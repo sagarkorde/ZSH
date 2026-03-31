@@ -9,6 +9,6 @@ authors:
     given-names: "Second"
   - family-names: "Author3"
     given-names: "Third"
-repository-code: "https://github.com/your-account/zsh-blockchain-profiling"
+repository-code: "https://github.com/sagarkorde/ZSH"
 license: "MIT"
 version: "v1.0.0"

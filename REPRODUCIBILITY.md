@@ -20,6 +20,6 @@
 
 ## Suggested Manuscript Statement
 
-`Code and artifact package available at: https://github.com/your-account/zsh-blockchain-profiling.`
+`Code and artifact package available at: https://github.com/sagarkorde/ZSH.`
 
 Replace the placeholder with the real public URL before submission.
