@@ -1,0 +1,10 @@
+__pycache__/
+.vscode/
+outputs/*.npy
+outputs/*.parquet
+outputs/*.pkl
+outputs/*.db
+outputs/*.csv
+outputs/*.png
+outputs/*.txt
+Dataset.parquet

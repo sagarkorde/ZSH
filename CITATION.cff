@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+title: "ZSH Blockchain Transaction Profiling"
+message: "If you use this repository, please cite the accompanying paper and this software release."
+type: software
+authors:
+  - family-names: "Author1"
+    given-names: "First"
+  - family-names: "Author2"
+    given-names: "Second"
+  - family-names: "Author3"
+    given-names: "Third"
+repository-code: "https://github.com/your-account/zsh-blockchain-profiling"
+license: "MIT"
+version: "v1.0.0"

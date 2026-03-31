@@ -1,0 +1,551 @@
+\documentclass{ieeeaccess}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{url}
+\usepackage{dblfloatfix}
+\usepackage{stfloats}
+\usepackage{placeins}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{etoolbox}
+\graphicspath{{./}}
+
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{6}
+\renewcommand{\topfraction}{0.90}
+\renewcommand{\bottomfraction}{0.50}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.85}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 4pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\dblfloatsep}{6pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{8pt plus 2pt minus 4pt}
+
+\def\thevol{XX}
+\def\theyear{2026}
+\makeatletter
+\patchcmd{\@evenfoot}{2023}{\theyear}{}{}
+\patchcmd{\@oddfoot}{2023}{\theyear}{}{}
+\patchcmd{\@evenfoot}{11}{\thevol}{}{}
+\patchcmd{\@oddfoot}{11}{\thevol}{}{}
+\patchcmd{\@evenfoot}{2016}{\theyear}{}{}
+\patchcmd{\@oddfoot}{2016}{\theyear}{}{}
+\patchcmd{\@evenfoot}{4}{\thevol}{}{}
+\patchcmd{\@oddfoot}{4}{\thevol}{}{}
+\makeatother
+
+\history{Date of publication March 31, 2026, date of current version March 31, 2026.}
+\doi{To be assigned after acceptance}
+
+\title{ZSH: A Zeta-Weighted Hybrid Semantic Clustering Framework for Blockchain Transaction Profiling and Anomaly-Aware Forensic Analysis}
+
+\author{\uppercase{Author 1}, \IEEEmembership{Student Member, IEEE},
+\uppercase{Author 2}, and \uppercase{Author 3}}
+
+\address{Department/School, University Name, City, Country}
+\corresp{Corresponding author: Name (e-mail: email@domain.com).}
+
+\begin{document}
+
+\titlepgskip=-15pt
+\maketitle
+
+\begin{abstract}
+Bitcoin transaction forensics requires profile-level interpretation rather than isolated anomaly scores, yet many unsupervised pipelines optimize Euclidean compactness and return unlabeled partitions that are difficult to operationalize. A Zeta-Weighted Hybrid Semantic framework named ZSH is introduced to address that limitation through finite-normalized Riemann zeta feature weighting, semantic seed allocation, Ward-guided centroid construction, profile-preserving anomaly detection, and same-space statistical validation. The study targets large-scale behavioral profiling on 11,303,526 Bitcoin transactions from blocks 744,837--903,456 using 27 structural and behavioral features. The proposed workflow generates 30 semantic profiles and flags 564,674 anomalous transactions, representing 5.00\% of the corpus, without altering cluster assignments during anomaly scoring. Empirical evaluation reports a bootstrap Silhouette value of 0.4495 with a 95\% confidence interval of [0.4374, 0.4615] and a permutation significance level below 0.001. A corrected geometry benchmark indicates that KMeans++ Elkan attains stronger intrinsic Euclidean compactness, while a contextual profiling benchmark shows that ZSH achieves higher weighted semantic purity 0.9474 versus 0.9368, higher macro purity 0.8705 versus 0.8179, lower semantic entropy 0.2543 versus 0.2772, and stronger minority-profile recoverability under shallow rule-tree explanation. Novelty arises from coupling statistically normalized feature weighting with semantically constrained centroid construction and an independent anomaly layer, yielding a reproducible profiling framework that is optimized for blockchain forensic interpretability rather than geometry-only partitioning.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Bitcoin, blockchain forensics, transaction profiling, unsupervised clustering, Riemann zeta weighting, anomaly detection, Isolation Forest, financial forensics
+\end{IEEEkeywords}
+
+% ===================================================================
+\section{Introduction}
+% ===================================================================
+
+Blockchain transaction ledgers have become a primary source of digital forensic evidence because every block preserves a timestamped record of value transfer, script usage, address interaction, and fee behavior. That transparency has encouraged extensive research on anomaly detection, anti-money laundering, phishing identification, illicit account screening, and financial forensic intelligence \cite{ref1,ref2,ref4,ref5}. In practice, however, analytical usefulness depends on more than raw observability. Investigators, compliance analysts, and cybercrime laboratories rarely act on isolated transaction rows. Decision support usually requires stable behavioral groupings that separate ordinary peer-to-peer transfers from exchange-style batching, consolidation patterns, coinjoin-like obfuscation, OP\_RETURN activity, and suspicious micro-structures that merit manual review. Unsupervised behavioral profiling is thus a high-value task in blockchain analytics because large public ledgers remain only weakly labeled, while operational workflows require semantic structure rather than anonymous cluster identifiers.
+
+Recent blockchain intelligence studies have substantially improved supervised and semi-supervised detection performance. Survey articles describe rapid progress in graph learning, deep representation learning, and temporal anomaly modeling across cryptocurrency ecosystems \cite{ref1,ref2,ref3}. Application-specific studies have reported strong results in fraudulent transaction discovery, illicit node identification, and phishing campaign detection \cite{ref5,ref8,ref19,ref27,ref35}. Yet a methodological mismatch persists between those advances and the needs of transaction profiling. Geometry-oriented clustering methods frequently yield compact partitions but offer limited behavioral meaning. Detection-oriented pipelines assign risk scores or binary labels but do not necessarily produce named behavioral families. Many graph-based methods require specialized labels or account-level supervision that do not translate directly to transaction-level exploratory profiling. As a result, an interpretability gap remains between raw blockchain records and the semantic language required in forensic reasoning.
+
+That gap is especially visible in Bitcoin-scale settings. Bitcoin transaction flows exhibit heavy-tailed value distributions, sparse and dense address interactions, mixed script behavior, repeated batching structures, and occasional obfuscation patterns that coexist within the same corpus. A geometry-only optimizer can separate points in Euclidean space without aligning clusters with operationally meaningful profiles. A rule-only system can provide semantic hints but may fail to preserve latent geometric substructure. A high-impact profiling framework must reconcile both views: numerical compactness for stable grouping and semantic steering for interpretable categories. Without that reconciliation, cluster labels remain difficult to explain, anomaly outputs become detached from behavioral families, and reviewer expectations for reproducibility and methodological rigor remain unmet.
+Recent Bitcoin-oriented studies reinforce the same concern. Machine learning-based anti-money laundering and financial-forensics studies have shown that suspicious transaction analysis benefits from domain-aware features and careful validation \cite{ref5,ref8,ref21,ref30}. However, most existing pipelines emphasize detection, not profile formation. The practical question in transaction profiling is whether a transaction appears abnormal, which behavioral family dominates a cluster, which subprofiles remain atypical, and whether anomaly signals should be interpreted as cluster membership or as an independent layer of evidence. A framework that conflates those roles risks overstating cluster quality or obscuring micro-profile risk. A framework that separates them can support more transparent investigative decisions.
+
+The present study addresses that problem through ZSH, a Zeta-Weighted Hybrid Semantic clustering framework for large-scale blockchain transaction profiling. The central methodological idea is that feature relevance, semantic prior knowledge, and geometric clustering should not be optimized independently. First, finite-normalized Riemann zeta weighting ranks the 27 transaction features through mutual-information relevance and converts the ranking into a normalized weight vector. Second, rule-derived semantic indicators allocate seed centroids for blockchain-relevant behavioral families, while Ward-guided micro-clusters preserve local structural variation. Third, a profile-preserving anomaly layer flags unusual transactions without changing cluster assignments. The resulting workflow produces semantically named behavioral families together with anomaly flags, rather than forcing both objectives into a single optimization stage.
+
+The research gap can thus be stated precisely. Existing blockchain clustering studies have not yet established a reproducible transaction-level pipeline that simultaneously satisfies five requirements: same-space statistical validation, semantically meaningful centroid initialization, profile naming, anomaly separation, and contextual superiority testing against a strong geometry-first baseline. Without those components, claims of superiority remain fragile because intrinsic metrics, interpretability, and downstream utility are often measured in inconsistent spaces or with incomplete methodological controls. Corrected evaluation is particularly important because manifold visualizations and metric-specific tuning can inadvertently exaggerate clustering quality when the evaluation space differs from the training space.
+
+The problem statement addressed in the manuscript is therefore as follows: how can a large unlabeled Bitcoin transaction corpus be partitioned into statistically valid, semantically interpretable, and anomaly-aware behavioral profiles when classical geometry-first methods optimize compactness more effectively than semantically constrained approaches? That problem motivates a conditional rather than absolute superiority claim. KMeans++ Elkan is expected to remain strong on intrinsic Euclidean geometry. The more relevant research question is whether a semantically guided framework can deliver higher profiling utility, cleaner behavioral families, and better recoverability of minority transaction profiles.
+
+Four research objectives govern the study.
+\begin{enumerate}
+\item To construct a feature weighting scheme that transforms ranked mutual-information relevance into a normalized transaction representation suitable for large-scale clustering.
+\item To design a hybrid centroid initialization strategy that integrates semantic seed allocation with local structural guidance from Ward-derived micro-clusters.
+\item To separate profile formation from anomaly detection so that cluster identity and anomalous behavior remain analytically distinct.
+\item To evaluate geometry, stability, and profiling utility under a corrected same-space benchmark against strong classical baselines.
+\end{enumerate}
+
+Five measurable contributions follow from those objectives.
+\begin{enumerate}
+\item A finite-normalized Riemann zeta weighting module is formulated for 27 blockchain transaction features, with weights constrained to sum to one and applied directly in the standardized feature space.
+\item A hybrid centroid construction procedure combines eight rule-derived semantic indicators with Ward-guided micro-cluster centers using a validated blending coefficient of $\lambda = 0.60$.
+\item A profile-preserving anomaly layer built with Isolation Forest identifies 564,674 anomalous transactions while leaving cluster assignments unchanged.
+\item A reproducible evaluation protocol reports 200 bootstrap iterations, 300 permutation iterations, a same-space baseline comparison, and a repeated contextual profiling benchmark using five samples of 120,000 rows each.
+\item A task-aligned empirical finding is established: KMeans++ Elkan yields the strongest Euclidean geometry, whereas ZSH achieves stronger semantic purity, lower entropy, and better minority-profile recoverability for blockchain transaction profiling.
+\end{enumerate}
+
+The remainder of the manuscript is organized as follows. Section II reviews recent literature on blockchain anomaly detection, graph learning, and profiling-related analytics. Section III presents the proposed ZSH framework, notation, architecture placeholder, and algorithmic workflow. Section IV describes the dataset, implementation environment, baselines, and evaluation protocol. Section V reports statistical validation, baseline comparison, ablation, profile-level findings, and contextual superiority analysis. Section VI concludes with impact, limitations, and future research directions. This introduction establishes the motivation and scope required for the methodological discussion that follows.
+
+% ===================================================================
+\section{Related Work}
+% ===================================================================
+
+Recent blockchain analytics literature has matured rapidly, yet the methodological center of gravity remains detection-oriented. The objective of this section is to position ZSH against the most relevant strands of anomaly detection, graph learning, and weakly supervised forensic profiling. The discussion highlights where current advances are strong and where a profiling-focused gap remains.
+
+\subsection{Machine Learning for Blockchain Anomaly Detection and AML}
+
+The objective of this subsection is to summarize how recent machine learning studies approach suspicious transaction detection, anti-money laundering, and financial forensic analysis. Survey and review articles have documented a clear shift from heuristic monitoring toward data-driven pipelines that analyze high-dimensional transaction behavior \cite{ref1,ref2,ref3}. In anti-money laundering settings, statistical learning and feature-driven models have demonstrated practical value for suspicious pattern screening \cite{ref4,ref5}. Bitcoin-focused studies have extended that direction by combining engineered transaction descriptors with supervised classifiers, explainability tools, or contrastive learning \cite{ref8,ref21,ref22,ref30}. These contributions show that transaction behavior contains sufficient signal for risk analysis, but the output usually remains a detection label, anomaly score, or illicitness estimate rather than a named behavioral profile.
+
+That distinction is important. A compliance analyst may need to understand whether a suspicious cluster corresponds to exchange-like batching, consolidation, or coinjoin-like behavior before any operational conclusion is drawn. Binary risk predictions do not provide that intermediate semantic layer. Consequently, detection studies motivate the current work but do not fully resolve the profile-formation problem. The limitation identified here motivates the graph-centric literature reviewed next.
+
+\subsection{Graph Learning for Illicit Accounts, Fraud, and Transaction Semantics}
+
+The objective of this subsection is to examine graph-based methods that capture temporal, relational, and structural signals in blockchain ecosystems. Ethereum phishing detection and illicit-account analysis have become especially active research topics. Transformer-based and graph-neural approaches have improved performance on phishing and fraud benchmarks by modeling interaction sequences and evolving neighborhood structure \cite{ref9,ref10,ref11,ref12,ref13}. Related work has also explored semantic representation learning for Ponzi detection, dynamic attribute graph anomaly detection, and multi-layer temporal transaction analysis \cite{ref14,ref15,ref16,ref17}. During 2024 and 2025, increasingly sophisticated graph methods appeared for phishing scam detection, illicit account mining, streaming fraud analysis, and transaction semantics \cite{ref18,ref19,ref20,ref24,ref25,ref26,ref27,ref28,ref29,ref31,ref32,ref33,ref34,ref35}.
+
+Graph learning is highly relevant because blockchain behavior is relational by nature. Even so, many graph-based studies depend on account-level labels, phishing annotations, or platform-specific task definitions. Those assumptions are reasonable for supervised threat intelligence, but transaction-level profiling on a massive weakly labeled corpus requires a different balance between scalability, interpretability, and semantic naming. A profiling framework can borrow ideas from graph-aware analysis without inheriting the label requirements of end-task classifiers. That observation leads to the more focused research gap articulated below.
+
+\subsection{Research Gap and Positioning of the Present Study}
+
+The objective of this subsection is to state the unresolved methodological gap addressed by ZSH. Three gaps stand out. First, most recent blockchain studies optimize detection accuracy rather than semantically interpretable transaction profiling \cite{ref5,ref8,ref21,ref30}. Second, interpretability is often treated as a post hoc explanation layer rather than as a design principle that shapes centroid initialization and profile naming. Third, comparisons with classical clustering algorithms are often difficult to interpret because training and evaluation occur in different spaces or because anomaly handling is allowed to influence cluster geometry.
+
+ZSH is positioned as a response to that combination of gaps. The framework does not attempt to outperform the strongest geometry-only optimizer on every intrinsic metric. Instead, it aims to transform a large Bitcoin transaction corpus into named behavioral profiles with an independent anomaly layer, while preserving same-space validation and explicit comparison with KMeans++ Elkan. The literature review thus motivates a methodology that integrates semantic steering, profile naming, and corrected evaluation rather than pursuing compactness alone. This linkage leads directly to the formal design of the proposed framework.
+
+% ===================================================================
+\section{Proposed Method and System Design}
+% ===================================================================
+
+The objective of this section is to formalize the ZSH workflow and document its reproducible design decisions. The section first introduces notation and a compact system overview, then details the weighting mechanism, centroid construction, clustering objective, semantic post-labeling, and anomaly layer. An algorithm block and an architecture placeholder are included to support reproducibility and final figure preparation.
+
+\subsection{Framework Overview and Notation}
+
+The objective of this subsection is to define the data representation and the outputs expected from the profiling pipeline. Let the standardized transaction dataset be represented by
+\begin{equation}
+\mathbf{X} = \left[\mathbf{x}_1^\top,\mathbf{x}_2^\top,\ldots,\mathbf{x}_n^\top\right]^\top \in \mathbb{R}^{n \times d},
+\label{eq:data_matrix}
+\end{equation}
+where $n$ denotes the number of transactions, $d$ denotes the number of clustering features, and $\mathbf{x}_i \in \mathbb{R}^{d}$ denotes the feature vector of transaction $i$. In the present dataset, $n = 11{,}303{,}526$ and $d = 27$. Equation \eqref{eq:data_matrix} defines the global transaction matrix that underpins weighting, centroid construction, and anomaly scoring.
+
+The pipeline returns the tuple
+\begin{equation}
+\left(\mathbf{y}, \mathbf{p}, \mathbf{a}, \mathbf{s}\right),
+\label{eq:output_tuple}
+\end{equation}
+where $\mathbf{y} \in \left\{1,\ldots,K\right\}^{n}$ is the vector of numeric cluster assignments, $\mathbf{p}$ is the vector of semantic profile labels, $\mathbf{a} \in \left\{0,1\right\}^{n}$ is the anomaly-flag vector, and $\mathbf{s} \in \mathbb{R}^{n}$ is the continuous anomaly-score vector. Equation \eqref{eq:output_tuple} distinguishes structural grouping from anomalous behavior, which is central to the framework design.
+
+Figure~\ref{fig:architecture} provides a placeholder specification for the final architecture diagram.
+
+\begin{figure*}[!t]
+\centering
+\fbox{\parbox{0.92\textwidth}{
+\textbf{Architecture diagram placeholder for the final manuscript.}
+The final figure should depict the following ordered stages: data ingestion from the Bitcoin ledger; transaction-level feature engineering; standardization; finite-normalized Riemann zeta weighting; semantic indicator extraction; Ward-guided micro-cluster generation; centroid blending; KMeans++ Elkan refinement; semantic post-labeling; Isolation Forest anomaly scoring; and statistical validation with bootstrap, permutation, and contextual profiling benchmarks. Arrows should indicate data flow, while side panels should identify reproducibility artifacts such as configuration files, output tables, and figures.
+}}
+\caption{Architecture of the ZSH workflow. The final artwork should visualize the end-to-end pipeline from Bitcoin transaction ingestion to semantic profile generation, anomaly scoring, and statistical validation.}
+\label{fig:architecture}
+\end{figure*}
+
+Algorithm~\ref{alg:zsh} summarizes the same workflow in procedural form.
+
+\begin{algorithm}[!t]
+\caption{ZSH profiling workflow}
+\label{alg:zsh}
+\begin{algorithmic}[1]
+\Require Standardized feature matrix $\mathbf{X}$, semantic indicator matrix $\mathbf{H}$, profile count $K$, blending coefficient $\lambda$, anomaly contamination rate $\gamma$
+\Ensure Cluster labels $\mathbf{y}$, semantic profiles $\mathbf{p}$, anomaly flags $\mathbf{a}$, anomaly scores $\mathbf{s}$
+\State Estimate proxy labels on $\mathbf{X}$ and compute feature mutual information scores
+\State Rank features by mutual information and compute finite-normalized zeta weights
+\State Form weighted representation $\mathbf{X}^{(w)}$
+\State Derive semantic seed centroids from $\mathbf{H}$ for blockchain-relevant behavioral families
+\State Fit Ward micro-clusters on $\mathbf{X}^{(w)}$ and extract micro-cluster centroids
+\State Blend semantic and Ward centroids using $\lambda$
+\State Refine blended centroids with KMeans++ Elkan in $\mathbf{X}^{(w)}$
+\State Assign semantic profile labels by dominant rule-family composition within each cluster
+\State Fit Isolation Forest on $\mathbf{X}^{(w)}$ and compute anomaly scores $\mathbf{s}$
+\State Threshold $\mathbf{s}$ at the $(1-\gamma)$ quantile to obtain anomaly flags $\mathbf{a}$
+\State Return $\mathbf{y}$, $\mathbf{p}$, $\mathbf{a}$, and $\mathbf{s}$
+\end{algorithmic}
+\end{algorithm}
+
+The notation and workflow introduced here establish the design logic needed for the component-level description that follows.
+
+\subsection{Finite-Normalized Riemann Zeta Weighting}
+
+The objective of this subsection is to define the weighted feature representation used by the clustering stage. Proxy labels are first generated from the standardized matrix using MiniBatchKMeans. Let $m_j$ denote the mutual information between feature $j$ and the proxy partition, and let $r_j$ denote the descending relevance rank induced by $m_j$. The zeta weight assigned to feature $j$ is
+\begin{equation}
+w_j = \frac{r_j^{-s}}{\sum_{k=1}^{d} k^{-s}},
+\label{eq:zeta_weight}
+\end{equation}
+where $s > 0$ is the decay exponent and $d$ is the number of observed features. Equation \eqref{eq:zeta_weight} ensures that all feature weights are positive and normalized through a finite partial sum, so that $\sum_{j=1}^{d} w_j = 1$. The finite normalization is important because the weighting scheme is applied to a measured feature set rather than to an infinite series.
+
+The weighted representation is then defined by
+\begin{equation}
+\mathbf{x}_i^{(w)} = \left[w_1 \tilde{x}_{i1}, w_2 \tilde{x}_{i2}, \ldots, w_d \tilde{x}_{id}\right]^\top,
+\label{eq:weighted_vector}
+\end{equation}
+where $\tilde{x}_{ij}$ denotes the standardized value of feature $j$ for transaction $i$. Equation \eqref{eq:weighted_vector} rescales each standardized coordinate according to relevance, creating a representation in which domain-informative features exert greater influence during clustering. This weighted space becomes the common training and evaluation space used throughout the remainder of the manuscript.
+
+The weighting stage thus transforms ranked feature relevance into a normalized representation that supports semantically guided centroid construction.
+\subsection{Hybrid Centroid Construction and Clustering Objective}
+
+The objective of this subsection is to define how semantic priors and local geometry are combined during centroid initialization. Eight semantic indicators are extracted from the transaction table: coinbase activity, coinjoin-like structure, batch payment behavior, consolidation, distribution, peer-to-peer transfer, OP\_RETURN usage, and replace-by-fee signaling. These indicators allocate seed centroids for major behavioral families. In parallel, Ward clustering on $\mathbf{X}^{(w)}$ produces local micro-cluster centers that preserve within-family variation.
+
+Let $\mathbf{C}_{\text{seed}} \in \mathbb{R}^{K \times d}$ denote the matrix of semantic seed centroids and let $\mathbf{C}_{\text{ward}} \in \mathbb{R}^{K \times d}$ denote the matrix of Ward-derived centroids after alignment to the same profile count $K$. The blended initialization is
+\begin{equation}
+\mathbf{C}_{\text{blend}} = \lambda \mathbf{C}_{\text{seed}} + \left(1-\lambda\right)\mathbf{C}_{\text{ward}},
+\label{eq:centroid_blend}
+\end{equation}
+where $\lambda \in [0,1]$ controls the balance between semantic prior structure and data-driven local geometry. In the reported experiments, $\lambda = 0.60$ was selected by grid search over $\left\{0.4,0.5,0.6,0.7,0.8\right\}$ because that value produced the best compromise between seed preservation and same-space validation geometry. Equation \eqref{eq:centroid_blend} thus formalizes the central hybridization step of the framework.
+
+Given the blended initialization, the refined clustering stage minimizes
+\begin{equation}
+\min_{\mathbf{y},\mathbf{C}} \sum_{i=1}^{n} \left\| \mathbf{x}_i^{(w)} - \mathbf{c}_{y_i} \right\|_2^2,
+\label{eq:kmeans_objective}
+\end{equation}
+where $\mathbf{c}_{y_i}$ denotes the centroid associated with the assignment $y_i$. Equation \eqref{eq:kmeans_objective} is the weighted-space clustering objective solved with KMeans++ Elkan after semantic blending. The objective retains Euclidean optimization while initializing the solution from semantically meaningful centers rather than from geometry-only seeds.
+
+The centroid construction stage therefore links domain semantics and local structure without abandoning a reproducible optimization objective.
+
+\subsection{Semantic Post-Labeling and Profile-Preserving Anomaly Layer}
+
+The objective of this subsection is to explain how numeric clusters are converted into named behavioral profiles and how anomaly scoring is separated from clustering. After convergence of the clustering stage, each cluster is assigned a semantic name according to the dominant indicator-family composition within that cluster. This post-labeling rule converts anonymous cluster identifiers into interpretable behavioral families such as \texttt{Coinjoin\_Mixer}, \texttt{Batch\_Payment}, \texttt{Standard\_P2P}, and \texttt{OP\_Return}. The semantic naming stage improves interpretability without modifying the numeric assignments.
+
+An Isolation Forest is then fitted independently on $\mathbf{X}^{(w)}$. Let $s_i$ denote the anomaly score for transaction $i$, and let $Q_{1-\gamma}\left(\mathbf{s}\right)$ denote the empirical $(1-\gamma)$ quantile of the score vector. The anomaly flag is defined as
+\begin{equation}
+a_i =
+\begin{cases}
+1, & s_i > Q_{1-\gamma}\left(\mathbf{s}\right), \\
+0, & \text{otherwise},
+\end{cases}
+\label{eq:anomaly_flag}
+\end{equation}
+where $\gamma$ denotes the target contamination rate. In the present study, $\gamma = 0.05$. Equation \eqref{eq:anomaly_flag} preserves the profile assignments because anomaly flags are computed after clustering and do not alter $\mathbf{y}$. The separation between semantic profile identity and anomaly severity is a defining property of ZSH.
+
+This stage completes the full analytical output and prepares the framework for reproducible evaluation.
+
+\subsection{Reproducibility Design}
+
+The objective of this subsection is to document the implementation choices that enable replication. The full workflow is implemented as a staged Python pipeline with dedicated scripts for loading, preprocessing, weighting, UMAP visualization, clustering, profile analysis, statistical validation, and contextual benchmarking. Large arrays are handled with memory-mapped storage, checkpoint files, and chunked operations to keep the execution stable on a workstation-scale environment. All intrinsic metrics are computed in the standardized weighted space, while UMAP is reserved for visualization. Repository artifacts include pipeline scripts, output tables, figures, and environment metadata for reproducibility.
+
+This reproducibility design links the formal method to the experimental protocol introduced in the next section.
+
+% ===================================================================
+\section{Experimental Setup and Implementation}
+% ===================================================================
+
+The objective of this section is to document the dataset, feature design, computational environment, baselines, and evaluation settings used to assess ZSH. Each subsection contributes a distinct part of the reproducibility chain required for journal submission and reviewer scrutiny.
+
+\subsection{Dataset and Coverage}
+
+The objective of this subsection is to define the empirical scope of the study. Experiments were conducted on a blockchain transaction corpus covering Bitcoin blocks 744,837--903,456 from 2022 to 2025. The final aligned dataset contained 11,303,526 transactions derived from the public Bitcoin ledger and transformed into a transaction-level analytical table. Temporal attributes such as block height and year were retained for interpretive analysis but excluded from direct clustering inputs. This separation avoids leakage from temporal identifiers into the behavioral representation.
+
+The dataset scope establishes the empirical foundation needed for feature engineering and reproducible evaluation.
+
+\subsection{Feature Space and Semantic Indicators}
+
+The objective of this subsection is to describe the 27-feature representation used for profiling. Four feature categories were engineered. Structural features captured input count, output count, address count, and total address involvement. Value and fee features captured total input value, total output value, average input value, average output value, fee, and fee-rate measures. Ratio and concentration features captured descriptors such as input-output ratio and value concentration. Behavioral indicator features captured coinbase activity, coinjoin-like structure, batch payment behavior, consolidation, distribution, peer-to-peer pattern, OP\_RETURN usage, and replace-by-fee signaling. The feature space was designed to combine continuous transaction geometry with domain-aware heuristics rather than relying on either source of information alone.
+
+This mixed feature design supports both semantic seeding and geometry-aware clustering in the subsequent stages.
+\subsection{Hardware, Software, and Visualization Settings}
+
+The objective of this subsection is to report the computational environment and visualization choices. Implementation was executed on an HP Omen workstation with an Intel 13th-generation Core i9 CPU, 64 GB RAM, and an NVIDIA RTX 4060 with 8 GB memory. The software stack included Python, NumPy, pandas, scikit-learn, DuckDB, joblib, matplotlib, seaborn, and UMAP. Memory-mapped arrays and chunked writes were used to preserve stability on the multi-million-transaction corpus. All intrinsic clustering metrics were computed in the standardized weighted space $\mathbf{X}^{(w)}$. UMAP was used only for visualization. To prevent spectral-initialization failure on the large transaction graph, UMAP used random initialization rather than default spectral initialization; downstream clustering quality was validated directly in the weighted space and is thus robust to this visualization-only choice.
+
+The environment description completes the computational context required for reproducibility and transitions to the formal evaluation setup.
+
+\subsection{Evaluation Protocol and Baselines}
+
+The objective of this subsection is to define the metrics and comparative baselines. Four evaluation layers were used: intrinsic clustering quality, bootstrap confidence intervals, permutation significance testing, and contextual profiling comparison. Intrinsic clustering quality was assessed with Silhouette, Davies--Bouldin index, and Calinski--Harabasz index. Stability was assessed with 200 bootstrap iterations on stratified 5,000-row subsamples. Statistical significance was assessed with 300 permutation iterations on the same weighted feature space. Profiling utility was assessed with five repeated 120,000-row contextual samples using eight heuristic indicators and a shallow decision tree as an explainability probe.
+
+Baseline methods included vanilla KMeans, KMeans++ Elkan, HDBSCAN, Gaussian mixture modeling, a Ward-guided hybrid baseline, and Agglomerative clustering. KMeans++ Elkan served as the strongest geometry-first reference because the research question concerns conditional superiority for profiling rather than dominance over weak baselines. The common evaluation space preserves methodological fairness across all methods.
+
+The protocol and baseline choices enable a direct transition to the concrete settings summarized in Table~\ref{tab:settings}.
+
+\begin{table}[!t]
+\caption{Core experimental settings used in the final ZSH study}
+\label{tab:settings}
+\centering
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Transactions & 11,303,526 \\
+Clustering features & 27 \\
+Final profile count $K$ & 30 \\
+Fit subset for Step 5 & 500,000 \\
+Validation subset & 50,000 \\
+Evaluation subset & 60,000 \\
+Zeta decay exponent $s$ & 1.5 \\
+Ward micro-clusters & 160 \\
+Isolation Forest contamination $\gamma$ & 0.05 \\
+Bootstrap iterations & 200 \\
+Permutation iterations & 300 \\
+Contextual comparison repeats & 5 \\
+Rows per contextual repeat & 120,000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:settings} consolidates the principal configuration values required to reproduce the full workflow. The experimental setting is thus fully specified for the results analysis that follows.
+
+% ===================================================================
+\section{Results and Discussion}
+% ===================================================================
+
+The objective of this section is to evaluate whether ZSH produces statistically valid, semantically meaningful, and operationally useful transaction profiles. The discussion proceeds from stability analysis to same-space geometry comparison, component ablation, profile-level interpretation, and contextual superiority testing against a geometry-first baseline.
+
+\subsection{Statistical Validity of the Learned Structure}
+
+The objective of this subsection is to determine whether the learned profile structure is stable and non-random. Across 200 bootstrap iterations on stratified 5,000-row subsamples, ZSH achieved a mean Silhouette score of 0.4495 with a 95\% confidence interval of [0.4374, 0.4615], a Davies--Bouldin index of 1.0722 with a 95\% confidence interval of [0.9836, 1.3216], and a Calinski--Harabasz index of 898.2 with a 95\% confidence interval of [298.4, 1351.5]. A permutation test rejected the null hypothesis of random labeling with $p < 0.001$, where the observed Silhouette value was 0.4485 and the null mean was $-0.1942 \pm 0.0327$. These results demonstrate that the learned partitions are stable under resampling and clearly separated from random assignment.
+
+Figure~\ref{fig:bootstrap} visualizes the confidence intervals for the intrinsic metrics.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.92\textwidth]{fig9_bootstrap_ci.png}
+\caption{Bootstrap confidence intervals for ZSH intrinsic metrics in the corrected same-space evaluation protocol}
+\label{fig:bootstrap}
+\end{figure*}
+
+Figure~\ref{fig:bootstrap} shows comparatively tight variability around the central Silhouette estimate and wider, but still interpretable, dispersion for Calinski--Harabasz values. The pattern indicates that profile structure is not an artifact of a single favorable sample. This stability evidence justifies a stronger comparison with external baselines.
+
+\FloatBarrier
+
+\subsection{Same-Space Benchmark Against Classical Baselines}
+
+The objective of this subsection is to compare ZSH against strong clustering baselines in a common evaluation space. Table~\ref{tab:sota} reports the corrected same-space benchmark. Every baseline was trained and evaluated in the standardized weighted space, eliminating cross-space inflation of intrinsic metrics. KMeans++ Elkan achieved the strongest geometry-first scores, followed by Agglomerative clustering, while ZSH remained competitive but did not dominate on Euclidean compactness and separation.
+\begin{table}[!t]
+\caption{Same-space benchmark in the standardized weighted feature space}
+\label{tab:sota}
+\centering
+\begin{tabular}{lcccc}
+\toprule
+Method & $k$ & Silhouette & DBI & CHI \\
+\midrule
+ZSH & 30 & 0.4530 & 1.0659 & 1315.2 \\
+Vanilla KMeans & 30 & 0.4875 & 1.0333 & 1311.0 \\
+KMeans++ Elkan & 30 & 0.4966 & 0.8443 & 2926.4 \\
+HDBSCAN & 14 & 0.2770 & 1.9099 & 557.2 \\
+Gaussian mixture model & 30 & 0.3332 & 1.8631 & 995.2 \\
+Ward-guided hybrid & 30 & 0.4238 & 1.0436 & 1304.6 \\
+Agglomerative & 30 & 0.4697 & 0.9073 & 2559.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:sota} supports a careful claim boundary. ZSH is not the strongest geometry-only method in the corpus. KMeans++ Elkan improves Silhouette by approximately 9.6\% relative to ZSH and lowers DBI substantially. The contribution of ZSH must therefore be interpreted through semantic profiling utility rather than absolute intrinsic compactness.
+
+Figure~\ref{fig:sota} visualizes the same comparison.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{fig10_sota_comparison.png}
+\caption{Same-space comparison between ZSH and classical baselines in the standardized weighted feature space}
+\label{fig:sota}
+\end{figure*}
+
+Figure~\ref{fig:sota} emphasizes the asymmetry between geometry-first optimization and profiling-oriented design. The strongest Euclidean performer is clearly identifiable, yet ZSH remains within a competitive range while offering semantic profile names and anomaly flags unavailable in the competing baselines. This observation motivates the component-level analysis reported next.
+
+\FloatBarrier
+
+\subsection{Ablation Analysis}
+
+The objective of this subsection is to isolate how weighting, geometry refinement, and anomaly separation influence the final workflow. Table~\ref{tab:ablation} presents the ablation results. Condition C represents the geometry-refinement branch after validation selected the identity fallback. Consequently, Condition C is best interpreted as methodologically similar to the KMeans++ Elkan geometry objective rather than as a distinct learned transform. The small numerical gap between Table~\ref{tab:sota} and Table~\ref{tab:ablation} arises from different evaluation subsamples used for the benchmark and the component analysis.
+
+\begin{table}[!t]
+\caption{Ablation study of ZSH components}
+\label{tab:ablation}
+\centering
+\begin{tabular}{p{4.8cm}cccc}
+\toprule
+Condition & Silhouette & DBI & CHI & Anomaly rate \\
+\midrule
+A: Vanilla KMeans without zeta weighting or seeds & 0.4469 & 1.3498 & 1656.4 & -- \\
+B: Condition A plus zeta weighting & 0.4276 & 1.0340 & 1633.3 & -- \\
+C: Condition B plus Elkan geometry refinement & 0.4896 & 0.8637 & 6204.5 & -- \\
+D: Condition C plus Isolation Forest flag & 0.4896 & 0.8637 & 6204.5 & 5.03\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:ablation} yields three important observations. First, zeta weighting alone improves DBI but reduces Silhouette and CHI, indicating that weighting is not merely a direct geometry booster. Second, geometry refinement substantially increases Silhouette and CHI relative to weighted-only clustering, confirming the value of high-quality centroid optimization. Third, Conditions C and D have identical clustering metrics, which verifies that anomaly scoring remains independent from cluster formation.
+
+Figure~\ref{fig:ablation} summarizes the same pattern visually.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{fig11_ablation_study.png}
+\caption{Ablation summary for weighting, geometry refinement, and anomaly separation}
+\label{fig:ablation}
+\end{figure*}
+
+Figure~\ref{fig:ablation} confirms that the largest intrinsic improvement originates from geometry refinement, whereas the anomaly layer enriches interpretation rather than altering partition structure. This finding leads naturally to profile-level interpretation of the learned clusters.
+
+\FloatBarrier
+
+\subsection{Profile-Level Behavioral Findings}
+
+The objective of this subsection is to interpret the learned profiles as operational transaction families. ZSH generated 30 semantic profiles. The highest-support profiles were \texttt{OP\_Return} at 11.53\%, \texttt{Distribution} at 10.84\%, \texttt{Batch\_Payment\_3} at 9.15\%, \texttt{Coinjoin\_Mixer} at 8.71\%, and \texttt{Standard\_P2P} at 7.97\%. These macro-families are useful for analysts because each captures a recognizable transaction behavior rather than a purely numeric cluster index.
+
+\begin{table}[!t]
+\caption{High-support ZSH profiles and anomaly rates}
+\label{tab:profiles}
+\centering
+\begin{tabular}{lcc}
+\toprule
+Profile & Corpus share & Anomaly rate \\
+\midrule
+OP\_Return & 11.53\% & 0.22\% \\
+Distribution & 10.84\% & 0.01\% \\
+Batch\_Payment\_3 & 9.15\% & 0.16\% \\
+Coinjoin\_Mixer & 8.71\% & 0.06\% \\
+Standard\_P2P & 7.97\% & 0.00\% \\
+RBF\_Enabled\_1 & 7.56\% & 0.02\% \\
+Coinjoin\_Mixer\_7 & 7.45\% & 0.44\% \\
+Standard\_P2P\_3 & 4.79\% & 0.09\% \\
+Batch\_Payment\_5 & 4.69\% & 1.72\% \\
+Batch\_Payment\_7 & 4.12\% & 0.38\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:profiles} shows that the largest profiles are predominantly low-anomaly macro-families. The anomaly layer reveals a different pattern among smaller subprofiles. The highest-anomaly micro-profiles were \texttt{Batch\_Payment\_1} at 100.00\%, \texttt{Coinjoin\_Mixer\_3} at 100.00\%, \texttt{Batch\_Payment\_2} at 100.00\%, \texttt{Coinjoin\_Mixer\_5} at 99.95\%, and \texttt{Coinbase} at 99.92\%. Those profiles do not appear in Table~\ref{tab:profiles} because support is comparatively low, yet the finding is operationally important because it demonstrates how macro-families can contain highly concentrated risk micro-structures.
+Figure~\ref{fig:heatmap} provides a feature-pattern summary for representative profiles.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.9\textwidth]{fig3_profile_heatmap.png}
+\caption{Heatmap of representative feature patterns across learned ZSH transaction profiles}
+\label{fig:heatmap}
+\end{figure*}
+
+Figure~\ref{fig:heatmap} illustrates why semantic naming is useful. Distinct high-support profiles show different structural and behavioral signatures, allowing investigators to interpret cluster identity without inspecting every transaction instance. The heatmap also provides a bridge from descriptive profiling to comparative benchmarking against classical methods.
+
+\FloatBarrier
+
+\subsection{Contextual Comparison With KMeans++ Elkan}
+
+The objective of this subsection is to evaluate whether ZSH provides better profiling utility than the strongest geometry-first baseline. A contextual comparison was conducted over five repeated 120,000-row samples using eight heuristic blockchain indicators and a shallow decision tree as an explainability probe. The indicators were not treated as external ground truth; instead, the probe measured semantic coherence and minority-profile recoverability under a task-aligned interpretation setting.
+
+\begin{table}[!t]
+\caption{Contextual profiling comparison between ZSH and KMeans++ Elkan}
+\label{tab:context}
+\centering
+\begin{tabular}{lcc}
+\toprule
+Metric & ZSH & KMeans++ Elkan \\
+\midrule
+Weighted semantic purity & 0.9474 & 0.9368 \\
+Macro purity & 0.8705 & 0.8179 \\
+Weighted entropy & 0.2543 & 0.2772 \\
+High-purity clusters & 21.4 & 17.4 \\
+Rule-tree accuracy & 0.8202 & 0.8396 \\
+Rule-tree balanced accuracy & 0.4541 & 0.3953 \\
+Rule-tree macro-F1 & 0.4203 & 0.3698 \\
+NMI with rule layer & 0.7186 & 0.7341 \\
+AMI with rule layer & 0.7185 & 0.7340 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:context} shows that ZSH improves weighted semantic purity by approximately 1.1\%, macro purity by approximately 6.4\%, and balanced accuracy by approximately 14.9\% relative to KMeans++ Elkan. KMeans++ Elkan remains slightly stronger on NMI and AMI, suggesting better alignment with the global information partition of the heuristic layer. Even so, the sharper purity and minority-profile recoverability of ZSH are more relevant for investigative profiling, where rare but meaningful substructures often deserve disproportionate attention.
+
+Figure~\ref{fig:context} visualizes the contextual benchmark.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{fig12_contextual_comparison.png}
+\caption{Contextual profiling comparison showing the trade-off between geometry-first and profiling-first criteria}
+\label{fig:context}
+\end{figure*}
+
+Figure~\ref{fig:context} reinforces the conditional-superiority argument. ZSH does not dominate the geometry benchmark, yet it produces cleaner behavioral groups and better minority-profile recoverability under a task-aligned probe. The remaining subsection integrates those findings with the principal limitations of the study.
+
+\FloatBarrier
+
+\subsection{Interpretation and Limitations}
+
+The objective of this subsection is to synthesize the empirical findings and define the valid scope of the proposed framework. The collective evidence supports a conditional conclusion. ZSH is not the strongest geometry-only clusterer in the corrected same-space benchmark. KMeans++ Elkan remains superior when the sole objective is Euclidean compactness and separation. Yet blockchain transaction profiling is not limited to geometry. Investigative utility depends on semantic profile coherence, explicit anomaly separation, and recoverability of minority behaviors. Under that objective, ZSH provides a more actionable representation of the transaction corpus.
+
+Several limitations define the present scope. First, intrinsic geometry remains weaker than the best classical baseline. Second, the contextual benchmark is based on heuristic indicators rather than on a large externally labeled behavioral benchmark. Third, the ZSH-G metric-learning branch selected the identity fallback, indicating that the strongest contribution lies in weighting, hybrid centroid construction, and profile-preserving anomaly handling rather than in a learned linear transform. Fourth, the dataset is Bitcoin-specific, so transferability to Ethereum, Solana, or cross-chain environments remains untested. Fifth, semantic seeds introduce purposeful domain bias that may require adaptation in other ecosystems. Sixth, the blending coefficient $\lambda = 0.60$ may require retuning on corpora with different behavioral mixtures.
+
+These limitations do not invalidate the framework, but the resulting boundary conditions define the claim precisely and motivate the conclusion presented next.
+
+% ===================================================================
+\section{Conclusion}
+% ===================================================================
+
+The objective of this section is to summarize the principal findings, define the contribution boundary, and identify future research directions. ZSH integrates finite-normalized Riemann zeta weighting, semantically guided centroid construction, profile-preserving anomaly detection, and corrected same-space validation for large-scale Bitcoin transaction profiling. The framework produced 30 named behavioral profiles on 11,303,526 transactions and identified 564,674 anomalous transactions while preserving cluster assignments during anomaly scoring. Statistical validation confirmed stable profile structure, and contextual benchmarking showed stronger semantic purity and minority-profile recoverability than KMeans++ Elkan.
+
+The strongest methodological contribution lies not in replacing the best geometry-first baseline, but in providing a reproducible profiling framework that aligns clustering with blockchain forensic interpretation. Geometry-first compactness remained higher for KMeans++ Elkan, whereas semantic coherence and profiling utility were stronger for ZSH. That distinction sharpens the novelty claim and aligns the contribution with reviewer expectations for honest positioning.
+
+The study remains subject to several limitations, including Bitcoin-specific evaluation, heuristic contextual probing, and the identity-fallback outcome of the linear metric branch. Future research can extend the framework toward cross-chain transfer, wallet-level behavioral profiling, dynamic or continual profile adaptation, and richer contextual supervision for external validation. Because profile outputs may influence investigative prioritization, deployment should remain restricted to authorized forensic, compliance, or research settings with human oversight. Under those conditions, ZSH offers a practically relevant step toward semantically interpretable and anomaly-aware blockchain transaction intelligence.
+
+\section*{Code and Artifact Availability}
+
+A public repository should accompany the final submission to support experimentation proof and reproducibility. The repository should expose the complete pipeline, environment specification, artifact map, and a one-command entry point such as \texttt{python RUN\_PIPELINE.py}. The final camera-ready version should replace the placeholder URL with the public repository address for the ZSH artifact package.
+
+\section*{Acknowledgment}
+
+Institutional and computational support used during the experiments should be acknowledged in the final version. Funding information should be inserted if applicable.
+\begin{thebibliography}{00}
+\bibitem{ref1} Y. Qi, J. Wu, H. Xu, and M. Guizani, ``Blockchain Data Mining With Graph Learning: A Survey,'' \emph{IEEE Trans. Pattern Anal. Mach. Intell.}, vol. 46, no. 2, pp. 729--748, Feb. 2024, doi: 10.1109/TPAMI.2023.3327404.
+\bibitem{ref2} J. Zhang, K. Cai, and J. Wen, ``A survey of deep learning applications in cryptocurrency,'' \emph{iScience}, vol. 27, no. 1, p. 108509, Jan. 2024, doi: 10.1016/j.isci.2023.108509.
+\bibitem{ref3} S. Kayikci and T. M. Khoshgoftaar, ``Blockchain meets machine learning: a survey,'' \emph{J. Big Data}, vol. 11, no. 1, Jan. 2024, doi: 10.1186/s40537-023-00852-y.
+\bibitem{ref4} R. I. T. Jensen and A. Iosifidis, ``Fighting Money Laundering With Statistics and Machine Learning,'' \emph{IEEE Access}, vol. 11, pp. 8889--8903, 2023, doi: 10.1109/ACCESS.2023.3239549.
+\bibitem{ref5} N. Pocher \emph{et al.}, ``Detecting anomalous cryptocurrency transactions: An AML/CFT application of machine learning-based forensics,'' \emph{Electron. Markets}, vol. 33, no. 1, Jul. 2023, doi: 10.1007/s12525-023-00654-3.
+\bibitem{ref6} N. Nayyer \emph{et al.}, ``A New Framework for Fraud Detection in Bitcoin Transactions Through Ensemble Stacking Model in Smart Cities,'' \emph{IEEE Access}, vol. 11, pp. 90916--90938, 2023, doi: 10.1109/ACCESS.2023.3308298.
+\bibitem{ref7} T. Voronov, D. Raz, and O. Rottenstreich, ``A Framework for Anomaly Detection in Blockchain Networks With Sketches,'' \emph{IEEE/ACM Trans. Netw.}, vol. 32, no. 1, pp. 686--698, Feb. 2024, doi: 10.1109/TNET.2023.3298253.
+\bibitem{ref8} Y. Elmougy and L. Liu, ``Demystifying Fraudulent Transactions and Illicit Nodes in the Bitcoin Network for Financial Forensics,'' in \emph{Proc. 29th ACM SIGKDD}, Aug. 2023, pp. 3979--3990, doi: 10.1145/3580305.3599803.
+\bibitem{ref9} S. Hu \emph{et al.}, ``BERT4ETH: A Pre-trained Transformer for Ethereum Fraud Detection,'' in \emph{Proc. ACM Web Conf. 2023}, Apr. 2023, pp. 2189--2197, doi: 10.1145/3543507.3583345.
+\bibitem{ref10} L. Wang, M. Xu, and H. Cheng, ``Phishing scams detection via temporal graph attention network in Ethereum,'' \emph{Inf. Process. Manag.}, vol. 60, no. 4, p. 103412, Jul. 2023, doi: 10.1016/j.ipm.2023.103412.
+\bibitem{ref11} A. Xiong \emph{et al.}, ``Ethereum phishing detection based on graph neural networks,'' \emph{IET Blockchain}, vol. 4, no. 3, pp. 226--234, May 2023, doi: 10.1049/blc2.12031.
+\bibitem{ref12} S. Li \emph{et al.}, ``SIEGE: Self-Supervised Incremental Deep Graph Learning for Ethereum Phishing Scam Detection,'' in \emph{Proc. 31st ACM Int. Conf. Multimedia}, Oct. 2023, pp. 8881--8890, doi: 10.1145/3581783.3612461.
+\bibitem{ref13} S. Li \emph{et al.}, ``TGC: Transaction Graph Contrast Network for Ethereum Phishing Scam Detection,'' in \emph{Annu. Comput. Secur. Appl. Conf.}, Dec. 2023, pp. 352--365, doi: 10.1145/3627106.3627109.
+\bibitem{ref14} J. Cai, B. Li, J. Zhang, and X. Sun, ``Ponzi Scheme Detection in Smart Contract via Transaction Semantic Representation Learning,'' \emph{IEEE Trans. Rel.}, vol. 73, no. 2, pp. 1117--1131, Jun. 2024, doi: 10.1109/TR.2023.3319318.
+\bibitem{ref15} C. Liu, Y. Xu, and Z. Sun, ``Directed dynamic attribute graph anomaly detection based on evolved graph attention for blockchain,'' \emph{Knowl. Inf. Syst.}, vol. 66, no. 2, pp. 989--1010, Dec. 2023, doi: 10.1007/s10115-023-02033-y.
+\bibitem{ref16} B. Han \emph{et al.}, ``MT\textasciicircum{}2AD: multi-layer temporal transaction anomaly detection in ethereum networks with GNN,'' \emph{Complex Intell. Syst.}, vol. 10, no. 1, pp. 613--626, Jul. 2023, doi: 10.1007/s40747-023-01126-z.
+\bibitem{ref17} L. Xiao \emph{et al.}, ``CTDM: cryptocurrency abnormal transaction detection method with spatio-temporal and global representation,'' \emph{Soft Comput.}, vol. 27, no. 16, pp. 11647--11660, May 2023, doi: 10.1007/s00500-023-08220-x.
+\bibitem{ref18} H. Huang \emph{et al.}, ``PEAE-GNN: Phishing Detection on Ethereum via Augmentation Ego-Graph Based on Graph Neural Network,'' \emph{IEEE Trans. Comput. Social Syst.}, vol. 11, no. 3, pp. 4326--4339, Jun. 2024, doi: 10.1109/TCSS.2023.3349071.
+\bibitem{ref19} J. Zhang \emph{et al.}, ``GrabPhisher: Phishing Scams Detection in Ethereum via Temporally Evolving GNNs,'' \emph{IEEE Trans. Serv. Comput.}, vol. 17, no. 6, pp. 3727--3741, Nov. 2024, doi: 10.1109/TSC.2024.3411449.
+\bibitem{ref20} J. Liu \emph{et al.}, ``Fishing for Fraudsters: Uncovering Ethereum Phishing Gangs With Blockchain Data,'' \emph{IEEE Trans. Inf. Forensics Secur.}, vol. 19, pp. 3038--3050, 2024, doi: 10.1109/TIFS.2024.3359000.
+\bibitem{ref21} M. Hasan \emph{et al.}, ``Detecting anomalies in blockchain transactions using machine learning classifiers and explainability analysis,'' \emph{Blockchain: Res. Appl.}, vol. 5, no. 3, p. 100207, Sep. 2024, doi: 10.1016/j.bcra.2024.100207.
+\bibitem{ref22} S. Ouyang, Q. Bai, H. Feng, and B. Hu, ``Bitcoin Money Laundering Detection via Subgraph Contrastive Learning,'' \emph{Entropy}, vol. 26, no. 3, p. 211, Feb. 2024, doi: 10.3390/e26030211.
+\bibitem{ref23} Z. Wang \emph{et al.}, ``Research on blockchain abnormal transaction detection technology combining CNN and transformer structure,'' \emph{Comput. Electr. Eng.}, vol. 116, p. 109194, May 2024, doi: 10.1016/j.compeleceng.2024.109194.
+\bibitem{ref24} Z. Chen \emph{et al.}, ``Ethereum Phishing Scam Detection Based on Data Augmentation Method and Hybrid Graph Neural Network Model,'' \emph{Sensors}, vol. 24, no. 12, p. 4022, Jun. 2024, doi: 10.3390/s24124022.
+\bibitem{ref25} Z. Ding, J. Shi, Q. Li, and J. Cao, ``Effective Illicit Account Detection on Large Cryptocurrency MultiGraphs,'' in \emph{Proc. 33rd ACM CIKM}, Oct. 2024, pp. 457--466, doi: 10.1145/3627673.3679707.
+\bibitem{ref26} J. Yang \emph{et al.}, ``2DynEthNet: A Two-Dimensional Streaming Framework for Ethereum Phishing Scam Detection,'' \emph{IEEE Trans. Inf. Forensics Secur.}, vol. 19, pp. 9924--9937, 2024, doi: 10.1109/TIFS.2024.3484296.
+\bibitem{ref27} J. Song \emph{et al.}, ``Illicit Social Accounts? Anti-Money Laundering for Transactional Blockchains,'' \emph{IEEE Trans. Inf. Forensics Secur.}, vol. 20, pp. 391--404, 2025, doi: 10.1109/TIFS.2024.3518068.
+\bibitem{ref28} W. Hou \emph{et al.}, ``TSFF: A Triple-Stream Feature Fusion Method for Ethereum Phishing Scam Detection,'' \emph{IEEE Internet Things J.}, vol. 12, no. 3, pp. 2623--2632, Feb. 2025, doi: 10.1109/JIOT.2024.3473771.
+\bibitem{ref29} L. Zhang \emph{et al.}, ``Unraveling the Deception of Web3 Phishing Scams: Dynamic Multiperspective Cascade Graph Approach for Ethereum Phishing Detection,'' \emph{IEEE Trans. Comput. Social Syst.}, vol. 12, no. 2, pp. 498--510, Apr. 2025, doi: 10.1109/TCSS.2024.3516144.
+\bibitem{ref30} Y. Liang \emph{et al.}, ``A plug-and-play data-driven approach for anti-money laundering in bitcoin,'' \emph{Expert Syst. Appl.}, vol. 266, p. 126072, Mar. 2025, doi: 10.1016/j.eswa.2024.126072.
+\bibitem{ref31} Z. Sheng, L. Song, and Y. Wang, ``Dynamic Feature Fusion: Combining Global Graph Structures and Local Semantics for Blockchain Phishing Detection,'' \emph{IEEE Trans. Netw. Serv. Manag.}, vol. 22, no. 5, pp. 4706--4718, Oct. 2025, doi: 10.1109/TNSM.2025.3576130.
+\bibitem{ref32} H. Sui \emph{et al.}, ``EPAD: Ethereum phishing scam detection via graph contrastive learning,'' \emph{Expert Syst. Appl.}, vol. 288, p. 128227, Sep. 2025, doi: 10.1016/j.eswa.2025.128227.
+\bibitem{ref33} J. Huang \emph{et al.}, ``GAPLG: Graph Augmented With Pseudolabels Generation for Blockchain Anomaly Transaction Detection,'' \emph{IEEE Trans. Comput. Social Syst.}, vol. 12, no. 6, pp. 4532--4546, Dec. 2025, doi: 10.1109/TCSS.2025.3555658.
+\bibitem{ref34} A. Asiri and K. Somasundaram, ``Graph convolution network for fraud detection in bitcoin transactions,'' \emph{Sci. Rep.}, vol. 15, no. 1, Apr. 2025, doi: 10.1038/s41598-025-95672-w.
+\bibitem{ref35} X. Shen, C. Xu, and L. Zhu, ``Blockchain Anomaly Transaction Detection Method Based on Graph Continual Learning,'' \emph{IEEE Trans. Netw. Sci. Eng.}, vol. 13, pp. 6059--6078, 2026, doi: 10.1109/TNSE.2026.3653459.
+\end{thebibliography}
+
+\section*{Author Biographies}
+
+\noindent\textbf{Author 1} is currently pursuing the Ph.D.\ degree with [Department], [University], [City], [Country]. The research interests include blockchain analytics, unsupervised learning, anomaly detection, and financial forensics.
+
+\medskip
+\noindent\textbf{Author 2} is with [Department], [University], [City], [Country]. The research interests include machine learning, data mining, and applied artificial intelligence.
+
+\medskip
+\noindent\textbf{Author 3} is with [Department], [University], [City], [Country]. The research interests include cybersecurity, blockchain systems, and digital forensics.
+
+\end{document}
