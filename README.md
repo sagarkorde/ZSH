@@ -6,6 +6,8 @@ This repository accompanies the paper:
 
 It provides the end-to-end experiment pipeline, reproducibility instructions, and the artifact mapping used to generate the main tables and figures reported in the manuscript.
 
+The latest packaged LaTeX manuscript project is available at `downloads/ZSH_LaTeX_Project_Latest.zip`.
+
 ## What This Repository Contains
 
 - `RUN_PIPELINE.py`
