@@ -42,8 +42,10 @@ import matplotlib.gridspec as gridspec
 
 # ── 0. OUTPUT DIRECTORY ───────────────────────────────────────
 # All intermediate and final artefacts land here.
-# Change this path to match wherever Step 2 wrote its outputs.
-OUTPUT_DIR = r"C:\Users\sagar\Desktop\Q2 Paper 22326\outputs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import (
+    OUTPUT_DIR, BALANCE_MODE, PROXY_K, RUN_S_GRID, RUN_PROXY_SENSITIVITY,
+)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ── 1. LOGGING SETUP ─────────────────────────────────────────
@@ -472,6 +474,119 @@ mi_df_raw = (pd.DataFrame({'feature': FEATURE_COLS, 'mi_score': mi_scores})
 ts("\nTop 15 MI scores (raw, before Zeta weighting):")
 ts("\n" + mi_df_raw.head(15).to_string(index=False))
 
+
+def _build_mi_subsample(proxy_labels_arr, sample_size=MI_SAMPLE, seed=42):
+    """
+    Deterministically reproduce STAGE 2's stratified subsample (same seed,
+    same per-cluster quota logic) — used by STAGE 2B/2C so they don't
+    require STAGE 2's X_mi/y_mi to still be in scope after a checkpoint
+    reload (is_done("mi")==True path only loads mi_scores, not X_mi/y_mi).
+    """
+    rng = np.random.default_rng(seed)
+    unique_cl = np.unique(proxy_labels_arr)
+    per_cl = sample_size // len(unique_cl)
+    idx_list = []
+    for c in unique_cl:
+        ci = np.where(proxy_labels_arr == c)[0]
+        sampled = rng.choice(ci, size=min(per_cl, len(ci)), replace=False)
+        idx_list.extend(sampled.tolist())
+    idx_arr = np.array(idx_list)
+    return idx_arr
+
+
+# ── STAGE 2B: RANDOM FOREST IMPORTANCE (reviewer #12 — alternative to
+#              MI-against-proxy-clustering as the sole ranking estimator) ──
+# Reuses the exact same stratified subsample as STAGE 2 (same seed/logic),
+# fits a RandomForestClassifier against the proxy cluster labels, and
+# ranks features by .feature_importances_ instead of mutual information.
+# This diversifies the *ranking estimator*; it does not by itself resolve
+# the reviewer's circularity concern about the proxy clustering itself —
+# that is addressed separately by STAGE 3B's proxy-independent Laplacian
+# ranking and by STAGE 2C's proxy n_clusters sensitivity sweep below.
+rf_importance_path = os.path.join(OUTPUT_DIR, 'rf_importance.npy')
+
+if is_done("rf_importance"):
+    ts("STAGE 2B [RF Importance]: Loading saved RF importances ...")
+    rf_importances = np.load(rf_importance_path)
+else:
+    ts("STAGE 2B [RF Importance]: Fitting RandomForestClassifier on the "
+       "STAGE 2 subsample ...")
+    t0 = time.time()
+    from sklearn.ensemble import RandomForestClassifier
+
+    idx_arr = _build_mi_subsample(proxy_labels)
+    X_rf = np.array(X_scaled[idx_arr])
+    y_rf = proxy_labels[idx_arr].astype(np.int32)
+
+    rf = RandomForestClassifier(
+        n_estimators=200, n_jobs=-1, random_state=42, max_depth=None,
+    )
+    rf.fit(X_rf, y_rf)
+    rf_importances = rf.feature_importances_.astype(np.float64)
+    np.save(rf_importance_path, rf_importances)
+    ts(f"  RF importance fit done in {time.time()-t0:.1f}s")
+    mark_done("rf_importance")
+
+rf_df_raw = (pd.DataFrame({'feature': FEATURE_COLS, 'rf_importance': rf_importances})
+               .sort_values('rf_importance', ascending=False))
+ts("\nTop 15 RF importances (raw, before Zeta weighting):")
+ts("\n" + rf_df_raw.head(15).to_string(index=False))
+
+# ── STAGE 2C: PROXY-CLUSTERING SENSITIVITY SWEEP (reviewer #12) ────────
+# How arbitrary is the n_clusters=10 choice for the proxy MiniBatchKMeans?
+# Refit the proxy clustering + MI ranking at several n_clusters values and
+# report Spearman correlation of the resulting feature ranks against the
+# baseline (n_clusters=10) ranking. Gated behind RUN_PROXY_SENSITIVITY
+# (pipeline_config) since it re-fits MiniBatchKMeans on the full X_scaled
+# multiple times — not needed for every routine run.
+if RUN_PROXY_SENSITIVITY:
+    proxy_sens_path = os.path.join(OUTPUT_DIR, 'step3_proxy_sensitivity.csv')
+    if is_done("proxy_sensitivity"):
+        ts("STAGE 2C [Proxy Sensitivity]: Already complete — skipping.")
+    else:
+        ts("STAGE 2C [Proxy Sensitivity]: Sweeping proxy n_clusters ...")
+        t0 = time.time()
+        from scipy.stats import spearmanr
+
+        PROXY_K_SWEEP = [5, 10, 15, 20]
+        sens_rows = []
+        rank_cols = {}
+        for k in PROXY_K_SWEEP:
+            if k == PROXY_K and PROXY_K == 10:
+                # Reuse the already-fit k=10 proxy clustering / MI scores
+                labels_k = proxy_labels
+                mi_k = mi_scores
+            else:
+                km_k = MiniBatchKMeans(
+                    n_clusters=k, n_init=5, batch_size=50_000,
+                    max_iter=300, random_state=42, verbose=0,
+                )
+                labels_k = km_k.fit_predict(X_scaled)
+                idx_k = _build_mi_subsample(labels_k)
+                X_k = np.array(X_scaled[idx_k])
+                y_k = labels_k[idx_k].astype(np.float32)
+                mi_k = mutual_info_regression(X_k, y_k, n_neighbors=MI_NEIGHBORS,
+                                               random_state=42)
+            rank_series = pd.Series(mi_k, index=FEATURE_COLS).rank(ascending=False)
+            rank_cols[k] = rank_series
+            ts(f"  n_clusters={k}: proxy clustering + MI done "
+               f"({time.time()-t0:.1f}s elapsed)")
+
+        baseline_ranks = rank_cols[10] if 10 in rank_cols else rank_cols[PROXY_K_SWEEP[0]]
+        for k, ranks_k in rank_cols.items():
+            rho, pval = spearmanr(baseline_ranks.reindex(FEATURE_COLS),
+                                   ranks_k.reindex(FEATURE_COLS))
+            sens_rows.append({
+                "n_clusters": k,
+                "spearman_rho_vs_k10": rho,
+                "p_value": pval,
+            })
+        sens_df = pd.DataFrame(sens_rows)
+        sens_df.to_csv(proxy_sens_path, index=False)
+        ts(f"  Proxy sensitivity -> {proxy_sens_path}\n" +
+           sens_df.to_string(index=False))
+        mark_done("proxy_sensitivity")
+
 # ── STAGE 3: RIEMANN ZETA RANKING via DuckDB ──────────────────
 # Core novel contribution of this step.
 #
@@ -561,15 +676,24 @@ else:
     con.register("mi_table", seed_df)
 
     # ── 3a. Primary weights at s = S_DECAY ──────────────────
-    # Uses finite normaliser Z_N(S_DECAY) — guarantees Σ w_r = 1.0 exactly.
+    # Uses finite normaliser Z_N(S_DECAY) — guarantees Σ w_r = 1.0 exactly,
+    # PROVIDED ranks form a clean 1..d sequence. RANK() gives ties the SAME
+    # rank and then skips the next value (e.g. two features tied at rank 26
+    # -> no rank 27 exists), which breaks that guarantee: Z_N(s) assumes
+    # ranks 1..d each appear exactly once. This bit the raw-corpus run,
+    # where two features (output_address_count, value_concentration_ratio)
+    # both score exactly 0.0 MI and produced a duplicate rank 26 / missing
+    # rank 27, failing the weight-sum assertion below. ROW_NUMBER() with a
+    # deterministic tiebreak (feature name) guarantees a strict 1..d
+    # bijection regardless of ties, matching Section 3.2's definition of
+    # rank rj as a bijection over {1,...,d}.
     query_primary = f"""
         SELECT
             feature,
             mi_score,
-            -- RANK() assigns 1 to the feature with the highest MI score
-            RANK() OVER (ORDER BY mi_score DESC)                              AS rank,
+            ROW_NUMBER() OVER (ORDER BY mi_score DESC, feature ASC)           AS rank,
             -- w_r = (1/r^s) / Z_N(s)  — finite-normalised Zeta weight
-            (1.0 / POWER(RANK() OVER (ORDER BY mi_score DESC), {S_DECAY}))
+            (1.0 / POWER(ROW_NUMBER() OVER (ORDER BY mi_score DESC, feature ASC), {S_DECAY}))
                 / {primary_normaliser}                                        AS zeta_weight
         FROM mi_table
         ORDER BY rank ASC
@@ -588,10 +712,10 @@ else:
         query_s = f"""
             SELECT
                 feature,
-                (1.0 / POWER(RANK() OVER (ORDER BY mi_score DESC), {s}))
+                (1.0 / POWER(ROW_NUMBER() OVER (ORDER BY mi_score DESC, feature ASC), {s}))
                     / {norm}   AS {s_col}
             FROM mi_table
-            ORDER BY RANK() OVER (ORDER BY mi_score DESC) ASC
+            ORDER BY ROW_NUMBER() OVER (ORDER BY mi_score DESC, feature ASC) ASC
         """
         s_df = con.execute(query_s).df()
 
@@ -704,6 +828,48 @@ ts("\n" + geom_rank_df[
     ['feature', 'rank', 'laplacian_score', 'geom_zeta_weight']
 ].head(15).to_string(index=False))
 
+# ── STAGE 3C: RF-IMPORTANCE ZETA RANKING (reviewer #12) ────────────────
+# Same finite-normaliser rank-to-weight pipeline as STAGE 3, but ranked by
+# STAGE 2B's RandomForest importances instead of mutual information.
+rf_ranks_parquet = os.path.join(OUTPUT_DIR, 'feature_ranks_rf.parquet')
+rf_ranks_csv = os.path.join(OUTPUT_DIR, 'feature_ranks_rf.csv')
+
+if is_done("rf_ranks"):
+    ts("STAGE 3C [RF Zeta Ranking]: Loading saved RF-based ranks ...")
+    rf_rank_df = pd.read_parquet(rf_ranks_parquet)
+else:
+    ts("STAGE 3C [RF Zeta Ranking]: Computing RF-importance Zeta ranks via DuckDB ...")
+    t0 = time.time()
+    rf_seed_df = pd.DataFrame({
+        'feature': FEATURE_COLS,
+        'rf_importance': rf_importances.astype(float),
+    })
+    con = duckdb.connect()
+    con.register("rf_table", rf_seed_df)
+    query_rf = f"""
+        SELECT
+            feature,
+            rf_importance,
+            ROW_NUMBER() OVER (ORDER BY rf_importance DESC, feature ASC) AS rank,
+            (1.0 / POWER(ROW_NUMBER() OVER (ORDER BY rf_importance DESC, feature ASC), {S_DECAY}))
+                / {primary_normaliser} AS rf_zeta_weight
+        FROM rf_table
+        ORDER BY rank ASC
+    """
+    rf_rank_df = con.execute(query_rf).df()
+    con.close()
+    rf_rank_df.to_parquet(rf_ranks_parquet, index=False)
+    rf_rank_df.to_csv(rf_ranks_csv, index=False)
+    ts(f"  RF Zeta ranking complete in {time.time()-t0:.2f}s")
+    mark_done("rf_ranks")
+
+rf_weight_sum = float(rf_rank_df['rf_zeta_weight'].sum())
+assert abs(rf_weight_sum - 1.0) < 1e-4, (
+    f"RF weight sum {rf_weight_sum:.8f} deviates unexpectedly.\n"
+    f"Delete {rf_ranks_parquet} and re-run."
+)
+ts(f"  ✓ RF Zeta weights sum to 1.0 ({rf_weight_sum:.8f})")
+
 # ── STAGE 4: APPLY WEIGHTS ────────────────────────────────────
 # Element-wise multiply X_scaled (n_samples × n_features) by the
 # weight vector (n_features,) so that high-MI features are amplified
@@ -758,6 +924,59 @@ else:
     ts(f"  X_weighted.npy fully written in {time.time()-t0:.1f}s")
     ts(f"  Weight vector saved → {weight_vector_path}")
     mark_done("apply_weights")
+
+
+def apply_weight_variant(weight_vector_local, out_path, ckpt_name, label):
+    """
+    Shared chunked-multiply-and-write helper (reviewer #4/#12 grid-search
+    infrastructure) — same memmap-chunk pattern as STAGE 4/4B above,
+    generalized so new weight variants (s-grid, RF-importance) don't
+    duplicate the write loop.
+    """
+    if is_done(ckpt_name):
+        ts(f"  [{label}] Already complete — skipping.")
+        return
+    t0 = time.time()
+    X_out_local = np.lib.format.open_memmap(
+        out_path, mode='w+', dtype=np.float32, shape=(n_samples, n_features)
+    )
+    total_chunks_local = (n_samples + CHUNK_ROWS - 1) // CHUNK_ROWS
+    for chunk_idx, start in enumerate(range(0, n_samples, CHUNK_ROWS), 1):
+        end = min(start + CHUNK_ROWS, n_samples)
+        chunk = np.array(X_scaled[start:end], dtype=np.float32)
+        X_out_local[start:end] = chunk * weight_vector_local
+        ts(f"  [{label}] chunk {chunk_idx}/{total_chunks_local} "
+           f"[{start:,}:{end:,}] written ({time.time()-t0:.1f}s elapsed)")
+    del X_out_local
+    ts(f"  [{label}] -> {out_path}  ({time.time()-t0:.1f}s)")
+    mark_done(ckpt_name)
+
+
+# ── STAGE 4F: APPLY RF-IMPORTANCE WEIGHTS (reviewer #12) ───────────────
+X_weighted_rf_path = os.path.join(OUTPUT_DIR, 'X_weighted_rf.npy')
+rf_weight_vector_path = os.path.join(OUTPUT_DIR, 'zeta_weight_vector_rf.pkl')
+rf_weight_map = dict(zip(rf_rank_df['feature'], rf_rank_df['rf_zeta_weight']))
+rf_weight_vector = np.array([rf_weight_map[f] for f in FEATURE_COLS], dtype=np.float32)
+apply_weight_variant(rf_weight_vector, X_weighted_rf_path,
+                      "apply_rf_weights", "STAGE 4F RF-weighted")
+if not os.path.exists(rf_weight_vector_path):
+    joblib.dump(rf_weight_vector, rf_weight_vector_path)
+
+# ── STAGE 4G: APPLY s-GRID VARIANTS (reviewer #4 — parameter sweep) ────
+# s=1.5's column (zeta_weight) is already applied above as X_weighted.npy.
+# This applies the other S_VALUES so Step 7's grid-search stage can score
+# each one. Gated behind RUN_S_GRID (pipeline_config) since it's 3 extra
+# full chunked passes over X_scaled.
+if RUN_S_GRID:
+    for s in S_VALUES:
+        if s == S_DECAY:
+            continue  # already applied as X_weighted.npy
+        s_col = f"w_s{str(s).replace('.', '')}"
+        s_weight_map = dict(zip(feature_rank_df['feature'], feature_rank_df[s_col]))
+        s_weight_vector = np.array([s_weight_map[f] for f in FEATURE_COLS], dtype=np.float32)
+        s_out_path = os.path.join(OUTPUT_DIR, f'X_weighted_{s_col.replace("w_", "")}.npy')
+        apply_weight_variant(s_weight_vector, s_out_path,
+                              f"apply_weights_{s_col}", f"STAGE 4G s={s}")
 
 # ── STAGE 4B: APPLY GEOMETRY-FIRST WEIGHTS ─────────────────────
 X_weighted_geom_path    = os.path.join(OUTPUT_DIR, 'X_weighted_geometry.npy')

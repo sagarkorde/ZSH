@@ -51,7 +51,8 @@ import umap
 
 # ── 0. OUTPUT DIRECTORY ───────────────────────────────────────
 # Must match the folder where Step 3 wrote its outputs.
-OUTPUT_DIR = r"C:\Users\sagar\Desktop\Q2 Paper 22326\outputs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import OUTPUT_DIR, BALANCE_MODE
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ── 1. LOGGING SETUP ─────────────────────────────────────────

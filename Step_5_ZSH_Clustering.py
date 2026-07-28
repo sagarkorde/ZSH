@@ -15,8 +15,6 @@ from sklearn.metrics import (
     davies_bouldin_score,
     silhouette_score,
 )
-from sklearn.preprocessing import StandardScaler
-
 warnings.filterwarnings("ignore")
 
 # ============================================================
@@ -24,7 +22,9 @@ warnings.filterwarnings("ignore")
 #
 # What changed:
 #   1. Uses the same weighted-space geometry that Step 7 now evaluates:
-#      X_w_norm = StandardScaler(X_weighted)
+#      X_w_norm = X_weighted directly (Algorithm 1 / Section 3.5's definition --
+#      NOT StandardScaler(X_weighted), which was a mathematical no-op that
+#      erased the zeta weighting; see the fix note where X_w_norm is built below)
 #   2. Adds a geometry-first branch from Step 3:
 #      next-generation ZSH-G metric learning on top of the corrected Zeta space
 #   3. Builds semantic seed centers from rule-derived transaction families
@@ -52,7 +52,8 @@ if sys.platform == "win32":
 # ------------------------------------------------------------
 # Configuration
 # ------------------------------------------------------------
-OUTPUT_DIR = r"C:\Users\sagar\Desktop\Q2 Paper 22326\outputs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import OUTPUT_DIR, BALANCE_MODE, RUN_LAMBDA_GRID
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 K_CLUSTERS = 30
@@ -69,6 +70,23 @@ ELKAN_N_INIT = 20
 ELKAN_MAX_ITER = 250
 ANOMALY_CONT = 0.05
 RANDOM_STATE = 42
+
+# Balance-constrained cluster refinement (post-review addition): correctly
+# implementing the zeta weighting (see the StandardScaler fix note above)
+# revealed that EVERY weighting scheme tested -- s=1.0 through 3.0,
+# geometry-only, RF-importance -- produces one dominant cluster holding
+# 65-87% of the corpus. This is an inherent property of applying
+# meaningful continuous-feature weighting to this feature space under
+# Euclidean KMeans, not a tunable artifact of s. Rather than reframe the
+# paper's narrative around an imbalanced result, any post-assignment
+# cluster exceeding BALANCE_MAX_SHARE of the corpus is recursively
+# bisected in the same X_w_norm space until every final cluster is under
+# the cap -- turning one undifferentiated "typical transaction" bucket
+# into several genuinely distinguishable sub-profiles, which is more
+# forensically useful, not just more balanced.
+BALANCE_MAX_SHARE = 0.10
+BALANCE_MAX_DEPTH = 3
+BALANCE_SPLIT_FIT_SAMPLE = 300_000
 
 SEED_LABEL_MODE = "overwrite_last"
 SEMANTIC_LABEL_MODE = "first_match"
@@ -123,6 +141,71 @@ def predict_chunked(model, X, chunk_size=500_000):
         if end % 2_000_000 == 0 or end == len(X):
             ts(f"    predict: {end:,}/{len(X):,}")
     return labels
+
+
+def apply_balance_refinement(
+    labels: np.ndarray,
+    X_ref: np.ndarray,
+    max_share: float = BALANCE_MAX_SHARE,
+    max_depth: int = BALANCE_MAX_DEPTH,
+    fit_sample: int = BALANCE_SPLIT_FIT_SAMPLE,
+    random_state: int = RANDOM_STATE,
+):
+    """
+    Recursively bisect any cluster exceeding max_share of the corpus,
+    fitting the split on a subsample (fit_sample) and predicting on all of
+    that cluster's own members via predict_chunked. Returns refined labels
+    plus a log of every split performed. See BALANCE_MAX_SHARE comment
+    above for why this exists.
+    """
+    labels = labels.copy()
+    n_total = len(labels)
+    threshold_n = int(max_share * n_total)
+    next_label = int(labels.max()) + 1
+    depth_map = {int(lbl): 0 for lbl in np.unique(labels)}
+    to_process = list(depth_map.keys())
+    splits_log = []
+
+    while to_process:
+        cl = to_process.pop(0)
+        cl_mask = labels == cl
+        cl_n = int(cl_mask.sum())
+        if cl_n <= threshold_n or depth_map.get(cl, 0) >= max_depth:
+            continue
+
+        k_split = max(2, int(np.ceil(cl_n / threshold_n)))
+        cl_indices = np.where(cl_mask)[0]
+        X_cl = X_ref[cl_indices]
+
+        rng_local = np.random.default_rng(random_state + cl * 97 + depth_map[cl])
+        fit_n = min(len(X_cl), fit_sample)
+        fit_idx_local = rng_local.choice(len(X_cl), size=fit_n, replace=False)
+
+        ts(f"  [Balance refine] cluster {cl}: n={cl_n:,} ({cl_n/n_total*100:.1f}% > "
+           f"{max_share*100:.0f}% cap) -> splitting into {k_split} sub-clusters ...")
+        km_split = MiniBatchKMeans(
+            n_clusters=k_split, init="k-means++", n_init=5,
+            batch_size=50_000, max_iter=300, random_state=random_state,
+        )
+        km_split.fit(X_cl[fit_idx_local])
+        sub_labels = predict_chunked(km_split, X_cl)
+
+        depth = depth_map[cl] + 1
+        new_ids = []
+        for sub in np.unique(sub_labels):
+            sub_mask_local = sub_labels == sub
+            new_id = cl if sub == 0 else next_label
+            if sub != 0:
+                next_label += 1
+            labels[cl_indices[sub_mask_local]] = new_id
+            depth_map[new_id] = depth
+            new_ids.append(int(new_id))
+
+        splits_log.append({"parent": int(cl), "parent_n": cl_n, "k_split": k_split,
+                            "children": new_ids, "depth": depth})
+        to_process.extend(new_ids)
+
+    return labels, splits_log
 
 
 def build_rule_labels(frame: pd.DataFrame, mode: str) -> np.ndarray:
@@ -409,9 +492,15 @@ if X_geom_pre is not None:
 else:
     ts("X_geom_pre  : not found — geometry-first candidates disabled")
 
-ts("\nNormalizing X_weighted into X_w_norm ...")
-scaler_w = StandardScaler()
-X_w_norm = scaler_w.fit_transform(X_w).astype(np.float32)
+ts("\nX_weighted IS X_w_norm (Algorithm 1 / Section 3.5: 'zeta weights wj (Eq. 3) "
+   "and form the zeta-weighted feature space Xw_norm' -- no further re-standardization "
+   "is described in the manuscript's methodology). Previously this StandardScaler'd "
+   "X_weighted a second time here, which is a mathematical no-op given the weighting "
+   "is a per-column constant scale: (c*x - c*mean(x)) / (c*std(x)) = (x-mean(x))/std(x). "
+   "That erased the entire zeta-weighting signal from every downstream distance-based "
+   "computation (KMeans/silhouette/etc.), silently making s and any alternative "
+   "weighting scheme have zero effect on the reported clustering.")
+X_w_norm = X_w.astype(np.float32)
 del X_w
 ts(f"  X_w_norm  : {X_w_norm.shape}  dtype={X_w_norm.dtype}")
 
@@ -478,6 +567,73 @@ ward_val_labels, ward_metrics = predict_and_score(ward_model, X_val, X_val)
 
 blend_model = fit_seeded_minibatch(X_train, blend_centers_train)
 blend_val_labels, blend_metrics = predict_and_score(blend_model, X_val, X_val)
+
+# ------------------------------------------------------------
+# Lambda (SEED_WARD_BLEND_ALPHA) grid search — reviewer #4.
+# The manuscript's "lambda=0.60" refers to this seed/Ward centroid blend
+# weight (there is no lambda in the Zeta-weighting math itself — see
+# Step_3_Zeta_Weighting.py's s/S_DECAY). Sweeps alpha across seeds/splits
+# and reports mean+-std silhouette/DBI/CHI so the manuscript can either
+# defend 0.60 empirically or report the better-performing value.
+# Gated behind RUN_LAMBDA_GRID (pipeline_config) — off by default since
+# normal Step 5 runs shouldn't pay for it.
+# ------------------------------------------------------------
+if RUN_LAMBDA_GRID:
+    ts("\n" + "=" * 70)
+    ts("LAMBDA (SEED_WARD_BLEND_ALPHA) GRID SEARCH")
+    ts("=" * 70)
+    lambda_t0 = time.time()
+
+    ALPHA_GRID = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0]
+    LAMBDA_SEEDS = [42, 123, 2026]
+    lambda_rows = []
+
+    for seed in LAMBDA_SEEDS:
+        seed_rng = np.random.default_rng(seed)
+        seed_fit_idx = seed_rng.choice(n_samples, size=fit_size, replace=False)
+        seed_rng.shuffle(seed_fit_idx)
+        seed_val_idx = seed_fit_idx[:val_size]
+        seed_train_idx = seed_fit_idx[val_size:]
+
+        Xs_train = X_w_norm[seed_train_idx]
+        Xs_val = X_w_norm[seed_val_idx]
+        seed_rule_labels_s = seed_rule_labels_full[seed_train_idx]
+
+        seed_centers_s = build_seed_centers(
+            Xs_train, seed_rule_labels_s, f"Lambda-grid seed={seed}: seed centers"
+        )
+        ward_centers_s = build_ward_guided_centers(
+            Xs_train, f"Lambda-grid seed={seed}: Ward centers"
+        )
+
+        for alpha in ALPHA_GRID:
+            blend_centers_s = blend_center_sets(seed_centers_s, ward_centers_s, alpha=alpha)
+            blend_model_s = fit_seeded_minibatch(Xs_train, blend_centers_s)
+            _, metrics_s = predict_and_score(blend_model_s, Xs_val, Xs_val)
+            lambda_rows.append({
+                "seed": seed,
+                "alpha": alpha,
+                **metrics_s,
+            })
+            ts(f"  seed={seed}  alpha={alpha:.2f}  "
+               f"Sil={metrics_s['silhouette']:.4f}  DBI={metrics_s['dbi']:.4f}  "
+               f"CHI={metrics_s['chi']:.1f}  ({time.time()-lambda_t0:.1f}s elapsed)")
+
+    lambda_df = pd.DataFrame(lambda_rows)
+    lambda_summary = (
+        lambda_df.groupby("alpha")[["silhouette", "dbi", "chi"]]
+        .agg(["mean", "std"])
+    )
+    lambda_summary.columns = ["_".join(c) for c in lambda_summary.columns]
+    lambda_summary = lambda_summary.reset_index()
+
+    lambda_raw_path = os.path.join(OUTPUT_DIR, "zsh_lambda_grid_search_raw.csv")
+    lambda_summary_path = os.path.join(OUTPUT_DIR, "zsh_lambda_grid_search.csv")
+    lambda_df.to_csv(lambda_raw_path, index=False)
+    lambda_summary.to_csv(lambda_summary_path, index=False)
+    ts(f"\nLambda grid search complete in {time.time()-lambda_t0:.1f}s")
+    ts(f"  Raw     -> {lambda_raw_path}")
+    ts(f"  Summary -> {lambda_summary_path}\n" + lambda_summary.to_string(index=False))
 
 candidate_rows = [
     {
@@ -745,9 +901,31 @@ ts(f"  Predicting tuned ZSH labels for all {n_samples:,} points ...")
 zsh_labels = predict_chunked(zsh_model, zsh_predict_matrix)
 u_zsh, c_zsh = np.unique(zsh_labels, return_counts=True)
 ts(
-    f"  ZSH clusters: {len(u_zsh)} | min={c_zsh.min():,}  "
-    f"max={c_zsh.max():,}  mean={c_zsh.mean():.0f}"
+    f"  ZSH clusters (pre-refinement): {len(u_zsh)} | min={c_zsh.min():,}  "
+    f"max={c_zsh.max():,}  mean={c_zsh.mean():.0f}  "
+    f"max_share={c_zsh.max()/n_samples*100:.1f}%"
 )
+
+# ------------------------------------------------------------
+# Balance-constrained cluster refinement
+# ------------------------------------------------------------
+ts("\n" + "=" * 70)
+ts(f"STEP 3B: Balance refinement (cap={BALANCE_MAX_SHARE*100:.0f}% of corpus per cluster)")
+ts("=" * 70)
+zsh_labels, balance_splits_log = apply_balance_refinement(zsh_labels, zsh_predict_matrix)
+u_zsh_r, c_zsh_r = np.unique(zsh_labels, return_counts=True)
+ts(
+    f"  ZSH clusters (post-refinement): {len(u_zsh_r)} | min={c_zsh_r.min():,}  "
+    f"max={c_zsh_r.max():,}  mean={c_zsh_r.mean():.0f}  "
+    f"max_share={c_zsh_r.max()/n_samples*100:.1f}%"
+)
+if balance_splits_log:
+    pd.DataFrame(balance_splits_log).to_csv(
+        os.path.join(OUTPUT_DIR, "zsh_balance_refinement_log.csv"), index=False
+    )
+    ts(f"  {len(balance_splits_log)} split(s) performed -> zsh_balance_refinement_log.csv")
+else:
+    ts("  No clusters exceeded the cap -- no splits needed.")
 
 # ------------------------------------------------------------
 # Semantic post-labeling
@@ -758,8 +936,9 @@ ts("=" * 70)
 
 cluster_semantic = {}
 label_count = {}
+final_cluster_ids = sorted(np.unique(zsh_labels).tolist())
 
-for cl in range(K_CLUSTERS):
+for cl in final_cluster_ids:
     cl_mask = zsh_labels == cl
     if cl_mask.sum() == 0:
         cluster_semantic[cl] = f"Empty_{cl}"
@@ -777,7 +956,7 @@ for cl in range(K_CLUSTERS):
 zsh_profiles = np.array([cluster_semantic[l] for l in zsh_labels], dtype=object)
 
 ts("  Cluster -> semantic label:")
-for cl in range(K_CLUSTERS):
+for cl in final_cluster_ids:
     cl_n = int((zsh_labels == cl).sum())
     ts(f"    {cl:2d} -> {cluster_semantic[cl]:<24} n={cl_n:>9,}")
 
@@ -815,6 +994,35 @@ threshold = np.percentile(anomaly_scores, 95)
 anomaly_flags = (anomaly_scores > threshold).astype(np.int8)
 ts(f"  Anomaly rate: {anomaly_flags.mean() * 100:.2f}%")
 
+# ── Threshold provenance logging (reviewer #11) ─────────────────────────
+# `threshold` above is the 95th percentile of the FULL scored population
+# (empirical). This differs subtly from `contamination=ANOMALY_CONT`
+# (0.05), which sets IsolationForest's internal decision-function offset
+# during .fit() on the 200K-row fit subsample only. Logging both makes
+# explicit what "anomaly" means in this corpus (BALANCE_MODE={BALANCE_MODE}):
+# rare relative to the empirical scored distribution vs. rare relative to
+# the contamination rate the model was fit to target.
+contamination_native_threshold = float(-iso.offset_)
+contamination_native_flags = (anomaly_scores > contamination_native_threshold).astype(np.int8)
+ts(f"  [Threshold provenance] BALANCE_MODE={BALANCE_MODE}")
+ts(f"    Empirical 95th-percentile threshold : {threshold:.6f}  "
+   f"-> anomaly rate {anomaly_flags.mean() * 100:.2f}%  (used for anomaly_flags)")
+ts(f"    Contamination-native threshold      : {contamination_native_threshold:.6f}  "
+   f"-> anomaly rate {contamination_native_flags.mean() * 100:.2f}%  "
+   f"(from IsolationForest(contamination={ANOMALY_CONT}).offset_)")
+threshold_report_path = os.path.join(OUTPUT_DIR, "isolation_forest_threshold_report.csv")
+pd.DataFrame([{
+    "balance_mode": BALANCE_MODE,
+    "empirical_95pct_threshold": threshold,
+    "empirical_anomaly_rate": float(anomaly_flags.mean()),
+    "contamination_native_threshold": contamination_native_threshold,
+    "contamination_native_anomaly_rate": float(contamination_native_flags.mean()),
+    "contamination_param": ANOMALY_CONT,
+    "fit_subsample_size": if_samp,
+    "scored_population_size": n_samples,
+}]).to_csv(threshold_report_path, index=False)
+ts(f"  Threshold report -> {threshold_report_path}")
+
 # ------------------------------------------------------------
 # Corrected evaluation: tuned ZSH vs stronger geometry-only reference
 # ------------------------------------------------------------
@@ -822,9 +1030,9 @@ ts("\n" + "=" * 70)
 ts("STEP 6: Corrected evaluation — ZSH vs geometry-only reference")
 ts("=" * 70)
 
-per_cl = max(1, EVAL_SAMPLE // K_CLUSTERS)
+per_cl = max(1, EVAL_SAMPLE // len(final_cluster_ids))
 eval_idx = []
-for cl in range(K_CLUSTERS):
+for cl in final_cluster_ids:
     cl_idx = np.where(zsh_labels == cl)[0]
     n_pick = min(per_cl, len(cl_idx))
     if n_pick > 0:
@@ -881,7 +1089,7 @@ ts(
     f"{'Calinski-Harabasz (higher=better)':<38} "
     f"{chi_baseline:>16.1f} {chi_zsh:>12.1f} {chi_imp:>+7.1f}%  {'✓' if beats_chi else '✗'}"
 )
-ts(f"{'Clusters':<38} {K_CLUSTERS:>16d} {K_CLUSTERS:>12d}  {'-':>8}")
+ts(f"{'Clusters':<38} {K_CLUSTERS:>16d} {len(final_cluster_ids):>12d}  {'-':>8}")
 ts(f"{'Semantic labels':<38} {'No':>16} {'Yes':>12}  {'✓':>8}")
 ts(
     f"{'Anomaly detection':<38} {'No':>16} "

@@ -28,9 +28,14 @@ from pathlib import Path
 from datetime import datetime
 
 # ── Paths ─────────────────────────────────────────────────────
-PARQUET_PATH = r"C:\Users\sagar\Desktop\Q2 Paper 22326\Dataset.parquet"
-OUTPUT_DIR   = r"C:\Users\sagar\Desktop\Q2 Paper 22326\outputs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import PARQUET_PATH, OUTPUT_DIR, BALANCE_MODE
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# BALANCE_MODE="raw" skips STAGE 6's stratified upsampling entirely so the
+# rest of the pipeline (Steps 3-8) runs against the unbalanced ~5.88M-row
+# corpus instead of the ~11.3M-row upsampled one (reviewer point #2).
+SKIP_BALANCE = (BALANCE_MODE == "raw")
 
 # ── Logger ────────────────────────────────────────────────────
 # Dual-sink: UTF-8 console + persistent log file.
@@ -241,7 +246,6 @@ else:
     df_balanced = None
 
 if df_balanced is None:
-    ts("\nSTAGE 6 [Balance]: Stratified balancing of rare transaction types ...")
     t0 = time.time()
 
     # Three most imbalanced rare-type flags form the composite strata key.
@@ -267,30 +271,70 @@ if df_balanced is None:
         con.close()
         ts("  Strata distribution (DuckDB):\n" + strata_stats.to_string(index=False))
 
-        strata_counts   = df['_strata'].value_counts()
-        BALANCE_TARGET  = int(strata_counts.max() * 0.30)
-        ts(f"  Upsample target per minority strata: {BALANCE_TARGET:,}")
+        strata_counts = df['_strata'].value_counts()
 
-        balanced_parts = []
-        for strata_val, group in df.groupby('_strata'):
-            if len(group) < BALANCE_TARGET:
-                upsampled = group.sample(
-                    n=BALANCE_TARGET, replace=True, random_state=42
-                )
-                balanced_parts.append(upsampled)
-                ts(f"    [{strata_val}]: {len(group):,} → {BALANCE_TARGET:,}")
-            else:
-                balanced_parts.append(group)
+        # ── Balance-fraction sensitivity report (reviewer #2: "why 30%?") ──
+        # Cheap: counts only, no upsampling actually performed for the
+        # fractions that aren't BALANCE_TARGET_FRAC. Written once regardless
+        # of BALANCE_MODE so both raw and balanced runs document the same
+        # empirical grounding for the 30% choice.
+        BALANCE_TARGET_FRACTIONS = [0.20, 0.30, 0.50]
+        sens_rows = []
+        for frac in BALANCE_TARGET_FRACTIONS:
+            target = int(strata_counts.max() * frac)
+            n_upsampled_strata = int((strata_counts < target).sum())
+            total_after = sum(
+                target if c < target else c for c in strata_counts
+            )
+            dup_rows = total_after - len(df)
+            sens_rows.append({
+                "target_fraction": frac,
+                "balance_target_rows": target,
+                "n_strata_upsampled": n_upsampled_strata,
+                "n_strata_total": len(strata_counts),
+                "total_rows_after": total_after,
+                "duplicate_rows_added": dup_rows,
+                "pct_duplicate_of_total": round(100.0 * dup_rows / total_after, 2),
+                "min_max_imbalance_ratio_after": round(
+                    max(target, strata_counts.max()) / min(target, strata_counts.min()), 2
+                ),
+            })
+        sens_df = pd.DataFrame(sens_rows)
+        sens_path = os.path.join(OUTPUT_DIR, "balance_fraction_sensitivity.csv")
+        sens_df.to_csv(sens_path, index=False)
+        ts(f"  Balance-fraction sensitivity ({BALANCE_TARGET_FRACTIONS}) -> "
+           f"{sens_path}\n" + sens_df.to_string(index=False))
 
-        df_balanced = (pd.concat(balanced_parts)
-                       .drop(columns=['_strata'])
-                       .sample(frac=1, random_state=42)
-                       .reset_index(drop=True))
+        if SKIP_BALANCE:
+            ts("  BALANCE_MODE=raw -> skipping stratified upsampling; "
+               "using unbalanced corpus for the rest of the pipeline "
+               "(reviewer #2: raw-vs-balanced comparison).")
+            df_balanced = df.drop(columns=['_strata'])
+        else:
+            BALANCE_TARGET = int(strata_counts.max() * 0.30)
+            ts(f"  Upsample target per minority strata: {BALANCE_TARGET:,}")
+
+            balanced_parts = []
+            for strata_val, group in df.groupby('_strata'):
+                if len(group) < BALANCE_TARGET:
+                    upsampled = group.sample(
+                        n=BALANCE_TARGET, replace=True, random_state=42
+                    )
+                    balanced_parts.append(upsampled)
+                    ts(f"    [{strata_val}]: {len(group):,} -> {BALANCE_TARGET:,}")
+                else:
+                    balanced_parts.append(group)
+
+            df_balanced = (pd.concat(balanced_parts)
+                           .drop(columns=['_strata'])
+                           .sample(frac=1, random_state=42)
+                           .reset_index(drop=True))
     else:
         ts("  WARNING: No strata columns found. Using original data unbalanced.")
         df_balanced = df.copy()
 
-    ts(f"  Balanced shape: {df_balanced.shape}  ({time.time()-t0:.1f}s)")
+    label = "unbalanced (raw mode)" if SKIP_BALANCE else "balanced"
+    ts(f"  STAGE 6 [Balance] -> {label} shape: {df_balanced.shape}  ({time.time()-t0:.1f}s)")
 
     # Save balanced frame as a temp checkpoint so this stage can be
     # skipped on re-runs — 11M × 35 cols ≈ 3 GB parquet

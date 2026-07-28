@@ -82,7 +82,8 @@ except ImportError:
 # 0.  CONFIGURATION — edit ONLY this block
 # ══════════════════════════════════════════════════════════════
 
-OUTPUT_DIR = r"C:\Users\sagar\Desktop\Q2 Paper 22326\outputs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import OUTPUT_DIR, BALANCE_MODE
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Statistical test parameters
@@ -264,10 +265,11 @@ ts("  Loading X_w (Zeta-weighted 27D) into RAM …")
 X_w = np.array(X_w_mm[:n_rows], dtype=np.float32)
 ts(f"  X_w shape: {X_w.shape}  | RAM≈{X_w.nbytes/1e9:.2f} GB")
 
-ts("  Standardizing X_w once to match Step 5 evaluation geometry …")
-t_norm = time.time()
-X_w = StandardScaler().fit_transform(X_w).astype(np.float32)
-ts(f"  X_w_norm shape: {X_w.shape}  | {time.time()-t_norm:.1f}s")
+ts("  X_w IS the evaluation space (Algorithm 1 / Section 3.5: Xw_norm = the "
+   "zeta-weighted feature space formed directly from Eq. 3 -- no further "
+   "re-standardization is described). Previously this StandardScaler'd X_w a "
+   "second time, which is a no-op for per-column-constant-scaled data and "
+   "silently erased the zeta weighting from every downstream metric.")
 
 # X_raw: unweighted features from Step 2 — used only in ablation Condition A
 X_raw = df_feat[feat_cols].values[:n_rows].astype(np.float32)
@@ -497,9 +499,14 @@ else:
         }
 
     # ── ZSH (Step 5 labels) ──────────────────────────────────
+    # ZSH's own k is no longer guaranteed to equal K_FINAL: balance
+    # refinement (Step 5) recursively splits any cluster over 10% of the
+    # corpus, so the deployed ZSH output can have more than K_FINAL=30
+    # clusters. Report the actual observed count, not the design constant.
     ts("  Scoring ZSH labels …")
     t_m = time.time()
-    row = score_row('ZSH (Ours, k=30)', L_zsh, K_FINAL)
+    zsh_actual_k = len(np.unique(L_zsh))
+    row = score_row(f'ZSH (Ours, k={zsh_actual_k})', L_zsh, zsh_actual_k)
     rows.append(row)
     ts(f"  ZSH  Sil={row['silhouette']:.4f}  DBI={row['dbi']:.4f}  "
        f"CHI={row['chi']:.0f}  ({time.time()-t_m:.1f}s)")
@@ -617,6 +624,228 @@ else:
     rows.append(row)
     ts(f"  Agg  Sil={row['silhouette']:.4f}  DBI={row['dbi']:.4f}  "
        f"CHI={row['chi']:.0f}  ({time.time()-t_m:.1f}s)")
+
+    # ══════════════════════════════════════════════════════════
+    # ── Graph-embedding baseline (reviewer #5 / #15) ────────────
+    # X_spectral.npy (Step 4's k-NN/Laplacian spectral embedding, 1-NN
+    # propagated to the full corpus) was previously only used as UMAP
+    # visualization input — never scored as an actual clustering baseline.
+    # Fitting KMeans++ Elkan directly on it, at the SAME sota_idx sample
+    # used for every other method, makes it a real, comparable row and
+    # lets the reported failure (Sil~0.0043 at full scale) be inspected
+    # here at a controlled subsample size instead.
+    # ══════════════════════════════════════════════════════════
+    spectral_path = p('X_spectral.npy')
+    if os.path.exists(spectral_path):
+        ts("  Fitting KMeans++ Elkan on Graph Embedding (X_spectral) …")
+        t_m = time.time()
+        X_spec_full = np.load(spectral_path, mmap_mode='r')
+        n_spec = min(len(X_spec_full), n_rows)
+        spec_idx = sota_idx[sota_idx < n_spec]
+        X_spec_sota = StandardScaler().fit_transform(
+            np.array(X_spec_full[spec_idx], dtype=np.float32)
+        )
+        km_spec = KMeans(n_clusters=K_FINAL, init='k-means++', n_init=ELKAN_N_INIT,
+                          max_iter=250, algorithm='elkan', random_state=RNG_SEED)
+        L_spec = km_spec.fit_predict(X_spec_sota)
+        row = score_row('Graph Embedding (Spectral, k=30)', L_spec, K_FINAL, X=X_spec_sota)
+        rows.append(row)
+        ts(f"  GraphEmb  Sil={row['silhouette']:.4f}  DBI={row['dbi']:.4f}  "
+           f"CHI={row['chi']:.0f}  clusters_realized={len(np.unique(L_spec))}  "
+           f"({time.time()-t_m:.1f}s)")
+
+        # Deduplicated variant: does duplication (from stratified upsampling,
+        # BALANCE_MODE=balanced) drive the failure, or is it intrinsic to the
+        # graph-embedding method itself?
+        X_spec_arr = np.array(X_spec_full[spec_idx], dtype=np.float32)
+        _, dedup_idx = np.unique(X_spec_arr, axis=0, return_index=True)
+        if len(dedup_idx) >= K_FINAL * 2:
+            X_spec_dedup = StandardScaler().fit_transform(X_spec_arr[dedup_idx])
+            km_spec_dedup = KMeans(n_clusters=K_FINAL, init='k-means++', n_init=ELKAN_N_INIT,
+                                    max_iter=250, algorithm='elkan', random_state=RNG_SEED)
+            L_spec_dedup = km_spec_dedup.fit_predict(X_spec_dedup)
+            row = score_row('Graph Embedding (Spectral, dedup, k=30)', L_spec_dedup,
+                             K_FINAL, X=X_spec_dedup)
+            rows.append(row)
+            ts(f"  GraphEmb(dedup n={len(dedup_idx)}/{len(spec_idx)})  "
+               f"Sil={row['silhouette']:.4f}  DBI={row['dbi']:.4f}  CHI={row['chi']:.0f}")
+        else:
+            ts(f"  GraphEmb dedup skipped — only {len(dedup_idx)} unique rows in sample.")
+    else:
+        ts("  Graph Embedding baseline skipped — X_spectral.npy not found "
+           "(run Step 4 first; ensure RUN_PIPELINE.py's cleanup_stale() no "
+           "longer deletes it).")
+
+    # ══════════════════════════════════════════════════════════
+    # ── Alternative-weighting-scheme rows (reviewer #12 / #15) ──
+    # Each of these is the SAME candidate-search-winning clustering
+    # approach applied to a different feature-weighting choice, scored
+    # as an independent SOTA row rather than only as an internal Step 5
+    # candidate-selection input.
+    # ══════════════════════════════════════════════════════════
+    def score_weight_variant(label, npy_name):
+        path = p(npy_name)
+        if not os.path.exists(path):
+            ts(f"  [{label}] skipped — {npy_name} not found.")
+            return
+        t_v = time.time()
+        X_variant_full = np.load(path, mmap_mode='r')
+        n_variant = min(len(X_variant_full), n_rows)
+        v_idx = sota_idx[sota_idx < n_variant]
+        # No StandardScaler here: these are all per-column-constant-reweighted
+        # variants of the same X_scaled columns as X_w; restandardizing would
+        # erase the very weighting difference this row exists to measure.
+        X_variant_sota = np.array(X_variant_full[v_idx], dtype=np.float32)
+        km_v = KMeans(n_clusters=K_FINAL, init='k-means++', n_init=ELKAN_N_INIT,
+                      max_iter=250, algorithm='elkan', random_state=RNG_SEED)
+        L_v = km_v.fit_predict(X_variant_sota)
+        row = score_row(label, L_v, K_FINAL, X=X_variant_sota)
+        rows.append(row)
+        ts(f"  [{label}]  Sil={row['silhouette']:.4f}  DBI={row['dbi']:.4f}  "
+           f"CHI={row['chi']:.0f}  ({time.time()-t_v:.1f}s)")
+
+    ts("  Scoring alternative feature-weighting SOTA rows …")
+    score_weight_variant('ZSH (Geometry-only weighting)', 'X_weighted_geometry.npy')
+    score_weight_variant('ZSH (RF-importance weighting)', 'X_weighted_rf.npy')
+    score_weight_variant('ZSH (Zeta s=1.0)', 'X_weighted_s10.npy')
+    score_weight_variant('ZSH (Zeta s=2.0)', 'X_weighted_s20.npy')
+    score_weight_variant('ZSH (Zeta s=3.0)', 'X_weighted_s30.npy')
+
+    # ══════════════════════════════════════════════════════════
+    # ── Other semantic clustering methods (reviewer #15) ────────
+    # DBSCAN and true Spectral Clustering (a clustering algorithm,
+    # distinct from the spectral EMBEDDING used as a feature space above).
+    # Both fit/scored on X_sota (the same X_w_norm subsample as every
+    # other row), degrading gracefully like the existing HDBSCAN row.
+    # ══════════════════════════════════════════════════════════
+    try:
+        ts("  Fitting DBSCAN on X_w_norm …")
+        t_m = time.time()
+        from sklearn.neighbors import NearestNeighbors as _NN
+        nn_eps = _NN(n_neighbors=5, n_jobs=-1).fit(X_sota)
+        dists_eps, _ = nn_eps.kneighbors(X_sota)
+        eps_est = float(np.median(dists_eps[:, -1]))
+        from sklearn.cluster import DBSCAN
+        dbscan = DBSCAN(eps=eps_est, min_samples=5, n_jobs=-1)
+        L_dbscan = dbscan.fit_predict(X_sota)
+        n_db_clusters = len(set(L_dbscan.tolist()) - {-1})
+        noise_rate_db = (L_dbscan == -1).mean() * 100
+        if (L_dbscan == -1).any() and (L_dbscan != -1).any():
+            nn_db = _NN(n_neighbors=1, n_jobs=-1).fit(X_sota[L_dbscan != -1])
+            _, nn_idx_db = nn_db.kneighbors(X_sota[L_dbscan == -1])
+            L_dbscan[L_dbscan == -1] = L_dbscan[L_dbscan != -1][nn_idx_db.flatten()]
+        row = score_row(f'DBSCAN (eps={eps_est:.3f})', L_dbscan, n_db_clusters)
+        rows.append(row)
+        ts(f"  DBSCAN  clusters={n_db_clusters}  noise={noise_rate_db:.1f}%  "
+           f"Sil={row['silhouette']:.4f}  DBI={row['dbi']:.4f}  CHI={row['chi']:.0f}  "
+           f"({time.time()-t_m:.1f}s)")
+    except Exception as exc:
+        ts(f"  DBSCAN failed, skipping row: {exc}")
+
+    try:
+        ts("  Fitting Spectral Clustering (algorithm) on X_w_norm …")
+        t_m = time.time()
+        from sklearn.cluster import SpectralClustering
+        spec_clust = SpectralClustering(
+            n_clusters=K_FINAL, affinity='nearest_neighbors', n_neighbors=10,
+            assign_labels='kmeans', random_state=RNG_SEED, n_jobs=-1,
+        )
+        L_specclust = spec_clust.fit_predict(X_sota)
+        row = score_row('Spectral Clustering (k=30)', L_specclust, K_FINAL)
+        rows.append(row)
+        ts(f"  SpectralClustering  Sil={row['silhouette']:.4f}  DBI={row['dbi']:.4f}  "
+           f"CHI={row['chi']:.0f}  ({time.time()-t_m:.1f}s)")
+    except Exception as exc:
+        ts(f"  Spectral Clustering failed, skipping row: {exc}")
+
+    # ══════════════════════════════════════════════════════════
+    # ── Supervised upper bound (reviewer #15) ────────────────────
+    # NOT a comparable clustering method — a classifier trained on the
+    # SAME rule-derived labels used for ZSH's semantic seeding gives a
+    # separability ceiling: how well-separated the rule-derived families
+    # already are in X_w_norm when a supervised model gets to see the
+    # labels directly. Explicitly excluded from "best method" ranking.
+    # ══════════════════════════════════════════════════════════
+    try:
+        ts("  Fitting supervised upper-bound classifier (rule-derived labels) …")
+        t_m = time.time()
+        SUP_PRIORITY_RULES = [
+            ("has_coinbase", "Coinbase"),
+            ("is_coinjoin_like", "Coinjoin_Mixer"),
+            ("is_batch_payment", "Batch_Payment"),
+            ("is_consolidation", "Consolidation"),
+            ("is_distribution", "Distribution"),
+            ("is_peer_to_peer", "Standard_P2P"),
+            ("has_op_return", "OP_Return"),
+            ("rbf_enabled", "RBF_Enabled"),
+        ]
+        df_sota_feat = df_feat.iloc[sota_idx].reset_index(drop=True)
+        rule_labels_sota = np.full(len(df_sota_feat), "Unknown", dtype=object)
+        unassigned = np.ones(len(df_sota_feat), dtype=bool)
+        for col, lbl in SUP_PRIORITY_RULES:
+            if col in df_sota_feat.columns:
+                mask = (df_sota_feat[col].to_numpy(dtype=float) > 0) & unassigned
+                rule_labels_sota[mask] = lbl
+                unassigned &= ~mask
+        from sklearn.ensemble import RandomForestClassifier as _RFC
+        from sklearn.model_selection import train_test_split as _tts
+        Xs_tr, Xs_te, ys_tr, ys_te = _tts(
+            X_sota, rule_labels_sota, test_size=0.30, random_state=RNG_SEED,
+            stratify=rule_labels_sota if len(np.unique(rule_labels_sota)) > 1 else None,
+        )
+        sup_clf = _RFC(n_estimators=200, n_jobs=-1, random_state=RNG_SEED)
+        sup_clf.fit(Xs_tr, ys_tr)
+        sup_train_acc = sup_clf.score(Xs_tr, ys_tr)
+        sup_test_acc = sup_clf.score(Xs_te, ys_te)
+        sup_pred_labels = sup_clf.predict(X_sota)
+        row = score_row('Supervised Upper Bound (RF on rule labels, NOT comparable)',
+                         sup_pred_labels, len(np.unique(sup_pred_labels)))
+        row['train_accuracy'] = sup_train_acc
+        row['test_accuracy'] = sup_test_acc
+        rows.append(row)
+        ts(f"  Supervised ceiling: train_acc={sup_train_acc:.4f}  "
+           f"test_acc={sup_test_acc:.4f}  Sil={row['silhouette']:.4f}  "
+           f"({time.time()-t_m:.1f}s)")
+    except Exception as exc:
+        ts(f"  Supervised upper-bound failed, skipping row: {exc}")
+
+    # ══════════════════════════════════════════════════════════
+    # ── s-grid search evaluation (reviewer #4) ───────────────────
+    # Silhouette/DBI/CHI for each Zeta decay exponent s, so the paper can
+    # empirically defend s=1.5 or report the better-performing value.
+    # Reuses X_sota-style stratified sampling but each s-variant is fit
+    # fresh via KMeans++ Elkan (same protocol as the SOTA rows above).
+    # ══════════════════════════════════════════════════════════
+    s_grid_rows = []
+    for s_label, s_file in [
+        ('s=1.0', 'X_weighted_s10.npy'),
+        ('s=1.5 (used)', 'X_weighted.npy'),
+        ('s=2.0', 'X_weighted_s20.npy'),
+        ('s=3.0', 'X_weighted_s30.npy'),
+    ]:
+        s_path = p(s_file)
+        if not os.path.exists(s_path):
+            ts(f"  [s-grid {s_label}] skipped — {s_file} not found.")
+            continue
+        t_s = time.time()
+        X_s_full = np.load(s_path, mmap_mode='r')
+        n_s = min(len(X_s_full), n_rows)
+        s_idx_use = sota_idx[sota_idx < n_s]
+        # No StandardScaler: see note on score_weight_variant above -- this is
+        # exactly the comparison that requires the per-column scale to survive.
+        X_s_sota = np.array(X_s_full[s_idx_use], dtype=np.float32)
+        km_s = KMeans(n_clusters=K_FINAL, init='k-means++', n_init=ELKAN_N_INIT,
+                      max_iter=250, algorithm='elkan', random_state=RNG_SEED)
+        L_s = km_s.fit_predict(X_s_sota)
+        m_s = score_row(f's-grid {s_label}', L_s, K_FINAL, X=X_s_sota)
+        s_grid_rows.append(m_s)
+        ts(f"  [s-grid {s_label}]  Sil={m_s['silhouette']:.4f}  DBI={m_s['dbi']:.4f}  "
+           f"CHI={m_s['chi']:.0f}  ({time.time()-t_s:.1f}s)")
+    if s_grid_rows:
+        s_grid_df = pd.DataFrame(s_grid_rows)
+        s_grid_path = p('step7_s_grid_search.csv')
+        s_grid_df.to_csv(s_grid_path, index=False)
+        ts(f"  s-grid search -> {s_grid_path}")
 
     sota_results = pd.DataFrame(rows)
     with open(sota_cache, 'wb') as f:
@@ -1158,7 +1387,7 @@ else:
         f"DBI {dbi_pct(c_row.dbi, b_row.dbi):+.1f}%, and "
         f"CHI {pct_chg(c_row.chi, b_row.chi):+.1f}%."
     )
-zsh_row = sota_results.loc[sota_results['method'] == 'ZSH (Ours, k=30)'].iloc[0]
+zsh_row = sota_results.loc[sota_results['method'].str.startswith('ZSH (Ours, k=')].iloc[0]
 sil_winner_row = sota_results.loc[sota_results['silhouette'].idxmax()]
 dbi_winner_row = sota_results.loc[sota_results['dbi'].idxmin()]
 chi_winner_row = sota_results.loc[sota_results['chi'].idxmax()]

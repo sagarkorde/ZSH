@@ -54,11 +54,19 @@ _ensure_packages()
 # CONFIGURATION  — only edit this block if paths change
 # ─────────────────────────────────────────────────────────────────────
 
-PYTHON   = r"C:\ProgramData\anaconda3\envs\gpu-env\python.exe"
-WORK_DIR = r"C:\Users\sagar\Desktop\Q2 Paper 22326"
-OUT_DIR  = os.path.join(WORK_DIR, "outputs")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import (
+    PIPELINE_PYTHON as PYTHON,
+    PIPELINE_WORK_DIR as WORK_DIR,
+    OUTPUT_DIR as OUT_DIR,
+    BALANCE_MODE,
+)
 
 # Pipeline order: (step_number, display_label, script_filename)
+# Steps 7-9 are opt-in (RUN_EXTENDED_STEPS=1) since they're not part of the
+# original 1-6 orchestration and Step 9 (Elliptic) has its own OUTPUT_DIR.
+RUN_EXTENDED_STEPS = os.environ.get("ZSH_RUN_EXTENDED_STEPS", "0") == "1"
+
 STEPS = [
     (1, "Load & Explore",      "Step_1_Load_and_Explore.py"),
     (2, "Preprocess",          "Step_2_Preprocess.py"),
@@ -67,6 +75,14 @@ STEPS = [
     (5, "ZSH Clustering",      "Step_5_ZSH_Clustering.py"), # novel algorithm (improved ZSH)
     (6, "Profile & Visualize", "Step_6_Profile_and_Visualize.py"),
 ]
+if RUN_EXTENDED_STEPS:
+    STEPS += [
+        (7, "Statistical Rigor",              "Step_7_Statistical_Rigor.py"),
+        (8, "Contextual Profiling Comparison", "Step_8_Contextual_Profiling_Comparison.py"),
+    ]
+# Step 9 (Elliptic replication) is intentionally NOT orchestrated here: it
+# writes to its own ELLIPTIC_OUTPUT_DIR (independent of OUT_DIR/BALANCE_MODE)
+# and has no dependency on Steps 1-8, so it's run standalone.
 
 # Minimum set of output files that must exist after each step.
 # Master runner fails fast if any are missing — preventing cascading errors.
@@ -88,6 +104,9 @@ REQUIRED_AFTER_STEP = {
         "zsh_improved_comparison.csv"],
     6: ["profile_statistics.csv", "cluster_assignments.csv",
         "step6_log.txt"],
+    7: ["step7_sota_comparison.csv", "step7_ablation_study.csv",
+        "step7_stats_report.txt"],
+    8: ["step8_contextual_comparison_summary.csv", "step8_contextual_report.txt"],
 }
 
 # Key numpy arrays + parquets used for row-count sync verification
@@ -121,8 +140,9 @@ STALE_FILES = [
     "kmeans_model.pkl", "kmeans_model_optimized.pkl",
     "optimal_k_search.png",
 
-    # ── Old spectral clustering experiment ─────────────────────────
-    "X_spectral.npy", "spectral_eigenvalues.npy", "spectral_sample_idx.npy",
+    # NOTE: X_spectral.npy / spectral_eigenvalues.npy / spectral_sample_idx.npy
+    # were removed from this list — they are LIVE, checkpointed Step 4 outputs
+    # (regenerated every run) needed by Step 7's graph-embedding SOTA baseline.
     "spectral_scree.png",
 
     # ── Old "optimized" / "publication" experiment outputs ─────────

@@ -22,8 +22,8 @@ from pathlib import Path
 from datetime import datetime
 
 # ── Paths ────────────────────────────────────────────────────
-PARQUET_PATH = r"C:\Users\sagar\Desktop\Q2 Paper 22326\Dataset.parquet"
-OUTPUT_DIR   = r"C:\Users\sagar\Desktop\Q2 Paper 22326\outputs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import PARQUET_PATH, OUTPUT_DIR, BALANCE_MODE
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ── Logger ───────────────────────────────────────────────────

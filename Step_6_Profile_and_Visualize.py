@@ -39,7 +39,8 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 warnings.filterwarnings('ignore')
 
 # ── Configuration ─────────────────────────────────────────────
-OUTPUT_DIR = r"C:\Users\sagar\Desktop\Q2 Paper 22326\outputs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import OUTPUT_DIR, BALANCE_MODE
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 TOP_UMAP    = 8

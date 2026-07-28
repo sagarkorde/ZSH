@@ -20,7 +20,6 @@ from sklearn.metrics import (
     normalized_mutual_info_score,
 )
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
 # ============================================================
@@ -46,7 +45,8 @@ from sklearn.tree import DecisionTreeClassifier
 #   profiling alignment / explainability, not geometry superiority.
 # ============================================================
 
-OUTPUT_DIR = r"C:\Users\sagar\Desktop\Q2 Paper 22326\outputs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pipeline_config import OUTPUT_DIR, BALANCE_MODE
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 SAMPLE_SIZE = 120_000
@@ -210,8 +210,11 @@ for seed in REPEAT_SEEDS:
     flags_sample = flags_sample_df.to_numpy(dtype=np.int8)
     zsh_labels = np.array(zsh_labels_mm[sample_idx], dtype=np.int32)
 
+    # X_sample IS X_w_norm (Algorithm 1 / Section 3.5) -- no extra StandardScaler
+    # pass: that was a no-op for per-column-constant-weighted data and silently
+    # erased the zeta weighting (see Step_5_ZSH_Clustering.py / Step_7 for the
+    # same fix and full explanation).
     X_sample = np.array(X_weighted_mm[sample_idx], dtype=np.float32)
-    X_sample = StandardScaler().fit_transform(X_sample).astype(np.float32)
 
     ts("  Fitting KMeans++ Elkan baseline on sampled X_w_norm ...")
     km = KMeans(
