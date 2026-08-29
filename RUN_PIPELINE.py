@@ -14,7 +14,7 @@
 #      experiment (HDBSCAN, spectral, old K-Means, old optimization)
 #
 # USAGE (single command from PowerShell or terminal):
-#   & C:\ProgramData\anaconda3\envs\gpu-env\python.exe "c:/Users/sagar/Desktop/Q2 Paper 22326/RUN_PIPELINE.py"
+#   python RUN_PIPELINE.py
 #
 # TO FORCE RE-RUN A SPECIFIC STEP:
 #   Step 1 → delete outputs/.ckpt1_*.done

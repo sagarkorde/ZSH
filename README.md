@@ -6,8 +6,6 @@ This repository accompanies the paper:
 
 It provides the end-to-end experiment pipeline, reproducibility instructions, and the artifact mapping used to generate the main tables and figures reported in the manuscript.
 
-The latest packaged LaTeX manuscript project is available at `downloads/ZSH_LaTeX_Project_Latest.zip`.
-
 ## What This Repository Contains
 
 - `RUN_PIPELINE.py`
@@ -19,7 +17,8 @@ The latest packaged LaTeX manuscript project is available at `downloads/ZSH_LaTe
 - `Step_6_Profile_and_Visualize.py`
 - `Step_7_Statistical_Rigor.py`
 - `Step_8_Contextual_Profiling_Comparison.py`
-- `outputs/` generated artifacts used by the paper
+- `Step_9_Elliptic_Replication.py`
+- `outputs/` generated artifacts used by the paper (created at run time, not tracked)
 
 ## Environment
 
@@ -37,7 +36,12 @@ pip install -r requirements.txt
 
 ## Data
 
-Place the transaction dataset at the repository root as:
+The transaction corpus is published on IEEE DataPort:
+
+`Bitcoin Blockchain Transaction Dataset for Wallet Address Profiling and Behavioral Analysis (Parquet + CSV Format)`
+<https://doi.org/10.21227/bxmt-mn56>
+
+Place it at the repository root as:
 
 ```text
 Dataset.parquet
@@ -68,6 +72,12 @@ Run the contextual profiling comparison:
 
 ```bash
 python Step_8_Contextual_Profiling_Comparison.py
+```
+
+Run the independent replication on the Elliptic dataset:
+
+```bash
+python Step_9_Elliptic_Replication.py
 ```
 
 ## Main Paper Artifacts

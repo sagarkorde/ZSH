@@ -9,3 +9,11 @@ outputs/*.png
 outputs/*.txt
 Dataset.parquet
 ~$*.docx
+
+# manuscript and submission artifacts - keep this repository code-and-data only
+*.docx
+*.tex
+*.pdf
+*.bib
+downloads/
+paper/
