@@ -1,0 +1,17 @@
+duckdb
+hdbscan
+joblib
+matplotlib
+numpy
+pandas
+pyarrow
+scikit-learn
+scipy
+seaborn
+umap-learn
+
+# Optional, for the GPU spectral embedding used by spectral_gpu.py.
+# sklearn's ARPACK solve does not converge in practical time on the
+# disconnected 80,000-node landmark graph; see ARTIFACT_MAP.md.
+# Install the wheel matching your CUDA version, e.g. cupy-cuda12x.
+# cupy-cuda12x>=13.0

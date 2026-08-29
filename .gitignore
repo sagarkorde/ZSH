@@ -1,0 +1,25 @@
+__pycache__/
+.vscode/
+outputs/*.npy
+outputs/*.parquet
+outputs/*.pkl
+outputs/*.db
+outputs/*.csv
+outputs/*.png
+outputs/*.txt
+Dataset.parquet
+~$*.docx
+
+# manuscript and submission artifacts - keep this repository code-and-data only
+*.docx
+*.tex
+*.pdf
+*.bib
+downloads/
+paper/
+
+# run-time output trees created by pipeline_config.py
+outputs_balanced/
+outputs_raw/
+outputs_elliptic/
+data/
