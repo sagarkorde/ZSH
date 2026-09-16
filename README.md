@@ -1,111 +1,42 @@
-# ZSH Blockchain Transaction Profiling
+# ZSH: transaction-level behavioural profiling of Bitcoin
 
-This repository accompanies the paper:
+ZSH clusters individual Bitcoin transactions using
+**Z**eta-normalised rank weighting of features, **S**ize-constrained
+refinement and **H**ierarchical (Ward) initialisation, and describes each
+cluster with annotations that are not used as clustering inputs.
 
-`ZSH: A Zeta-Weighted Hybrid Semantic Clustering Framework for Blockchain Transaction Profiling and Anomaly-Aware Forensic Analysis`
+## Versions
 
-It provides the end-to-end experiment pipeline, reproducibility instructions, and the artifact mapping used to generate the main tables and figures reported in the manuscript.
+| Branch / tag | Content |
+|---|---|
+| `v1-submitted` | Code cited by the first manuscript submission (Aug 2026). Kept unchanged in `legacy_v1/`. Its results are superseded. |
+| `v2` (this branch) | Corrected method, temporal and external validation, prospective data. Work in progress. |
 
-## What This Repository Contains
-
-- `RUN_PIPELINE.py`
-- `Step_1_Load_and_Explore.py`
-- `Step_2_Preprocess.py`
-- `Step_3_Zeta_Weighting.py`
-- `Step_4_UMAP_Embedding.py`
-- `Step_5_ZSH_Clustering.py`
-- `Step_6_Profile_and_Visualize.py`
-- `Step_7_Statistical_Rigor.py`
-- `Step_8_Contextual_Profiling_Comparison.py`
-- `Step_9_Elliptic_Replication.py`
-- `outputs/` generated artifacts used by the paper (created at run time, not tracked)
+The v2 study is specified in [`ANALYSIS_PLAN.md`](ANALYSIS_PLAN.md) before any
+confirmatory analysis. Changes made after the code freeze (tag `v2-frozen`) are
+listed in [`DEVIATIONS.md`](DEVIATIONS.md).
 
 ## Environment
 
-Recommended environment:
-
-- Python 3.10 or newer
-- 64 GB RAM recommended
-- Windows workstation used in the paper: Intel Core i9, 64 GB RAM, NVIDIA RTX 4060 8 GB
-
-Install dependencies:
+Python 3.12 with pinned dependencies:
 
 ```bash
-pip install -r requirements.txt
+uv venv --python 3.12 .venv
+uv pip install --python .venv -r env/requirements.lock
 ```
 
 ## Data
 
-The transaction corpus is published on IEEE DataPort:
+* Bitcoin transaction sample (Jul 2022 – Sep 2024), IEEE DataPort:
+  <https://doi.org/10.21227/bxmt-mn56>
+* Elliptic Bitcoin dataset: <https://www.kaggle.com/datasets/ellipticco/elliptic-data-set>
+* GraphSense TagPacks: <https://github.com/graphsense/graphsense-tagpacks>
+* Prospective sample (Oct 2024 – Aug 2026): collected with the scripts in this
+  repository from the public Esplora API; file list and checksums are
+  published with the results.
 
-`Bitcoin Blockchain Transaction Dataset for Wallet Address Profiling and Behavioral Analysis (Parquet + CSV Format)`
-<https://doi.org/10.21227/bxmt-mn56>
+Input checksums are listed in `ANALYSIS_PLAN.md` §2.
 
-Place it at the repository root as:
+## Licence
 
-```text
-Dataset.parquet
-```
-
-If the dataset cannot be shared publicly, provide:
-
-- a schema description
-- extraction instructions
-- a synthetic or reduced sample for sanity checks
-- checksums for the internal experiment dataset
-
-## Reproducing the Paper
-
-Run the main pipeline:
-
-```bash
-python RUN_PIPELINE.py
-```
-
-Run the statistical validation:
-
-```bash
-python Step_7_Statistical_Rigor.py
-```
-
-Run the contextual profiling comparison:
-
-```bash
-python Step_8_Contextual_Profiling_Comparison.py
-```
-
-Run the independent replication on the Elliptic dataset:
-
-```bash
-python Step_9_Elliptic_Replication.py
-```
-
-## Main Paper Artifacts
-
-The following files correspond directly to the manuscript:
-
-- `outputs/step7_stats_report.txt`
-- `outputs/step7_sota_comparison.csv`
-- `outputs/step7_ablation_study.csv`
-- `outputs/step8_contextual_comparison_summary.csv`
-- `outputs/fig9_bootstrap_ci.png`
-- `outputs/fig10_sota_comparison.png`
-- `outputs/fig11_ablation_study.png`
-- `outputs/fig12_contextual_comparison.png`
-- `outputs/profile_statistics.csv`
-- `outputs/RESULTS_SUMMARY.txt`
-
-See `ARTIFACT_MAP.md` for the exact mapping from manuscript items to output files.
-
-## Important Claim Boundary
-
-This repository supports a conditional claim:
-
-- `KMeans++ Elkan` is stronger on intrinsic Euclidean clustering geometry in the corrected same-space benchmark.
-- `ZSH` is stronger for semantic blockchain profiling, minority-profile recoverability, and anomaly-aware forensic interpretation.
-
-The paper should not claim universal geometry-only superiority over KMeans.
-
-## Citation
-
-Use `CITATION.cff` for repository citation metadata after the repository is made public.
+MIT (see `LICENSE`).

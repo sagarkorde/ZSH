@@ -23,3 +23,6 @@ outputs_balanced/
 outputs_raw/
 outputs_elliptic/
 data/
+
+.venv/
+results/cache/
