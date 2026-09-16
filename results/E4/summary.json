@@ -1,0 +1,28 @@
+{
+  "clusterwise": {
+    "KMeans++ K*": {
+      "clusters": 31,
+      "mean_jaccard": 0.7200594403708616,
+      "n_ge_0.75": 12,
+      "n_0.5_to_0.75": 14,
+      "n_lt_0.5": 5
+    },
+    "RPW K* (no refinement)": {
+      "clusters": 31,
+      "mean_jaccard": 0.7453400468237802,
+      "n_ge_0.75": 15,
+      "n_0.5_to_0.75": 13,
+      "n_lt_0.5": 3
+    },
+    "ZSH": {
+      "clusters": 31,
+      "mean_jaccard": 0.7333081936314121,
+      "n_ge_0.75": 13,
+      "n_0.5_to_0.75": 16,
+      "n_lt_0.5": 2
+    }
+  },
+  "K_star": 31,
+  "rows_per_replicate": 1000000,
+  "reference_rows": 200000
+}
