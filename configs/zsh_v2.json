@@ -1,0 +1,197 @@
+{
+  "version": "v2",
+  "master_seed": 42,
+  "paths": {
+    "d1_parquet": "C:/Users/sagar/Desktop/CryptoGraphNet_GitHub_Clean/datasets/custom/Dataset.parquet",
+    "elliptic_dir": "D:/bitcoin_batches/elliptic_bitcoin_dataset",
+    "tagmap_json": "C:/Users/sagar/Desktop/ZHS_23826/ZSH_regeneration/btc_tagmap.json",
+    "out_root": "D:/ZSH_v2_outputs"
+  },
+  "checksums": {
+    "d1_parquet": "d1c02258ada8afb769b3ee3078eb13333844fb63693d4f74a22e819867ef81ea",
+    "elliptic_txs_features.csv": "fd7f83573443c9e302e371d3f110e3b6224160f5d1ed8a287757936127800ff0",
+    "elliptic_txs_classes.csv": "93e2e7b2405c735ba752bf6ba06b947561deddd1f5a8fc91e46f6a4c0e439493",
+    "elliptic_txs_edgelist.csv": "a35053ba68a98e4382cae2ba65b9d9e36b23b6439e02dff084971b1b72a5156e",
+    "tagmap_json": "2200d3601d8d7a372c596dad710a6db684281322075ab84dc15877c8ef3bbdd7"
+  },
+  "splits": {
+    "dev_start": "2022-07-13T00:00:00Z",
+    "test_start": "2024-01-01T00:00:00Z",
+    "test_end": "2024-10-01T00:00:00Z"
+  },
+  "features": {
+    "removed_annotation_flags": [
+      "is_consolidation",
+      "is_distribution",
+      "is_peer_to_peer",
+      "is_batch_payment",
+      "is_coinjoin_like"
+    ],
+    "priority": [
+      "input_count",
+      "output_count",
+      "vsize",
+      "total_input_value",
+      "total_output_value",
+      "fee",
+      "fee_rate_sat_per_vbyte",
+      "avg_input_value",
+      "avg_output_value",
+      "input_output_ratio",
+      "weight",
+      "size",
+      "input_address_count",
+      "output_address_count",
+      "input_script_count",
+      "total_addresses",
+      "value_difference",
+      "fee_rate_sat_per_byte",
+      "has_coinbase",
+      "has_op_return",
+      "rbf_enabled"
+    ],
+    "extra_audit_only": [
+      "value_concentration_ratio"
+    ],
+    "binary": [
+      "has_coinbase",
+      "has_op_return",
+      "rbf_enabled"
+    ],
+    "mode_share_max": 0.999,
+    "spearman_max": 0.98,
+    "spearman_rows": 1000000,
+    "selected": [
+      "input_count",
+      "output_count",
+      "vsize",
+      "total_input_value",
+      "fee",
+      "fee_rate_sat_per_vbyte",
+      "avg_output_value",
+      "input_output_ratio",
+      "size",
+      "fee_rate_sat_per_byte",
+      "has_op_return",
+      "rbf_enabled"
+    ]
+  },
+  "weighting": {
+    "proxy_k": 10,
+    "proxy_n_init": 10,
+    "mi_per_cluster": 20000,
+    "mi_neighbors": 3,
+    "s": 1.5,
+    "laplacian_rows": 20000,
+    "laplacian_knn": 10
+  },
+  "init": {
+    "n_micro": 160,
+    "micro_n_init": 3,
+    "k0": 30
+  },
+  "fit": {
+    "max_iter": 300,
+    "tol": 0.0001,
+    "cap": 0.1,
+    "depth": 3,
+    "split_fit_rows": 500000,
+    "split_n_init": 5,
+    "batch_size": 65536
+  },
+  "atypicality": {
+    "n_estimators": 200,
+    "max_samples": 256,
+    "fit_rows": 500000
+  },
+  "annotations": {
+    "eocj_min_value_sat": 50000,
+    "eocj_min_equal": 3,
+    "tag_categories": [
+      "exchange",
+      "miner",
+      "coinjoin"
+    ],
+    "min_positives_per_fold": 200
+  },
+  "evaluation": {
+    "coverages": [
+      0.1,
+      0.25,
+      0.5
+    ],
+    "min_members_rank": 100,
+    "bootstrap_B": 1000,
+    "silhouette_rows": 20000,
+    "silhouette_draws": 5,
+    "geometry_rows": 200000,
+    "threads": 16
+  },
+  "e2": {
+    "fit_rows": 200000,
+    "eval_rows": 200000,
+    "ward_rows": 30000,
+    "hdbscan_rows": 50000
+  },
+  "e4": {
+    "seeds": 10,
+    "bootstrap": 30,
+    "rows": 1000000,
+    "reference_rows": 200000,
+    "null_replicates": 10
+  },
+  "e7": {
+    "flagged": 5000,
+    "unflagged": 5000
+  },
+  "e0": {
+    "api_rows": 2000
+  },
+  "future": {
+    "first_month": "2024-10",
+    "last_month": "2026-08",
+    "blocks_per_month": 800,
+    "page_size": 25,
+    "api_primary": "https://mempool.space/api",
+    "api_fallback": "https://blockstream.info/api",
+    "min_interval_s": 1.0
+  },
+  "elliptic": {
+    "train_last_timestep": 34,
+    "k0": 30,
+    "lf_features": 93,
+    "min_labelled_rank": 20,
+    "rf_n_estimators": 50,
+    "rf_max_features": 50
+  },
+  "e10": {
+    "s_values": [
+      0.5,
+      1.0,
+      2.0,
+      3.0
+    ],
+    "k0_values": [
+      10,
+      20,
+      40,
+      60
+    ],
+    "cap_values": [
+      0.05,
+      0.15,
+      0.2,
+      null
+    ],
+    "deep_depth": 6,
+    "rows": 1000000,
+    "upsample_target": 0.3,
+    "blend_lambda": 0.6,
+    "seed_min_points": 500
+  },
+  "e12": {
+    "pca_components": 3,
+    "trim_alpha": 0.01,
+    "k_paper": 5
+  }
+}

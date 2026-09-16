@@ -1,0 +1,27 @@
+{
+  "ManyInManyOut": {
+    "prevalence_dev": 0.016141575262091104,
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0
+  },
+  "SingleInFanOut": {
+    "prevalence_dev": 0.026893432447896968,
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0
+  },
+  "FanIn": {
+    "prevalence_dev": 0.0737700993085256,
+    "accuracy": 0.99623,
+    "balanced_accuracy": 0.9961995203617046
+  },
+  "FanOut": {
+    "prevalence_dev": 0.08525143531853403,
+    "accuracy": 0.995636,
+    "balanced_accuracy": 0.9976144766935904
+  },
+  "OneInOneOut": {
+    "prevalence_dev": 0.4049868227090668,
+    "accuracy": 1.0,
+    "balanced_accuracy": 1.0
+  }
+}
