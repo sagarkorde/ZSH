@@ -76,6 +76,8 @@ scipy==1.18.1
     #   umap-learn
 six==1.17.0
     # via python-dateutil
+tabulate==0.10.0
+    # via -r env/requirements.in
 threadpoolctl==3.7.0
     # via
     #   -r env/requirements.in
