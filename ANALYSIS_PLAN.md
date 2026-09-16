@@ -244,3 +244,62 @@ on its own sample only, noise reported as its own group); E12.
   checksums.
 * Checkpoints: `v2-plan`, `v2-data-audit`, `v2-frozen`, `v2-data-future`,
   `v2-results`, `v2-figures`, `v2-manuscript`.
+
+---
+
+## 7. Clarifications recorded before the freeze
+
+Made after `v2-plan` and before `v2-frozen`. They come from the data audit and
+code tests on DEV data only; no TEST, prospective or Elliptic-test result had
+been computed.
+
+1. **§2.1** The last D1 transaction before 1 Oct 2024 is dated 7 Sep 2024, so
+   TEST covers 1 Jan – 7 Sep 2024 (36,259 blocks). DEV covers 63,075 blocks.
+2. **§2.2** Requests are spread over both hosts at the same time, each host at
+   ≤ 1 request/s; a host's interval doubles after HTTP 429 (maximum 8 s), and
+   failed paths get a second pass. The timestamp endpoint returns the last
+   block mined before a given time, so month *m* covers heights
+   (h_m, h_{m+1}].
+3. **§3.1** The selection rules keep 12 features: `input_count, output_count,
+   vsize, total_input_value, fee, fee_rate_sat_per_vbyte, avg_output_value,
+   input_output_ratio, size, fee_rate_sat_per_byte, has_op_return,
+   rbf_enabled`. `has_coinbase` is removed by the 99.9% mode rule (0.037% of
+   DEV rows); `input_address_count`, `output_address_count`,
+   `input_script_count` and `total_addresses` are removed by the same rule
+   (they are lengths of lists that hold one joined string);
+   `total_output_value`, `avg_input_value`, `weight`, `value_difference` by the
+   redundancy rule. The stored fee-rate columns are in BTC per (v)byte and are
+   recomputed in sat/(v)B.
+4. **§3.3** The D1 columns `has_p2pk … has_taproot`, `is_self_transfer` and
+   `address_reuse` are false/zero in every row and are not used. GraphSense
+   coinjoin tags match no D1 transaction, so L4 on D1 is effectively the
+   exchange (and, where the minimum is met, miner) category.
+   Evaluated targets: L2 coinbase, P2PKH, P2SH, P2WPKH, P2WSH, P2TR, mixed;
+   L3 runes, omni, other OP_RETURN; L4 exchange, miner, coinjoin; L5 EO-CJ
+   (prospective sample only). Primary metric for hypothesis tests: AP lift
+   (average precision / base rate), Holm-adjusted across targets; enrichment
+   at fixed coverage is descriptive.
+5. **E2** BIRCH threshold 0.5; HDBSCAN min_cluster_size = 0.1% of its sample;
+   GMM reg_covar tried in the order 1e-4, 1e-3, 1e-2 (first that fits is
+   used and reported); trimmed k-means with 10 k-means++ starts and at most
+   100 iterations.
+6. **E3** Arms: A1 primary; A2 uniform + refinement (K_u); A3 rank-power,
+   no refinement, K\*; A4 uniform, no refinement, K\*; A5 uniform, no
+   refinement, K_u; A6 MI-direct + refinement; A7 Laplacian rank-power +
+   refinement; A9 uniform K-means++ (n_init = 10), K\* (the standard baseline
+   used in E4–E6). H1 primary contrast A3 vs A4, secondary A1 vs A2. H2
+   primary contrast A1 vs A3, secondary A2 vs A5. All arms use the primary
+   seed.
+7. **E4** Reference partitions for the baselines are their full-DEV fits (A9,
+   A3). Centroid displacement is measured in the unweighted scaled space.
+8. **E8** Elliptic uses the §3.2 preprocessing with all 165 features treated as
+   continuous. Clusters need ≥ 20 labelled training members to be ranked
+   ahead of others. The per-timestep analysis uses the smallest prefix of
+   training-ranked clusters that covers 25% of training illicit transactions.
+9. **E9** Bitcoin atypicality analyses are exploratory, block bootstrap
+   B = 200.
+10. **E10** v1-style upsampling strata: (in>3 ∧ out>3, in=1 ∧ out>5,
+    OP_RETURN); strata below 30% of the largest are upsampled with
+    replacement. The sample-weighted variant uses weights
+    max(1, target/stratum size) in scaling, proxy partition, MI sampling,
+    initialisation, K-means and refinement.
