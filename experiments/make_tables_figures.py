@@ -388,8 +388,8 @@ def fig_factorial():
 # E4 stability
 # ---------------------------------------------------------------------------
 def table_stability():
-    s = pd.read_csv(R("E4") / "summary_by_method.csv")
-    p = pd.read_csv(R("E4") / "pairwise.csv")
+    s = pd.read_csv(R("E4") / "summary_by_method.csv", keep_default_na=False, na_values=[""])
+    p = pd.read_csv(R("E4") / "pairwise.csv", keep_default_na=False, na_values=[""])
     js = load_json("E4/summary.json")["clusterwise"]
     t = s.merge(p, on=["kind", "method"], how="outer")
     t["Clusters (Jaccard ≥ 0.75 / 0.5–0.75 / < 0.5)"] = t.apply(
@@ -398,7 +398,7 @@ def table_stability():
     t["Mean cluster Jaccard"] = t.apply(
         lambda r: js[r.method]["mean_jaccard"] if r.kind == "bootstrap" and r.method in js else np.nan, axis=1)
     kind_name = {"seed": "10 seeds, same data", "bootstrap": "30 block-bootstrap refits",
-                 "null": "10 seeds, column-permuted data"}
+                 "null": "10 seeds, column-permuted data (no joint structure)"}
     t.insert(0, "Replicates", t.kind.map(kind_name))
     cols = ["Replicates", "method", "k_mean", "ari_mean", "ari_std", "ami_mean", "vi_bits_mean",
             "centroid_shift_mean", "pairwise_ari_mean", "pairwise_ari_min", "mi_rank_tau_mean",
@@ -408,8 +408,8 @@ def table_stability():
 
 def fig_stability():
     from itertools import combinations  # noqa: F401
-    reps = pd.read_csv(R("E4") / "replicates.csv")
-    jac = pd.read_csv(R("E4") / "clusterwise_jaccard_long.csv")
+    reps = pd.read_csv(R("E4") / "replicates.csv", keep_default_na=False, na_values=[""])
+    jac = pd.read_csv(R("E4") / "clusterwise_jaccard_long.csv", keep_default_na=False, na_values=[""])
     methods = ["ZSH", "KMeans++ K*", "RPW K* (no refinement)"]
     names = {"ZSH": "ZSH", "KMeans++ K*": "K-means++", "RPW K* (no refinement)": "rank-power,\nno refinement"}
     fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 2.8), gridspec_kw={"width_ratios": [1, 1.25]})
@@ -418,12 +418,20 @@ def fig_stability():
         for j, m in enumerate(methods):
             v = reps[(reps.kind == kind) & (reps.method == m)].ari
             x = j + (i - 0.5) * 0.3
-            ax.scatter(np.full(len(v), x) + np.random.default_rng(j).uniform(-0.05, 0.05, len(v)), v,
-                       s=9, color=ps.SERIES[i], alpha=0.8, lw=0, label=["seeds", "block bootstrap"][i] if j == 0 else None)
+            jit = np.random.default_rng(j + 10 * i).uniform(-0.05, 0.05, len(v))
+            if kind == "seed":
+                ax.scatter(np.full(len(v), x) + jit, v, s=12, facecolor="white", edgecolor=ps.SERIES[j], lw=0.9,
+                           label="10 seeds (hollow)" if j == 0 else None)
+            else:
+                ax.scatter(np.full(len(v), x) + jit, v, s=10, color=ps.SERIES[j], lw=0, alpha=0.85,
+                           label="30 block-bootstrap refits (filled)" if j == 0 else None)
     ax.set_xticks(range(len(methods)), [names[m] for m in methods])
     ax.set_ylabel("ARI with the full-DEV fit")
     ax.set_ylim(0, 1)
-    ax.legend(loc="lower left")
+    from matplotlib.lines import Line2D
+    ax.legend(handles=[Line2D([], [], ls="", marker="o", mfc="white", mec=ps.INK2, label="10 seeds"),
+                       Line2D([], [], ls="", marker="o", color=ps.INK2, label="30 block-bootstrap refits")],
+              loc="lower left")
     ax.set_title("(a) Agreement with full-DEV fit", loc="left")
     ax.grid(axis="x", visible=False)
     ax = axes[1]
