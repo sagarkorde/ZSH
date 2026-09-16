@@ -8,3 +8,4 @@ requests
 joblib
 threadpoolctl
 umap-learn
+tabulate
