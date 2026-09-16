@@ -52,12 +52,32 @@ def main():
         plan += [(m, int(h)) for h in heights]
     log(f"{len(plan):,} blocks planned over {len(months)} months")
 
-    # 2. heights -> hashes
-    api.get_many([f"/block-height/{h}" for _, h in plan])
-    hashes = {h: api.text(f"/block-height/{h}").strip() for _, h in plan}
-    # 3. block headers (tx_count, timestamp)
-    api.get_many([f"/block/{hashes[h]}" for _, h in plan])
-    info = {h: api.json(f"/block/{hashes[h]}") for _, h in plan}
+    # 2-3. hashes and headers of the sampled heights. mempool.space
+    # /v1/blocks/<h> returns the 15 blocks h, h-1, ..., h-14 (hash, tx_count,
+    # timestamp), so one request covers up to 15 sampled heights
+    # (deviation logged in DEVIATIONS.md; same blocks and fields as /block/<hash>).
+    need = sorted({h for _, h in plan}, reverse=True)
+    tops, covered = [], set()
+    for h in need:
+        if h not in covered:
+            tops.append(h)
+            covered.update(range(h - 14, h + 1))
+    api.get_many([f"/v1/blocks/{h}" for h in tops], hosts=[api.hosts[0]])
+    headers = {}
+    for h in tops:
+        for b in api.json(f"/v1/blocks/{h}") or []:
+            headers[int(b["height"])] = b
+    missing = [h for h in need if h not in headers]
+    if missing:
+        log(f"  {len(missing)} heights missing from bulk headers; fetching singly")
+        api.get_many([f"/block-height/{h}" for h in missing])
+        for h in missing:
+            hh = api.text(f"/block-height/{h}").strip()
+            api.get_many([f"/block/{hh}"])
+            headers[h] = api.json(f"/block/{hh}")
+    hashes = {h: headers[h]["id"] for _, h in plan}
+    info = {h: headers[h] for _, h in plan}
+    log(f"  headers for {len(info):,} blocks from {len(tops):,} bulk requests")
     # 4. one page per block
     pages = {}
     for m, h in plan:

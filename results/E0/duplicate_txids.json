@@ -1,0 +1,9 @@
+{
+  "rows_with_duplicated_txid": 618,
+  "distinct_duplicated_txids": 309,
+  "by_split": {
+    "0": 300,
+    "1": 318
+  },
+  "note": "descriptive audit fact computed after the freeze; rows kept"
+}

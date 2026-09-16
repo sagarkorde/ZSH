@@ -378,7 +378,9 @@ def fig_factorial():
         ax.set_title(title, loc="left")
         ax.set_xlabel("Difference in AP lift on TEST")
         ax.grid(axis="y", visible=False)
-    axes[1].legend(loc="lower right")
+    h, lab = axes[1].get_legend_handles_labels()
+    fig.legend(h, lab, loc="lower center", ncol=2, bbox_to_anchor=(0.5, -0.04))
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
     savefig(fig, "F6_factorial")
 
 

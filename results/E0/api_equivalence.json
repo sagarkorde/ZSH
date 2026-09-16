@@ -1,0 +1,100 @@
+{
+  "requested": 2000,
+  "matched": 2006,
+  "features": {
+    "input_count": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "output_count": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "vsize": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "size": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "has_op_return": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "rbf_enabled": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "L1": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "L2": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "L3": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "tags": {
+      "agreement": 1.0,
+      "rule": "exact",
+      "usable_on_prospective": true
+    },
+    "total_input_value": {
+      "agreement": 1.0,
+      "rule": "rel_err<=1e-6",
+      "max_rel_err": 5.72093737552656e-08,
+      "p99_rel_err": 5.1483722511805607e-08,
+      "usable_on_prospective": true
+    },
+    "fee": {
+      "agreement": 1.0,
+      "rule": "rel_err<=1e-6",
+      "max_rel_err": 5.9461270517261156e-08,
+      "p99_rel_err": 5.50568877876579e-08,
+      "usable_on_prospective": true
+    },
+    "avg_output_value": {
+      "agreement": 1.0,
+      "rule": "rel_err<=1e-6",
+      "max_rel_err": 5.728015963416874e-08,
+      "p99_rel_err": 5.164411304179224e-08,
+      "usable_on_prospective": true
+    },
+    "input_output_ratio": {
+      "agreement": 1.0,
+      "rule": "rel_err<=1e-6",
+      "max_rel_err": 5.945781908134824e-08,
+      "p99_rel_err": 5.811362012194524e-08,
+      "usable_on_prospective": true
+    },
+    "fee_rate_sat_per_vbyte": {
+      "agreement": 1.0,
+      "rule": "rel_err<=1e-6",
+      "max_rel_err": 5.946127064992062e-08,
+      "p99_rel_err": 5.505688775997441e-08,
+      "usable_on_prospective": true
+    },
+    "fee_rate_sat_per_byte": {
+      "agreement": 1.0,
+      "rule": "rel_err<=1e-6",
+      "max_rel_err": 5.946127045558614e-08,
+      "p99_rel_err": 5.5056887692495924e-08,
+      "usable_on_prospective": true
+    }
+  },
+  "examples_of_disagreement": {},
+  "cache_sha256": "cccc9bd0d5b5a61e5a41d617bafd6a1d98c2d62d3714533a055a0b6589e6ede6"
+}
