@@ -1,0 +1,15 @@
+{
+  "stored_fee_rate_times_1e8_over_recomputed_median": 99999999.94312379,
+  "rows_checked": 122880,
+  "has_p2pk_true_share": 0.0,
+  "exact_p2pk_type_share": 0.0,
+  "has_p2pk_true_and_p2pkh_type_share": 0.0,
+  "has_p2sh_true_and_only_p2wsh_share": 0.0,
+  "input_address_list_len_values": {
+    "1": 122838,
+    "0": 42
+  },
+  "coinbase_input_count_values": {
+    "1": 42
+  }
+}

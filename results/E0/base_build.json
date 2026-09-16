@@ -1,0 +1,16 @@
+{
+  "rows": 5884387,
+  "flag_rule_mismatches": {
+    "ManyInManyOut": 0,
+    "SingleInFanOut": 0,
+    "FanIn": 0,
+    "FanOut": 0,
+    "OneInOneOut": 0
+  },
+  "split_counts": {
+    "0": 3299616,
+    "1": 2584530,
+    "9": 241
+  },
+  "base_sha256": "30abea4a607ea897dc3e765fd5b9fc189de0806a89b4dc75d8c647fdcfe05156"
+}

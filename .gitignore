@@ -26,3 +26,5 @@ data/
 
 .venv/
 results/cache/
+results/*_smoke/
+__pycache__/
