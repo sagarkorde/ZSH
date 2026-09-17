@@ -1,6 +1,6 @@
 {
   "requested": 2000,
-  "matched": 2006,
+  "matched": 2000,
   "features": {
     "input_count": {
       "agreement": 1.0,
@@ -56,7 +56,7 @@
       "agreement": 1.0,
       "rule": "rel_err<=1e-6",
       "max_rel_err": 5.72093737552656e-08,
-      "p99_rel_err": 5.1483722511805607e-08,
+      "p99_rel_err": 5.1489081694715375e-08,
       "usable_on_prospective": true
     },
     "fee": {
@@ -70,14 +70,14 @@
       "agreement": 1.0,
       "rule": "rel_err<=1e-6",
       "max_rel_err": 5.728015963416874e-08,
-      "p99_rel_err": 5.164411304179224e-08,
+      "p99_rel_err": 5.167405464568053e-08,
       "usable_on_prospective": true
     },
     "input_output_ratio": {
       "agreement": 1.0,
       "rule": "rel_err<=1e-6",
       "max_rel_err": 5.945781908134824e-08,
-      "p99_rel_err": 5.811362012194524e-08,
+      "p99_rel_err": 5.8115003827018266e-08,
       "usable_on_prospective": true
     },
     "fee_rate_sat_per_vbyte": {

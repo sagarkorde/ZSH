@@ -46,7 +46,7 @@ def main():
     failed = api.get_many([f"/tx/{t}" for t in sample.txid], progress_every=500)
     tagmap = load_tagmap()
     recs = []
-    for t in sample.txid:
+    for t in dict.fromkeys(sample.txid):  # a txid can be drawn into two samples
         j = api.json(f"/tx/{t}")
         if j is None:
             continue
