@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from zsh.config import Log, out_dir, results_dir, rng_for, write_json  # noqa: E402
+from zsh.config import CFG, Log, out_dir, results_dir, rng_for, write_json  # noqa: E402
 from zsh.data import TAG_BITS, l1_rule_masks  # noqa: E402
 from zsh.io import FUTURE_PATH, SMOKE, load_base, load_future  # noqa: E402
 from zsh.metrics import wilson_interval  # noqa: E402
@@ -83,8 +83,28 @@ def main():
                     "recall_rule": float(tp / np.sum(wt * cj)) if cj.any() else np.nan,
                     "prevalence_eocj": float(np.sum(wt * cj) / np.sum(wt)),
                     "prevalence_rule": float(np.sum(wt * many) / np.sum(wt))}
+        # percentile intervals: blocks resampled with replacement within each month (the sampling
+        # design: months are strata, blocks the sampled units); weights are constant within a block
+        blk = pd.DataFrame({"month": fut.month.to_numpy(), "block": fut.block_height.to_numpy(),
+                            "tp": w * (many & cj), "rule": w * many, "cj": w * cj, "w": w})
+        blk = blk.groupby(["month", "block"], sort=True)[["tp", "rule", "cj", "w"]].sum().reset_index()
+        B = 50 if SMOKE else CFG["evaluation"]["bootstrap_B"]
+        brng = rng_for("E7", "future_bootstrap")
+        groups = [g[["tp", "rule", "cj", "w"]].to_numpy() for _, g in blk.groupby("month")]
+        boots = []
+        for _ in range(B):
+            tp_, ru, c_, ww = sum(g[brng.integers(len(g), size=len(g))].sum(axis=0) for g in groups)
+            boots.append({"precision_rule": tp_ / ru if ru > 0 else np.nan,
+                          "recall_rule": tp_ / c_ if c_ > 0 else np.nan,
+                          "prevalence_eocj": c_ / ww, "prevalence_rule": ru / ww})
+        weighted_ci = {}
+        for key in boots[0]:
+            v = np.array([b[key] for b in boots], dtype=float)
+            v = v[np.isfinite(v)]
+            weighted_ci[key] = [float(np.quantile(v, 0.025)), float(np.quantile(v, 0.975))] if len(v) else None
         summary["FUTURE"] = {
             "rows": len(fut), "unweighted": rates(np.ones(len(fut))), "design_weighted": rates(w),
+            "design_weighted_ci": weighted_ci, "bootstrap_B": B,
             "confusion": {"rule&eocj": int((many & cj).sum()), "rule&~eocj": int((many & ~cj).sum()),
                           "~rule&eocj": int((~many & cj).sum()), "~rule&~eocj": int((~many & ~cj).sum())},
             "coinjoin_tag_matches": int(((tags & TAG_BITS["coinjoin"]) > 0).sum()),
@@ -92,10 +112,14 @@ def main():
             "eocj_top_values_sat": (fut.loc[cj, "eocj_value"].value_counts().head(10).to_dict()
                                     if "eocj_value" in fut else {}),
         }
-        by_month = (fut.assign(rule=many, cj=cj).groupby("month")
-                    .apply(lambda g: pd.Series({"rows": len(g), "rule": g.rule.mean(), "eocj": g.cj.mean(),
-                                                "precision_rule": g.cj[g.rule].mean() if g.rule.any() else np.nan}),
-                           include_groups=False))
+        def month_rates(g):
+            wt = g.w.to_numpy()
+            r_, c2 = g.rule.to_numpy(), g.cj.to_numpy()
+            return pd.Series({"rows": len(g), "rule": np.average(r_, weights=wt), "eocj": np.average(c2, weights=wt),
+                              "eocj_rows": int(c2.sum()),
+                              "precision_rule": np.average(c2[r_], weights=wt[r_]) if r_.any() else np.nan})
+        by_month = (fut.assign(rule=many, cj=cj, w=w).groupby("month")
+                    .apply(month_rates, include_groups=False))
         by_month.to_csv(res / "future_by_month.csv")
         log(f"FUTURE: {summary['FUTURE']['unweighted']}")
     write_json(summary, res / "summary.json")
