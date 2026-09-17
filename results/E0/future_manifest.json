@@ -1,0 +1,247 @@
+{
+  "months": [
+    {
+      "month": "2024-10",
+      "first_height": 863566,
+      "last_height": 868326,
+      "blocks_in_month": 4761,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2024-11",
+      "first_height": 868327,
+      "last_height": 872689,
+      "blocks_in_month": 4363,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2024-12",
+      "first_height": 872690,
+      "last_height": 877258,
+      "blocks_in_month": 4569,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-01",
+      "first_height": 877259,
+      "last_height": 881692,
+      "blocks_in_month": 4434,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-02",
+      "first_height": 881693,
+      "last_height": 885783,
+      "blocks_in_month": 4091,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-03",
+      "first_height": 885784,
+      "last_height": 890324,
+      "blocks_in_month": 4541,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-04",
+      "first_height": 890325,
+      "last_height": 894668,
+      "blocks_in_month": 4344,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-05",
+      "first_height": 894669,
+      "last_height": 899296,
+      "blocks_in_month": 4628,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-06",
+      "first_height": 899297,
+      "last_height": 903454,
+      "blocks_in_month": 4158,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-07",
+      "first_height": 903455,
+      "last_height": 908028,
+      "blocks_in_month": 4574,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-08",
+      "first_height": 908029,
+      "last_height": 912616,
+      "blocks_in_month": 4588,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-09",
+      "first_height": 912617,
+      "last_height": 917148,
+      "blocks_in_month": 4532,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-10",
+      "first_height": 917149,
+      "last_height": 921682,
+      "blocks_in_month": 4534,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-11",
+      "first_height": 921683,
+      "last_height": 925939,
+      "blocks_in_month": 4257,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2025-12",
+      "first_height": 925940,
+      "last_height": 930340,
+      "blocks_in_month": 4401,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2026-01",
+      "first_height": 930341,
+      "last_height": 934541,
+      "blocks_in_month": 4201,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2026-02",
+      "first_height": 934542,
+      "last_height": 938780,
+      "blocks_in_month": 4239,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2026-03",
+      "first_height": 938781,
+      "last_height": 943129,
+      "blocks_in_month": 4349,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2026-04",
+      "first_height": 943130,
+      "last_height": 947348,
+      "blocks_in_month": 4219,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2026-05",
+      "first_height": 947349,
+      "last_height": 951913,
+      "blocks_in_month": 4565,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2026-06",
+      "first_height": 951914,
+      "last_height": 956140,
+      "blocks_in_month": 4227,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2026-07",
+      "first_height": 956141,
+      "last_height": 960481,
+      "blocks_in_month": 4341,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    },
+    {
+      "month": "2026-08",
+      "first_height": 960482,
+      "last_height": 964957,
+      "blocks_in_month": 4476,
+      "blocks_sampled": 800,
+      "pages_obtained": 800,
+      "kept": true
+    }
+  ],
+  "closed_early": false,
+  "min_page_share": 0.95,
+  "rows": 456292,
+  "blocks_with_page": 18400,
+  "month_boundary_heights": {
+    "2024-10": 863565,
+    "2024-11": 868326,
+    "2024-12": 872689,
+    "2025-01": 877258,
+    "2025-02": 881692,
+    "2025-03": 885783,
+    "2025-04": 890324,
+    "2025-05": 894668,
+    "2025-06": 899296,
+    "2025-07": 903454,
+    "2025-08": 908028,
+    "2025-09": 912616,
+    "2025-10": 917148,
+    "2025-11": 921682,
+    "2025-12": 925939,
+    "2026-01": 930340,
+    "2026-02": 934541,
+    "2026-03": 938780,
+    "2026-04": 943129,
+    "2026-05": 947348,
+    "2026-06": 951913,
+    "2026-07": 956140,
+    "2026-08": 960481,
+    "end": 964957
+  },
+  "d4_sha256": "dff579fba854e86328297a5d740d736f69b7e1b9c30de8358396e617a3288733",
+  "cache_sha256": "2437fddaaf765b4f41c265925537cc20a6962c3bf552e6703d85381c6dcd6e6b",
+  "hosts": [
+    "https://mempool.space/api",
+    "https://blockstream.info/api"
+  ]
+}
