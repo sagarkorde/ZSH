@@ -87,7 +87,11 @@ def save(df, name, align=None):
     for i, c in enumerate(cols):
         cells = ["" if pd.isna(v) else str(v) for v in df.iloc[:, i]]
         longest_word = max(len(w) for w in str(c).split())
-        widths.append(min(max([longest_word + 2, 7] + [len(x) + 1 for x in cells]), 30))
+        longest_cell = max([len(x) for x in cells] + [0])
+        if align[i] == "l":
+            widths.append(min(max(longest_word + 2, min(longest_cell + 1, 14)), 14))
+        else:
+            widths.append(max(longest_word + 2, min(longest_cell + 3, 18), 9))
     sep = [("-" * (w - 1) + ":") if a == "r" else (":" + "-" * (w - 2) + ":" if a == "c" else ":" + "-" * (w - 1))
            for a, w in zip(align, widths)]
     lines = ["| " + " | ".join(cols) + " |", "|" + "|".join(sep) + "|"]
@@ -229,8 +233,8 @@ def t_methods():
                      f(r.common_dbi, 2), f(r.common_chi / 1000, 1), f(r.own_silhouette, 3),
                      pct(r.test_max_share), f(cc.ap_lift.median(), 2) if len(cc) else "",
                      f"{hi} / {lo}" if hi != "" else ""])
-    cols = ["Method", "K", "Fit (s)", "Silh.", "DBI", "CH (10³)", "Silh. (own)", "Largest test cluster (%)",
-            "Median AP lift", "ZSH higher / lower"]
+    cols = ["Method", "K", "Fit (s)", "Silh.", "DBI", "CH (10³)", "Silh. own", "Largest (%)",
+            "Median lift", "Higher / lower"]
     save(pd.DataFrame(rows, columns=cols), "T_methods", ["l"] + ["r"] * (len(cols) - 1))
 
 
@@ -291,8 +295,7 @@ def t_stability():
                      f"{f(r.ari_mean, 2)} ± {f(r.ari_std, 2)}" if pd.notna(r.ari_mean) else "",
                      f(r.ami_mean, 2), f(r.vi_bits_mean, 2), f"{f(r.pairwise_ari_mean, 2)} ({f(r.pairwise_ari_min, 2)})",
                      f(r.centroid_shift_mean, 2), f(r.get("mi_rank_tau_mean", np.nan), 2), jac])
-    cols = ["Replicates", "Method", "K", "ARI with full fit", "AMI", "VI (bits)", "Pairwise ARI (min)",
-            "Centroid shift", "Kendall τ", "Stable / moving / unstable"]
+    cols = ["Replicates", "Method", "K", "ARI", "AMI", "VI", "Pair. ARI", "Shift", "τ", "Jaccard groups"]
     save(pd.DataFrame(rows, columns=cols), "T_stability", ["l", "l"] + ["r"] * 8)
 
 
@@ -314,9 +317,8 @@ def t_transfer():
                          f(wd.get(period, {}).get("kendall_tau", np.nan), 2) if m == "ZSH" else "",
                          ru["profiles_for_80pct"] if ru else "",
                          f"{rr['profiles_runes_ge_90pct']} ({pct(rr['runes_in_ge_90pct_profiles'], 0)}%)" if rr else ""])
-    cols = ["Period", "Method", "Profiles used", "Refit K", "ARI", "AMI", "Mean best Jaccard",
-            "Jaccard ≥ 0.75 / < 0.5", "Kendall τ of ranks", "Profiles holding 80% of Runes",
-            "Refit profiles ≥ 90% Runes (share of Runes)"]
+    cols = ["Period", "Method", "Profiles", "Refit K", "ARI", "AMI", "Jaccard", "≥ 0.75 / < 0.5",
+            "τ", "Runes in 80%", "Refit ≥ 90% Runes"]
     save(pd.DataFrame(rows, columns=cols), "T_transfer", ["l", "l"] + ["r"] * 9)
 
 
@@ -334,13 +336,12 @@ def t_concentration():
             b = k.loc[t]
             rows.append([lab, TARGET.get(t, t), n(a.positives), pct(a.base_rate, 2),
                          f"{f(a.ap_lift, 1)} ({ci(a.ap_lift_lo, a.ap_lift_hi, 1)})",
-                         f(a["enrich@0.25"], 1), pct(a["prec@0.25"], 1), int(a["clusters@0.25"]),
+                         pct(a["prec@0.25"], 1), int(a["clusters@0.25"]),
                          f(b.ap_lift, 1), f"{fa(-b.d_ap_lift)} ({ci(-b.d_ap_lift_hi, -b.d_ap_lift_lo, 2 if abs(b.d_ap_lift) < 1 else 1)})",
                          pval(b.d_ap_lift_p_holm)])
-    cols = ["Period", "Annotation", "Positives", "Base rate (%)", "ZSH AP lift (95% CI)",
-            "Enrich. at 25%", "Precision at 25% (%)", "Profiles at 25%", "K-means++ AP lift",
-            "ZSH − K-means++ (95% CI)", "p (Holm)"]
-    save(pd.DataFrame(rows, columns=cols), "T_concentration", ["l", "l"] + ["r"] * 9)
+    cols = ["Period", "Annotation", "Positives", "Base (%)", "ZSH AP lift (95% CI)",
+            "Prec. (%)", "Profiles", "KM++", "Difference (95% CI)", "p"]
+    save(pd.DataFrame(rows, columns=cols), "T_concentration", ["l", "l"] + ["r"] * 8)
 
 
 def t_heuristic():
@@ -395,8 +396,8 @@ def t_elliptic():
     rf = s["random_forest_reference"]
     rows.append(["AF-165", "Random forest (supervised)", "", f(rf["ap"] / rf["base_rate"]), "",
                  f"{pct(rf['precision'])} (recall {pct(rf['recall'])})", "", ""])
-    cols = ["Features", "Method", "K", "AP lift (95% CI)", "Enrichment at 25% (95% CI)", "Precision (%)",
-            "ZSH − method (95% CI)", "p (Holm)"]
+    cols = ["Features", "Method", "K", "AP lift (95% CI)", "Enrichment (95% CI)", "Prec. (%)",
+            "Difference (95% CI)", "p"]
     save(pd.DataFrame(rows, columns=cols), "T_elliptic", ["l", "l", "r", "r", "r", "r", "r", "r"])
 
 
@@ -421,7 +422,7 @@ def t_atypicality():
                          "Isolation Forest, ZSH space", tname.get(t, t), n(v["positives"]),
                          f"{f(v['roc_auc'], 3)} ({ci(*v['roc_auc_ci'], 3)})", f(v["pr_auc"], 3),
                          pct(v["base_rate"]), "exploratory"])
-    cols = ["Data", "Score", "Target", "Positives", "ROC-AUC (95% CI)", "PR-AUC", "Base rate (%)", "Reading"]
+    cols = ["Data", "Score", "Target", "Positives", "ROC-AUC (95% CI)", "PR-AUC", "Base (%)", "Reading"]
     save(pd.DataFrame(rows, columns=cols), "T_atypicality", ["l", "l", "l", "r", "r", "r", "r", "l"])
 
 
@@ -446,8 +447,8 @@ def t_sensitivity():
         rows.append([VARIANT.get(r.variant, r.variant), int(r.k), pct(r.max_share_fit), pct(r.max_share_test),
                      f(r.common_silhouette, 3), f(d.ap_lift.median(), 2),
                      f"{hi} / {lo}" if hi != "" else ""])
-    cols = ["Variant", "K", "Largest cluster, fit (%)", "Largest cluster, test (%)", "Silh.",
-            "Median AP lift", "Higher / lower than reference"]
+    cols = ["Variant", "K", "Largest, fit (%)", "Largest, test (%)", "Silh.", "Median lift",
+            "Higher / lower"]
     save(pd.DataFrame(rows, columns=cols), "T_sensitivity", ["l"] + ["r"] * 6)
     # appendix: AP lift per annotation and variant
     piv = c.pivot(index="method", columns="target", values="ap_lift")
