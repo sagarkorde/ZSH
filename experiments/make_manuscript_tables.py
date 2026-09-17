@@ -1,0 +1,479 @@
+"""Compact, formatted tables for the article (Markdown), built from results/.
+
+Presentation only: reads saved results and writes results/manuscript/<name>.md.
+Each builder runs only if its inputs exist. Captions are written in the article.
+"""
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+
+from zsh.config import CFG, OUT, RESULTS, results_dir  # noqa: E402
+from zsh.data import L1_NAMES, L2_NAMES, L3_NAMES, TAG_BITS  # noqa: E402
+
+MS = results_dir("manuscript")
+
+NICE = {
+    "input_count": "Input count", "output_count": "Output count", "vsize": "Virtual size",
+    "size": "Serialised size", "total_input_value": "Total input value", "fee": "Fee",
+    "fee_rate_sat_per_vbyte": "Fee rate per virtual byte", "fee_rate_sat_per_byte": "Fee rate per byte",
+    "avg_output_value": "Mean output value", "input_output_ratio": "Input-to-output value ratio",
+    "has_op_return": "OP_RETURN output (0/1)", "rbf_enabled": "Replace-by-fee signalled (0/1)",
+}
+TARGET = {
+    "L2:coinbase": "Coinbase", "L2:P2PKH": "P2PKH inputs", "L2:P2SH": "P2SH inputs",
+    "L2:P2WPKH": "P2WPKH inputs", "L2:P2WSH": "P2WSH inputs", "L2:P2TR": "P2TR inputs",
+    "L2:mixed": "Mixed-script inputs", "L3:runes": "Runes", "L3:omni": "Omni",
+    "L3:other_opreturn": "Other OP_RETURN", "L4:exchange": "Exchange tag", "L4:miner": "Miner tag",
+    "L4:coinjoin": "CoinJoin tag", "L5:eocj": "Equal-output CoinJoin",
+}
+TARGET_SHORT = {
+    "L2:coinbase": "CB", "L2:P2PKH": "PKH", "L2:P2SH": "SH", "L2:P2WPKH": "WPKH", "L2:P2WSH": "WSH",
+    "L2:P2TR": "TR", "L2:mixed": "Mix", "L3:runes": "Run", "L3:omni": "Omni", "L3:other_opreturn": "OR",
+    "L4:exchange": "Exch",
+}
+
+
+def R(exp):
+    return RESULTS / exp
+
+
+def js(p):
+    p = RESULTS / p
+    return json.load(open(p, encoding="utf-8")) if p.exists() else None
+
+
+def n(x):
+    return "" if pd.isna(x) else f"{int(round(x)):,}"
+
+
+def f(x, d=2):
+    if x is None or pd.isna(x):
+        return ""
+    t = f"{x:.{d}f}"
+    if float(t) == 0:
+        t = t.lstrip("-")
+    return t.replace("-", "−")
+
+
+def fa(x, d=1):
+    """d decimals, or two when |x| < 1."""
+    return f(x, 2 if abs(x) < 1 else d)
+
+
+def pct(x, d=1):
+    return "" if x is None or pd.isna(x) else f"{100 * x:.{d}f}"
+
+
+def ci(lo, hi, d=2):
+    return f"{f(lo, d)}–{f(hi, d)}" if lo >= 0 else f"{f(lo, d)} to {f(hi, d)}"
+
+
+def pval(p):
+    if pd.isna(p):
+        return ""
+    return "< 0.001" if p < 0.001 else f"{p:.3f}"
+
+
+def save(df, name, align=None):
+    cols = list(df.columns)
+    align = align or ["l"] + ["r"] * (len(cols) - 1)
+    sep = ["---:" if a == "r" else (":---:" if a == "c" else ":---") for a in align]
+    lines = ["| " + " | ".join(cols) + " |", "|" + "|".join(sep) + "|"]
+    for _, r in df.iterrows():
+        lines.append("| " + " | ".join("" if pd.isna(v) else str(v) for v in r) + " |")
+    (MS / f"{name}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"{name}: {df.shape}")
+
+
+# ---------------------------------------------------------------------------
+def t_data():
+    s = pd.read_csv(R("E0") / "splits.csv").set_index("split")
+    rows = [
+        ["Bitcoin sample, development", f"{s.loc[0, 'first_time'][:10]} to {s.loc[0, 'last_time'][:10]}",
+         n(s.loc[0, "rows"]), n(s.loc[0, "blocks"]), "fitting all models"],
+        ["Bitcoin sample, test", f"{s.loc[1, 'first_time'][:10]} to {s.loc[1, 'last_time'][:10]}",
+         n(s.loc[1, "rows"]), n(s.loc[1, "blocks"]), "evaluation"],
+    ]
+    fm = js("E0/future_manifest.json")
+    if fm:
+        rows.append(["Prospective sample", f"{fm['months'][0]['month']} to {fm['months'][-1]['month']}",
+                     n(fm["rows"]), n(fm["blocks_with_page"]), "evaluation"])
+    ell = OUT / "labels" / "elliptic_counts.json"
+    if ell.exists():
+        e = json.load(open(ell))
+        rows.append(["Elliptic, training steps", "time steps 1–34", n(e["train_rows"]),
+                     f"{e['train_labelled']:,} labelled", "fitting; ranking clusters"])
+        rows.append(["Elliptic, test steps", "time steps 35–49", n(e["test_rows"]),
+                     f"{e['test_labelled']:,} labelled", "evaluation"])
+    save(pd.DataFrame(rows, columns=["Data", "Period", "Transactions", "Blocks or labels", "Use"]), "T_data",
+         ["l", "l", "r", "r", "l"])
+
+
+def elliptic_counts():
+    """Small helper output for T_data (row counts of the Elliptic split)."""
+    from zsh.io import elliptic_train_mask, load_elliptic
+    p = OUT / "labels" / "elliptic_counts.json"
+    if p.exists():
+        return
+    df = load_elliptic()
+    tr = elliptic_train_mask(df)
+    lab = df.label.to_numpy() >= 0
+    out = {"train_rows": int(tr.sum()), "test_rows": int((~tr).sum()),
+           "train_labelled": int((tr & lab).sum()), "test_labelled": int((~tr & lab).sum()),
+           "train_illicit": int((tr & (df.label.to_numpy() == 1)).sum()),
+           "test_illicit": int((~tr & (df.label.to_numpy() == 1)).sum())}
+    json.dump(out, open(p, "w"), indent=1)
+
+
+def t_features():
+    w = pd.read_csv(R("E1") / "weights.csv").sort_values("rank")
+    rows = [[int(r["rank"]), NICE.get(r.feature, r.feature), f(r.mi, 3), f(r.weight, 3)] for _, r in w.iterrows()]
+    save(pd.DataFrame(rows, columns=["Rank", "Feature", "Mutual information", "Weight"]), "T_features",
+         ["r", "l", "r", "r"])
+
+
+def t_annotations():
+    p = pd.read_csv(R("E0") / "annotation_prevalence.csv")
+    p = p[p.annotation.isin(["L2", "L3", "L4"]) & p.split.isin([0, 1])]
+    wide = p.pivot_table(index=["annotation", "label"], columns="split", values="share").reset_index()
+    fut = OUT / "future" / "d4_future.parquet"
+    d = pd.read_parquet(fut) if fut.exists() else None
+    order = [("L2", x) for x in ("P2PKH", "P2SH", "P2WPKH", "P2WSH", "P2TR", "mixed", "coinbase")] + \
+            [("L3", x) for x in ("runes", "omni", "other_opreturn")] + [("L4", x) for x in ("exchange", "miner", "coinjoin")]
+    rows = []
+    for a, lab in order:
+        r = wide[(wide.annotation == a) & (wide.label == lab)]
+        row = [a, TARGET[f"{a}:{lab}"], pct(r[0].iloc[0], 2), pct(r[1].iloc[0], 2)]
+        if d is not None:
+            col = {"L2": d.L2.to_numpy() == L2_NAMES.index(lab) if a == "L2" else None,
+                   "L3": d.L3.to_numpy() == L3_NAMES.index(lab) if a == "L3" else None,
+                   "L4": (d.tags.to_numpy() & TAG_BITS[lab]) > 0 if a == "L4" else None}[a]
+            row.append(pct(np.average(col, weights=d.design_weight), 2))
+        rows.append(row)
+    cols = ["Type", "Annotation", "Development (%)", "Test (%)"]
+    if d is not None:
+        rows.append(["L5", TARGET["L5:eocj"], "", "", pct(np.average(d.eocj, weights=d.design_weight), 2)])
+        cols.append("Prospective (%, weighted)")
+    save(pd.DataFrame(rows, columns=cols), "T_annotations", ["l", "l"] + ["r"] * (len(cols) - 2))
+
+
+def t_profiles():
+    dev = pd.read_csv(R("E1") / "profiles_dev.csv")
+    test = pd.read_csv(R("E1") / "profiles_test.csv").set_index("profile")
+    futp = R("E6") / "profiles_future.csv"
+    fut = pd.read_csv(futp).set_index("profile") if futp.exists() else None
+    rows = []
+    for _, r in dev.iterrows():
+        p = int(r.profile)
+        row = [f"P{p:02d}", pct(r.share), pct(test.loc[p, "share"]) if p in test.index else ""]
+        if fut is not None:
+            row.append(pct(fut.loc[p, "share"]) if p in fut.index else "")
+        row += [f"{r.med_inputs:g}", f"{r.med_outputs:g}", n(r.med_value_sat), f(r.med_fee_rate, 1),
+                f"{r.top_script} {pct(r.top_script_share, 0)}", pct(r.rbf_share, 0),
+                pct(r.exchange_tag_share, 1),
+                pct(test.loc[p, "runes_share"], 0) if p in test.index else ""]
+        rows.append(row)
+    cols = ["Profile", "Dev. (%)", "Test (%)"] + (["Prosp. (%)"] if fut is not None else []) + [
+        "In", "Out", "Value (sat)", "Fee rate", "Main input script (%)", "RBF (%)", "Exch. tag (%)",
+        "Runes, test (%)"]
+    save(pd.DataFrame(rows, columns=cols), "T_profiles", ["l"] + ["r"] * (len(cols) - 1))
+
+
+def t_methods():
+    g = pd.read_csv(R("E2") / "methods_intrinsic_timing.csv")
+    c = pd.read_csv(R("E2") / "methods_concentration_independent.csv")
+    name = {"ZSH": "ZSH", "KMeans++": "K-means++", "MiniBatchKMeans": "Mini-batch K-means",
+            "GMM (diag)": "Gaussian mixture (diag.)", "BIRCH": "BIRCH", "Ward (sample + NC)": "Ward (sample)",
+            "VKV-partial (k=5)": "Vlahavas et al., partial (k = 5)",
+            "VKV-partial (k=31)": "Vlahavas et al., partial (k = K)",
+            "HDBSCAN (own sample)": "HDBSCAN (own sample)"}
+    if "noise_share" in g:
+        hd = g.method == "HDBSCAN (own sample)"
+        if hd.any():
+            name["HDBSCAN (own sample)"] = f"HDBSCAN (own sample, {pct(g.loc[hd, 'noise_share'].iloc[0], 0)}% noise)"
+    rows = []
+    for _, r in g.iterrows():
+        cc = c[c.method == r.method]
+        hi = lo = ""
+        if r.method != "ZSH" and len(cc):
+            hi = int(((cc.d_ap_lift_hi < 0) & (cc.d_ap_lift_p_holm < 0.05)).sum())
+            lo = int(((cc.d_ap_lift_lo > 0) & (cc.d_ap_lift_p_holm < 0.05)).sum())
+        rows.append([name.get(r.method, r.method), int(r.k_fit), f(r.fit_seconds, 1), f(r.common_silhouette, 3),
+                     f(r.common_dbi, 2), f(r.common_chi / 1000, 1), f(r.own_silhouette, 3),
+                     pct(r.test_max_share), f(cc.ap_lift.median(), 2) if len(cc) else "",
+                     f"{hi} / {lo}" if hi != "" else ""])
+    cols = ["Method", "K", "Fit (s)", "Silh.", "DBI", "CH (10³)", "Silh. (own)", "Largest test cluster (%)",
+            "Median AP lift", "ZSH higher / lower"]
+    save(pd.DataFrame(rows, columns=cols), "T_methods", ["l"] + ["r"] * (len(cols) - 1))
+
+
+ARMS = {"A1": ("rank-power", "yes", "hierarchical"), "A2": ("uniform", "yes", "hierarchical"),
+        "A3": ("rank-power", "no", "hierarchical"), "A4": ("uniform", "no", "hierarchical"),
+        "A5": ("uniform", "no, K of A2", "hierarchical"), "A6": ("MI-proportional", "yes", "hierarchical"),
+        "A7": ("Laplacian rank-power", "yes", "hierarchical"), "A9": ("uniform", "no", "K-means++ (10 starts)")}
+
+
+def t_factorial():
+    g = pd.read_csv(R("E3") / "arms_geometry.csv").set_index("arm")
+    allc = pd.read_csv(R("E3") / "all_vs_A1_independent.csv")
+    med = allc.groupby("method").ap_lift.median()
+    rows = []
+    for a, (w, ref, init) in ARMS.items():
+        if a not in g.index:
+            continue
+        r = g.loc[a]
+        rows.append([a + (" (ZSH)" if a == "A1" else ""), w, ref, init, int(r.k), pct(r.max_share_dev),
+                     f(r.common_silhouette, 3), f(med.get(a, np.nan), 2)])
+    cols = ["Arm", "Weights", "Refinement", "Initialisation", "K", "Largest cluster (%)", "Silh.",
+            "Median AP lift"]
+    save(pd.DataFrame(rows, columns=cols), "T_factorial", ["l", "l", "l", "l", "r", "r", "r", "r"])
+
+
+def t_contrasts():
+    rows = []
+    for key, test_arm, lab in (("H1_primary_A3_vs_A4", "A3", "H1: A3 − A4"),
+                               ("H2_primary_A1_vs_A3", "A1", "H2: A1 − A3")):
+        d = pd.read_csv(R("E3") / f"{key}_independent.csv")
+        a = d[d.method == test_arm]
+        for _, r in a.iterrows():
+            rows.append([lab, TARGET.get(r.target, r.target), f(r.d_ap_lift, 2),
+                         ci(r.d_ap_lift_lo, r.d_ap_lift_hi), pval(r.d_ap_lift_p_holm)])
+    save(pd.DataFrame(rows, columns=["Contrast", "Annotation", "Difference in AP lift", "95% CI", "p (Holm)"]),
+         "T_contrasts", ["l", "l", "r", "r", "r"])
+
+
+def t_stability():
+    s = pd.read_csv(R("E4") / "summary_by_method.csv", keep_default_na=False, na_values=[""])
+    p = pd.read_csv(R("E4") / "pairwise.csv", keep_default_na=False, na_values=[""])
+    cw = js("E4/summary.json")["clusterwise"]
+    t = s.merge(p, on=["kind", "method"], how="outer")
+    kind = {"seed": "10 seeds", "bootstrap": "30 block bootstraps", "null": "10 seeds, permuted columns"}
+    name = {"ZSH": "ZSH", "KMeans++ K*": "K-means++", "RPW K* (no refinement)": "Rank-power, no refinement"}
+    order = [("bootstrap", "ZSH"), ("bootstrap", "KMeans++ K*"), ("bootstrap", "RPW K* (no refinement)"),
+             ("seed", "ZSH"), ("seed", "KMeans++ K*"), ("seed", "RPW K* (no refinement)"), ("null", "ZSH")]
+    rows = []
+    for k, m in order:
+        r = t[(t.kind == k) & (t.method == m)]
+        if not len(r):
+            continue
+        r = r.iloc[0]
+        jac = ""
+        if k == "bootstrap" and m in cw:
+            jac = f"{cw[m]['n_ge_0.75']} / {cw[m]['n_0.5_to_0.75']} / {cw[m]['n_lt_0.5']}"
+        rows.append([kind[k], name[m], f(r.k_mean, 1),
+                     f"{f(r.ari_mean, 2)} ± {f(r.ari_std, 2)}" if pd.notna(r.ari_mean) else "",
+                     f(r.ami_mean, 2), f(r.vi_bits_mean, 2), f"{f(r.pairwise_ari_mean, 2)} ({f(r.pairwise_ari_min, 2)})",
+                     f(r.centroid_shift_mean, 2), f(r.get("mi_rank_tau_mean", np.nan), 2), jac])
+    cols = ["Replicates", "Method", "K", "ARI with full fit", "AMI", "VI (bits)", "Pairwise ARI (min)",
+            "Centroid shift", "Kendall τ", "Stable / moving / unstable"]
+    save(pd.DataFrame(rows, columns=cols), "T_stability", ["l", "l"] + ["r"] * 8)
+
+
+def t_transfer():
+    s = js("E5/summary.json")
+    wd = js("E5/weight_drift.json") or {}
+    rows = []
+    for period, lab in (("TEST", "Test"), ("FUTURE", "Prospective")):
+        if period not in s:
+            continue
+        for m, mn in (("ZSH", "ZSH"), ("KMeans++ K*", "K-means++")):
+            a = s[period][m]
+            key = "runes_transfer_zsh" if m == "ZSH" else "runes_transfer_kmu"
+            ru = s[period].get(key)
+            rr = s[period].get("runes_refit_zsh") if m == "ZSH" else None
+            rows.append([lab, mn, a["transfer_profiles_used"], a["refit_k"], f(a["ari"], 2), f(a["ami"], 2),
+                         f(a["mean_best_jaccard"], 2),
+                         f"{a['n_best_jaccard_ge_0.75']} / {a['n_best_jaccard_lt_0.5']}",
+                         f(wd.get(period, {}).get("kendall_tau", np.nan), 2) if m == "ZSH" else "",
+                         ru["profiles_for_80pct"] if ru else "",
+                         f"{rr['profiles_runes_ge_90pct']} ({pct(rr['runes_in_ge_90pct_profiles'], 0)}%)" if rr else ""])
+    cols = ["Period", "Method", "Profiles used", "Refit K", "ARI", "AMI", "Mean best Jaccard",
+            "Jaccard ≥ 0.75 / < 0.5", "Kendall τ of ranks", "Profiles holding 80% of Runes",
+            "Refit profiles ≥ 90% Runes (share of Runes)"]
+    save(pd.DataFrame(rows, columns=cols), "T_transfer", ["l", "l"] + ["r"] * 9)
+
+
+def t_concentration():
+    rows = []
+    for period, lab in (("test", "Test"), ("future", "Prospective")):
+        p = R("E6") / f"{period}_independent.csv"
+        if not p.exists():
+            continue
+        d = pd.read_csv(p)
+        z = d[d.method == "ZSH"].set_index("target")
+        k = d[d.method == "K-means++ (K*)"].set_index("target")
+        for t in z.index:
+            a = z.loc[t]
+            b = k.loc[t]
+            rows.append([lab, TARGET.get(t, t), n(a.positives), pct(a.base_rate, 2),
+                         f"{f(a.ap_lift, 1)} ({ci(a.ap_lift_lo, a.ap_lift_hi, 1)})",
+                         f(a["enrich@0.25"], 1), pct(a["prec@0.25"], 1), int(a["clusters@0.25"]),
+                         f(b.ap_lift, 1), f"{fa(-b.d_ap_lift)} ({ci(-b.d_ap_lift_hi, -b.d_ap_lift_lo, 2 if abs(b.d_ap_lift) < 1 else 1)})",
+                         pval(b.d_ap_lift_p_holm)])
+    cols = ["Period", "Annotation", "Positives", "Base rate (%)", "ZSH AP lift (95% CI)",
+            "Enrich. at 25%", "Precision at 25% (%)", "Profiles at 25%", "K-means++ AP lift",
+            "ZSH − K-means++ (95% CI)", "p (Holm)"]
+    save(pd.DataFrame(rows, columns=cols), "T_concentration", ["l", "l"] + ["r"] * 9)
+
+
+def t_heuristic():
+    s = js("E7/summary.json")
+    if not s:
+        return
+    rows = []
+    if "D1" in s:
+        e = s["D1"]["estimates"]
+        rows += [["2022–2024 sample (stratified, n = "
+                  f"{s['D1']['n_flagged']:,} + {s['D1']['n_unflagged']:,})",
+                  "Precision of the count rule", f"{pct(e['precision_rule']['estimate'])} "
+                  f"({pct(e['precision_rule']['ci'][0])}–{pct(e['precision_rule']['ci'][1])})"],
+                 ["", "Recall of the count rule", f"{pct(e['recall_rule']['estimate'])} "
+                  f"({pct(e['recall_rule']['ci'][0])}–{pct(e['recall_rule']['ci'][1])})"],
+                 ["", "Prevalence of equal-output CoinJoins", f"{pct(e['prevalence']['estimate'], 2)} "
+                  f"({pct(e['prevalence']['ci'][0], 2)}–{pct(e['prevalence']['ci'][1], 2)})"],
+                 ["", "Transactions with a GraphSense coinjoin tag", str(s["D1"]["coinjoin_tag_matches"])]]
+    if "FUTURE" in s:
+        fw = s["FUTURE"]["design_weighted"]
+        lab = f"Prospective sample (all {s['FUTURE']['rows']:,} transactions, weighted)"
+        first = True
+        for k, name in (("precision_rule", "Precision of the count rule"), ("recall_rule", "Recall of the count rule"),
+                        ("prevalence_eocj", "Prevalence of equal-output CoinJoins"),
+                        ("prevalence_rule", "Share meeting the count rule")):
+            if k in fw:
+                d = 2 if k.startswith("prevalence") else 1
+                ci_ = s["FUTURE"].get("design_weighted_ci", {}).get(k)
+                txt = pct(fw[k], d) + (f" ({pct(ci_[0], d)}–{pct(ci_[1], d)})" if ci_ else "")
+                rows.append([lab if first else "", name, txt])
+                first = False
+        rows.append(["", "Transactions with a GraphSense coinjoin tag", str(s["FUTURE"]["coinjoin_tag_matches"])])
+    save(pd.DataFrame(rows, columns=["Data", "Quantity", "Estimate, % (95% CI)"]), "T_heuristic", ["l", "l", "r"])
+
+
+def t_elliptic():
+    c = pd.read_csv(R("E8") / "concentration.csv")
+    s = js("E8/summary.json")
+    name = {"ZSH": "ZSH", "K-means++ (K)": "K-means++", "rank-power K-means (K)": "Rank-power, no refinement",
+            "uniform + refinement": "Uniform + refinement"}
+    rows = []
+    for _, r in c.iterrows():
+        rows.append([r.setting, name.get(r.method, r.method), int(r.k),
+                     f"{f(r.ap_lift)} ({ci(r.ap_lift_lo, r.ap_lift_hi)})",
+                     f"{f(r['enrich@0.25'])} ({ci(r['enrich@0.25_lo'], r['enrich@0.25_hi'])})",
+                     pct(r["prec@0.25"]),
+                     "" if pd.isna(r.get("d_ap_lift")) else
+                     f"{f(-r.d_ap_lift)} ({ci(-r.d_ap_lift_hi, -r.d_ap_lift_lo)})",
+                     pval(r.get("d_ap_lift_p_holm", np.nan))])
+    for m in s.get("failed_baselines", []):
+        rows.append([m.split(", ")[-1], "Gaussian mixture (diag.)", "", "failed to fit", "", "", "", ""])
+    rf = s["random_forest_reference"]
+    rows.append(["AF-165", "Random forest (supervised)", "", f(rf["ap"] / rf["base_rate"]), "",
+                 f"{pct(rf['precision'])} (recall {pct(rf['recall'])})", "", ""])
+    cols = ["Features", "Method", "K", "AP lift (95% CI)", "Enrichment at 25% (95% CI)", "Precision (%)",
+            "ZSH − method (95% CI)", "p (Holm)"]
+    save(pd.DataFrame(rows, columns=cols), "T_elliptic", ["l", "l", "r", "r", "r", "r", "r", "r"])
+
+
+def t_atypicality():
+    s = js("E9/summary.json")
+    rows = []
+    sname = {"IF (rank-power space)": "Isolation Forest, ZSH space",
+             "IF (unweighted space)": "Isolation Forest, unweighted",
+             "LOF (rank-power space)": "Local outlier factor, ZSH space",
+             "distance to ZSH centroid": "Distance to ZSH centroid"}
+    dec = {"supported (not positively associated)": "H6 supported",
+           "contradicted (positively associated)": "H6 contradicted", "inconclusive": "inconclusive"}
+    for k, v in s["elliptic"].items():
+        rows.append(["Elliptic test steps", sname.get(k, k), "illicit", n(v["positives"]),
+                     f"{f(v['roc_auc'], 3)} ({ci(*v['roc_auc_ci'], 3)})", f(v["pr_auc"], 3),
+                     pct(v["base_rate"]), dec.get(v["h6_decision"], v["h6_decision"])])
+    tname = {"runes": "Runes", "exchange_tag": "exchange tag", "P2WSH_inputs": "P2WSH inputs",
+             "eocj": "equal-output CoinJoin"}
+    for period, d in s["bitcoin"].items():
+        for t, v in d.items():
+            rows.append([{"TEST": "Bitcoin test", "FUTURE": "Bitcoin prospective"}[period],
+                         "Isolation Forest, ZSH space", tname.get(t, t), n(v["positives"]),
+                         f"{f(v['roc_auc'], 3)} ({ci(*v['roc_auc_ci'], 3)})", f(v["pr_auc"], 3),
+                         pct(v["base_rate"]), "exploratory"])
+    cols = ["Data", "Score", "Target", "Positives", "ROC-AUC (95% CI)", "PR-AUC", "Base rate (%)", "Reading"]
+    save(pd.DataFrame(rows, columns=cols), "T_atypicality", ["l", "l", "l", "r", "r", "r", "r", "l"])
+
+
+VARIANT = {"reference": "Reference (primary settings)", "s=0.5": "s = 0.5", "s=1.0": "s = 1", "s=2.0": "s = 2",
+           "s=3.0": "s = 3", "K0=10": "K₀ = 10", "K0=20": "K₀ = 20", "K0=40": "K₀ = 40", "K0=60": "K₀ = 60",
+           "cap=0.05": "c = 5%", "cap=0.15": "c = 15%", "cap=0.2": "c = 20%", "cap=None": "no refinement",
+           "depth=6": "depth 6", "upsampled (v1 style)": "upsampled corpus", "sample-weighted": "sample weights",
+           "init=k-means++": "K-means++ start", "init=semantic seeds": "semantic seeds",
+           "init=seed-Ward blend": "seed–Ward blend"}
+
+
+def t_sensitivity():
+    g = pd.read_csv(R("E10") / "variants_geometry.csv")
+    c = pd.read_csv(R("E10") / "variants_independent.csv")
+    rows = []
+    for _, r in g.iterrows():
+        d = c[c.method == r.variant]
+        hi = lo = ""
+        if r.variant != "reference":
+            hi = int(((d.d_ap_lift_lo > 0) & (d.d_ap_lift_p_holm < 0.05)).sum())
+            lo = int(((d.d_ap_lift_hi < 0) & (d.d_ap_lift_p_holm < 0.05)).sum())
+        rows.append([VARIANT.get(r.variant, r.variant), int(r.k), pct(r.max_share_fit), pct(r.max_share_test),
+                     f(r.common_silhouette, 3), f(d.ap_lift.median(), 2),
+                     f"{hi} / {lo}" if hi != "" else ""])
+    cols = ["Variant", "K", "Largest cluster, fit (%)", "Largest cluster, test (%)", "Silh.",
+            "Median AP lift", "Higher / lower than reference"]
+    save(pd.DataFrame(rows, columns=cols), "T_sensitivity", ["l"] + ["r"] * 6)
+    # appendix: AP lift per annotation and variant
+    piv = c.pivot(index="method", columns="target", values="ap_lift")
+    piv = piv.reindex([v for v in g.variant if v in piv.index])
+    tcols = [t for t in TARGET_SHORT if t in piv.columns]
+    rows = [[VARIANT.get(v, v)] + [f(piv.loc[v, t], 1) for t in tcols] for v in piv.index]
+    save(pd.DataFrame(rows, columns=["Variant"] + [TARGET_SHORT[t] for t in tcols]), "T_sensitivity_targets")
+
+
+def t_loo():
+    loo = pd.read_csv(R("E10") / "loo_seeded.csv")
+    arm = {"unseeded ZSH": "unseeded", "seeded, all families": "all seeds",
+           "seeded, family withheld": "family withheld"}
+    rows = []
+    fam_name = {"Coinbase": "Coinbase", "ManyInManyOut": "Many inputs and outputs",
+                "SingleInFanOut": "Single input, fan-out", "FanIn": "Fan-in", "FanOut": "Fan-out",
+                "OneInOneOut": "One input, one output", "OpReturn": "OP_RETURN", "RBF": "Replace-by-fee"}
+    feats = set(CFG["features"]["selected"])
+    for fam, d in loo.groupby("family", sort=False):
+        d = d.set_index("method")
+        fr = d.feature_removed.fillna("").iloc[0]
+        r = [fam_name.get(fam, fam), (NICE.get(fr, fr) if fr in feats else "none (not an input)") if fr else "none"]
+        for a in arm:
+            v = d.loc[a]
+            r.append(f"{f(v.ap_lift, 2)}")
+        w, s_ = d.loc["seeded, family withheld"], d.loc["seeded, all families"]
+        r.append(f"{f(w.ap_lift - s_.ap_lift, 2)}")
+        rows.append(r)
+    cols = ["Rule family", "Feature removed", "Unseeded", "All seeds", "Family withheld",
+            "Withheld − all seeds"]
+    save(pd.DataFrame(rows, columns=cols), "T_loo", ["l", "l", "r", "r", "r", "r"])
+
+
+BUILDERS = [elliptic_counts, t_data, t_features, t_annotations, t_profiles, t_methods, t_factorial,
+            t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
+            t_sensitivity, t_loo]
+
+
+def main():
+    only = set(sys.argv[1:])
+    for b in BUILDERS:
+        if only and b.__name__ not in only:
+            continue
+        try:
+            b()
+        except (FileNotFoundError, KeyError, TypeError) as e:
+            print(f"skip {b.__name__}: {type(e).__name__}: {e}")
+
+
+if __name__ == "__main__":
+    main()
