@@ -19,6 +19,7 @@ STEPS = [
     ("e03", "experiments/e03_factorial.py"),
     ("e04", "experiments/e04_stability.py"),
     ("e05", "experiments/e05_transfer.py"),
+    ("e05b", "experiments/e05b_weight_drift.py"),
     ("e06", "experiments/e06_concentration.py"),
     ("e07", "experiments/e07_heuristic_validity.py"),
     ("e08", "experiments/e08_elliptic.py"),
