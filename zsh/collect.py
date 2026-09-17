@@ -5,6 +5,7 @@ prospective sample can be re-parsed without contacting the API again.
 """
 import gzip
 import json
+import os
 import queue
 import sqlite3
 import threading
@@ -96,6 +97,16 @@ class Esplora:
         fc = CFG["future"]
         self.hosts = hosts or [fc["api_primary"], fc["api_fallback"]]
         self.min_interval = fc["min_interval_s"] if min_interval is None else min_interval
+        # Operational overrides (no new sources): ZSH_PAGE_HOSTS picks a subset of the configured
+        # hosts for bulk fetching, ZSH_MIN_INTERVAL slows every host down (never speeds up).
+        self.page_hosts = None
+        sel = os.environ.get("ZSH_PAGE_HOSTS")
+        if sel:
+            self.page_hosts = [h for h in self.hosts if any(s and s in h for s in sel.split(","))]
+            if not self.page_hosts:
+                raise ValueError(f"ZSH_PAGE_HOSTS={sel} matches no configured host")
+        if os.environ.get("ZSH_MIN_INTERVAL"):
+            self.min_interval = max(self.min_interval, float(os.environ["ZSH_MIN_INTERVAL"]))
         self.cache = Cache(cache_path)
         self.log = log
 
@@ -157,7 +168,8 @@ class Esplora:
                         rate = done[0] / (time.time() - t0)
                         self.log(f"  fetched {done[0]:,}/{len(todo):,} ({rate:.2f}/s)")
 
-        threads = [threading.Thread(target=run, args=(h,), daemon=True) for h in (hosts or self.hosts)]
+        use = hosts or self.page_hosts or self.hosts
+        threads = [threading.Thread(target=run, args=(h,), daemon=True) for h in use]
         for t in threads:
             t.start()
         for t in threads:
@@ -165,7 +177,7 @@ class Esplora:
         if failed:
             self.log(f"  {len(failed)} paths failed; second pass, one host at a time")
             retry, failed = failed, []
-            for base in (hosts or self.hosts):
+            for base in use:
                 w = HostWorker(base, self.min_interval, self.log)
                 still = []
                 for p in retry:
