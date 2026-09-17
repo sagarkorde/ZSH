@@ -47,7 +47,7 @@ def main():
         many = l1_rule_masks(base.input_count.to_numpy(), base.output_count.to_numpy())["ManyInManyOut"]
         N_f, N_u = int(many.sum()), int((~many).sum())
         s = pd.read_parquet(d5_rows)[["txid", "sample", "split"]]
-        a = pd.read_parquet(d5_api)
+        a = pd.read_parquet(d5_api).drop_duplicates("txid")
         m = s.merge(a, on="txid")
         m = m[m["sample"].isin(["e7_flagged", "e7_unflagged"])]
         rows = []
