@@ -487,7 +487,7 @@ def fig_drift():
     step = max(1, len(months) // 16)
     ax.set_xticks(range(0, len(months), step), months[::step], rotation=45, ha="right")
     ax.set_yticks(range(len(piv)), [f"P{int(i):02d}" for i in piv.index], fontsize=6)
-    for d, lab in (("2024-01", "test"), ("2024-04", "Runes"), ("2024-10", "future")):
+    for d, lab in (("2024-01", "test"), ("2024-04", "Runes"), ("2024-10", "prospective")):
         if d in months:
             x = months.index(d) - 0.5
             ax.axvline(x, color=ps.SERIES[1], lw=1)
@@ -555,15 +555,19 @@ def fig_curves():
             if m in cur:
                 ax.step(grid, _avg_curve(cur[m], grid), where="post", color=col, lw=1.3, label=m)
         ax.axhline(1, color=ps.MUTED, lw=0.7, ls=":")
-        ax.set_yscale("log")
-        ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+        lo, hi = ax.get_ylim()
+        if hi / max(lo, 1e-9) > 12:
+            ax.set_yscale("log")
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
+            ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
         ax.set_title(f"{period}: {tlabel(t)}", loc="left")
         ax.set_xlabel("coverage of positives")
         ax.set_ylabel("precision / base rate")
     for ax in axes.ravel()[len(panels):]:
         ax.set_visible(False)
-    axes[0, 0].legend(loc="upper right", fontsize=6)
-    fig.tight_layout()
+    h, lab = axes[0, 0].get_legend_handles_labels()
+    fig.legend(h, lab, loc="lower center", ncol=4, fontsize=6.3, bbox_to_anchor=(0.5, -0.02))
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
     savefig(fig, "F9_curves")
 
 
