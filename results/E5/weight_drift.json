@@ -1,0 +1,16 @@
+{
+  "TEST": {
+    "kendall_tau": 0.4848484848484848,
+    "p_value": 0.031050242838437284,
+    "refit_k": 36,
+    "refit_max_share": 0.09069695457201116,
+    "refit_splits": 4
+  },
+  "FUTURE": {
+    "kendall_tau": 0.4242424242424242,
+    "p_value": 0.06286914699241088,
+    "refit_k": 37,
+    "refit_max_share": 0.09296678442751571,
+    "refit_splits": 6
+  }
+}

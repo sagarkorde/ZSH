@@ -1,0 +1,8 @@
+Replicates,method,k_mean,ari_mean,ari_std,ami_mean,vi_bits_mean,centroid_shift_mean,pairwise_ari_mean,pairwise_ari_min,mi_rank_tau_mean,Mean cluster Jaccard,Clusters (Jaccard ≥ 0.75 / 0.5–0.75 / < 0.5)
+30 block-bootstrap refits,KMeans++ K*,31.0,0.7562,0.0488,0.8478,1.3592,0.3607,0.7713682339218325,0.6426566932629092,,0.7200594403708616,12 / 14 / 5
+30 block-bootstrap refits,RPW K* (no refinement),31.0,0.841,0.0627,0.8891,0.9739,0.2464,0.806772553272734,0.6563754679759881,0.9232,0.7453400468237802,15 / 13 / 3
+30 block-bootstrap refits,ZSH,31.2,0.8295,0.0611,0.8864,1.0203,0.305,0.803068192406328,0.6888261128076614,0.9232,0.7333081936314121,13 / 16 / 2
+"10 seeds, column-permuted data (no joint structure)",ZSH,32.3,,,,,,0.6095131798772638,0.3620013559780323,,,
+"10 seeds, same data",KMeans++ K*,31.0,0.7676,0.0509,0.85,1.3401,0.3632,0.7863212279131544,0.6886952561202682,,,
+"10 seeds, same data",RPW K* (no refinement),31.0,0.8551,0.0623,0.8915,0.952,0.256,0.8309059043468431,0.6561247374165794,0.9121,,
+"10 seeds, same data",ZSH,31.2,0.8421,0.0577,0.8891,0.9953,0.3593,0.8146605294954432,0.7085401983319626,0.9121,,

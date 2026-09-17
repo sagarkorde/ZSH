@@ -1,0 +1,6 @@
+| Data                            | Part                        | Period                   |   Transactions |   Blocks |
+|:--------------------------------|:----------------------------|:-------------------------|---------------:|---------:|
+| Bitcoin sample [dataset]        | Development (fit)           | 2022-07-13 to 2023-12-31 |        3299616 |    63075 |
+| Bitcoin sample [dataset]        | Test (2024)                 | 2024-01-01 to 2024-09-07 |        2584530 |    36259 |
+| Bitcoin sample [dataset]        | Excluded (after test end)   | 2024-10-01 to 2025-07-01 |            241 |        7 |
+| Prospective sample (this study) | Future (2024-10 to 2026-08) | 2024-10 to 2026-08       |         456292 |    18400 |
