@@ -155,7 +155,7 @@ def table_profiles():
 # figures from E0 / E1
 # ---------------------------------------------------------------------------
 def fig_pipeline():
-    fig = plt.figure(figsize=(ps.FULL_W, 2.0))
+    fig = plt.figure(figsize=(ps.FULL_W, 1.5))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_axis_off()
     steps = [("Transaction\nrecords", "12 features,\nsatoshi units"),
@@ -169,18 +169,15 @@ def fig_pipeline():
     width = (right - left - gap * (n - 1)) / n
     for i, (title, sub) in enumerate(steps):
         x0 = left + i * (width + gap)
-        box = FancyBboxPatch((x0, 0.25), width, 0.70, boxstyle="round,pad=0,rounding_size=0.02",
+        box = FancyBboxPatch((x0, 0.05), width, 0.90, boxstyle="round,pad=0,rounding_size=0.02",
                              fc="#dbe9fb" if i in (2, 3, 4) else "#eef4fc", ec=ps.SERIES[0], lw=0.8)
         ax.add_patch(box)
-        ax.text(x0 + width / 2, 0.80, title, ha="center", va="center", fontsize=7, weight="bold")
-        ax.text(x0 + width / 2, 0.47, sub, ha="center", va="center", fontsize=6.2, color=ps.INK2,
+        ax.text(x0 + width / 2, 0.76, title, ha="center", va="center", fontsize=7.5, weight="bold")
+        ax.text(x0 + width / 2, 0.36, sub, ha="center", va="center", fontsize=6.8, color=ps.INK2,
                 linespacing=1.15)
         if i < n - 1:
-            ax.annotate("", xy=(x0 + width + gap, 0.58), xytext=(x0 + width, 0.58),
+            ax.annotate("", xy=(x0 + width + gap, 0.50), xytext=(x0 + width, 0.50),
                         arrowprops=dict(arrowstyle="-|>", color=ps.MUTED, lw=0.8, shrinkA=0, shrinkB=0))
-    ax.text(left, 0.10, "Shaded steps form ZSH. Separate component: Isolation Forest atypicality score on the "
-            "weighted space, with no threshold.\nEverything is fitted on development data; test and future "
-            "data pass through the frozen model.", fontsize=6.2, color=ps.INK2, va="center")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     savefig(fig, "F1_pipeline")
@@ -191,19 +188,18 @@ def fig_design():
     fig, ax = plt.subplots(figsize=(ps.FULL_W, 1.6))
     spans = [("Development (fit)", "2022-07-13", "2024-01-01", ps.SERIES[0]),
              ("Test", "2024-01-01", "2024-09-08", ps.SERIES[1]),
-             ("Future (collected after freeze)", "2024-10-01", "2026-09-01", ps.SERIES[2])]
+             ("Prospective (collected after the freeze)", "2024-10-01", "2026-09-01", ps.SERIES[2])]
     for i, (lab, a, b, c) in enumerate(spans):
         a, b = pd.Timestamp(a), pd.Timestamp(b)
         ax.barh(0, (b - a).days, left=a, height=0.45, color=c)
         ax.text(a + (b - a) / 2, 0.42, lab, ha="center", va="bottom", fontsize=7)
     for d, lab in (("2024-04-20", "Runes launch\n(block 840,000)"), ("2026-09-17", "code frozen\n(tag v2-frozen)")):
-        ax.axvline(pd.Timestamp(d), color=ps.MUTED, lw=0.8, ls="--")
-        ax.text(pd.Timestamp(d), -0.45, lab, ha="center", va="top", fontsize=6.3, color=ps.INK2)
+        ax.plot([pd.Timestamp(d)] * 2, [-0.5, 0.26], color=ps.INK2, lw=0.8, ls="--")
+        ax.text(pd.Timestamp(d), -0.55, lab, ha="center", va="top", fontsize=6.3, color=ps.INK2)
     ax.set_ylim(-1.0, 0.9)
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)
     ax.grid(False)
-    ax.set_title("Study periods (Bitcoin); Elliptic: fit on time steps 1–34, test on 35–49", loc="left")
     savefig(fig, "F2_design")
 
 
@@ -218,7 +214,6 @@ def fig_weights():
     ax.set_xlim(0, w.weight.max() * 1.55)
     ax.set_xlabel("Weight $w_j$ (sums to 1)")
     ax.grid(axis="y", visible=False)
-    ax.set_title("Rank-power weights, s = 1.5", loc="left")
     savefig(fig, "F3_weights")
 
 
@@ -260,7 +255,6 @@ def fig_profiles():
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
     cb.set_label("column-scaled median (left block) or share of members", fontsize=6.5)
-    ax.set_title("ZSH profiles on development data (share of development transactions in brackets)", loc="left")
     savefig(fig, "F4_profiles")
 
 
@@ -268,6 +262,8 @@ def fig_profiles():
 # E2 / E3
 # ---------------------------------------------------------------------------
 def tlabel(t):
+    if t == "L2:coinbase":
+        return "Coinbase"
     kind, name = t.split(":", 1)
     return {"L2": "Inputs: ", "L3": "OP_RETURN: ", "L4": "Tag: ", "L5": "", "L1": "Rule: "}[kind] + {
         "runes": "Runes", "omni": "Omni", "other_opreturn": "other", "eocj": "Equal-output CoinJoin",
@@ -316,7 +312,6 @@ def fig_methods():
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.13 - 1.2 / (0.28 * len(targets) + 1.0) * 0.1),
               ncol=3)
     ax.grid(axis="y", visible=False)
-    ax.set_title("Annotation concentration by method, matched K, fitted on the same DEV sample", loc="left")
     savefig(fig, "F5_methods")
 
 
@@ -500,7 +495,6 @@ def fig_drift():
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
     cb.set_label("monthly share of transactions (future months design-weighted)", fontsize=6.5)
-    ax.set_title("Monthly shares of the development-fitted profiles, 2022–2026", loc="left", pad=12)
     savefig(fig, "F8_drift")
 
 
@@ -673,17 +667,20 @@ def fig_atypicality():
     from sklearn.metrics import roc_curve
     sfx = "_smoke" if SFX else ""
     d = pd.read_parquet(OUT / ("labels" + sfx) / "elliptic_test_atypicality.parquet")
-    fig, ax = plt.subplots(figsize=(ps.HALF_W, 2.9))
+    fig, ax = plt.subplots(figsize=(ps.HALF_W, 3.9))
     cols = [c for c in d.columns if c not in ("timestep", "illicit")]
+    nice = {"IF (rank-power space)": "Isolation Forest, ZSH space",
+            "IF (unweighted space)": "Isolation Forest, unweighted",
+            "LOF (rank-power space)": "local outlier factor, ZSH space",
+            "distance to ZSH centroid": "distance to ZSH centroid"}
     for c, col in zip(cols, ps.SERIES):
         fpr, tpr, _ = roc_curve(d.illicit, d[c])
-        ax.plot(fpr, tpr, color=col, lw=1.3, label=c)
+        ax.plot(fpr, tpr, color=col, lw=1.3, label=nice.get(c, c))
     ax.plot([0, 1], [0, 1], color=ps.MUTED, lw=0.7, ls=":")
     ax.set_xlabel("false positive rate")
     ax.set_ylabel("true positive rate")
     ax.set_aspect("equal")
-    ax.legend(loc="lower right", fontsize=5.8)
-    ax.set_title("Atypicality vs illicit status", loc="left")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.45, -0.2), fontsize=6.3, ncol=1)
     savefig(fig, "F11_atypicality")
 
 
@@ -714,29 +711,40 @@ def table_sensitivity():
 
 
 def fig_sensitivity():
+    """Heat map: log2 of each variant's AP lift relative to the reference variant, all annotations."""
     c = pd.read_csv(R("E10") / "variants_independent.csv")
-    groups = [("decay exponent s", ["s=0.5", "s=1.0", "reference", "s=2.0", "s=3.0"]),
-              ("initial K₀", ["K0=10", "K0=20", "reference", "K0=40", "K0=60"]),
-              ("size cap / depth", ["cap=0.05", "reference", "cap=0.15", "cap=0.2", "cap=None", "depth=6"]),
-              ("data and initialisation", ["reference", "upsampled (v1 style)", "sample-weighted",
-                                           "init=k-means++", "init=semantic seeds", "init=seed-Ward blend"])]
+    g = pd.read_csv(R("E10") / "variants_geometry.csv").set_index("variant")
+    order = ["reference", "s=0.5", "s=1.0", "s=2.0", "s=3.0", "K0=10", "K0=20", "K0=40", "K0=60",
+             "cap=0.05", "cap=0.15", "cap=0.2", "cap=None", "depth=6",
+             "upsampled (v1 style)", "sample-weighted", "init=k-means++", "init=semantic seeds",
+             "init=seed-Ward blend"]
+    names = {"reference": "reference", "s=0.5": "s = 0.5", "s=1.0": "s = 1", "s=2.0": "s = 2", "s=3.0": "s = 3",
+             "K0=10": "K₀ = 10", "K0=20": "K₀ = 20", "K0=40": "K₀ = 40", "K0=60": "K₀ = 60",
+             "cap=0.05": "cap 5%", "cap=0.15": "cap 15%", "cap=0.2": "cap 20%", "cap=None": "no refinement",
+             "depth=6": "depth 6", "upsampled (v1 style)": "upsampled corpus", "sample-weighted": "sample weights",
+             "init=k-means++": "K-means++ start", "init=semantic seeds": "semantic seeds",
+             "init=seed-Ward blend": "seed–Ward blend"}
     targets = list(dict.fromkeys(c.target))
-    fig, axes = plt.subplots(1, 4, figsize=(ps.FULL_W, 2.9), sharey=True)
-    for ax, (title, vs) in zip(axes, groups):
-        for ti, t in enumerate(targets[:8]):
-            d = c[c.target == t].set_index("method")
-            vals = [d.loc[v, "ap_lift"] if v in d.index else np.nan for v in vs]
-            ax.plot(range(len(vs)), vals, marker="o", ms=3, lw=1, color=ps.SERIES[ti % 8],
-                    label=tlabel(t) if ax is axes[0] else None)
-        ax.set_xticks(range(len(vs)), [v.replace("reference", "ref.").replace("init=", "") for v in vs],
-                      rotation=55, ha="right", fontsize=6)
-        ax.set_yscale("log")
-        ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
-        ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
-        ax.set_title(title, loc="left")
-    axes[0].set_ylabel("AP lift on TEST")
-    fig.legend(loc="lower center", ncol=4, fontsize=6, bbox_to_anchor=(0.5, -0.12))
-    fig.tight_layout()
+    piv = c.pivot(index="method", columns="target", values="ap_lift")[targets]
+    rel = np.log2(piv.loc[order] / piv.loc["reference"])
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 4.6))
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("div", [ps.DIV_NEG, ps.DIV_MID, ps.DIV_POS])
+    lim = 1.5
+    im = ax.imshow(rel.clip(-lim, lim).to_numpy(), aspect="auto", cmap=cmap, vmin=-lim, vmax=lim)
+    for i in range(rel.shape[0]):
+        for j in range(rel.shape[1]):
+            v = piv.loc[order[i], targets[j]]
+            txt = f"{v:.0f}" if v >= 100 else (f"{v:.1f}" if v >= 10 else f"{v:.2f}")
+            ax.text(j, i, txt, ha="center", va="center", fontsize=5.6,
+                    color=ps.INK if abs(rel.iloc[i, j]) < 1.0 else "white",
+                    weight="bold" if i == 0 else "normal")
+    ax.set_xticks(range(len(targets)), [tlabel(t) for t in targets], rotation=35, ha="right")
+    ax.set_yticks(range(len(order)), [f"{names[v]} (K = {int(g.loc[v, 'k'])})" for v in order])
+    for y in (0.5, 4.5, 8.5, 13.5, 15.5):
+        ax.axhline(y, color="white", lw=2)
+    ax.grid(False)
+    cb = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
+    cb.set_label("log₂(AP lift / reference), clipped at ±1.5", fontsize=6.5)
     savefig(fig, "F12_sensitivity")
 
 
