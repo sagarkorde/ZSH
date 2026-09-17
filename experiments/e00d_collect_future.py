@@ -7,6 +7,7 @@ transactions with a uniformly drawn start index. Run only after tag `v2-frozen`.
 """
 import json
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -85,20 +86,42 @@ def main():
         n_pages = math.ceil(n_tx / fc["page_size"])
         r = rng_for("FUT", "page", h)
         pages[h] = (int(r.integers(n_pages)) * fc["page_size"], n_pages)
-    api.get_many([f"/block/{hashes[h]}/txs/{pages[h][0]}" for _, h in plan])
+    page_path = {h: f"/block/{hashes[h]}/txs/{pages[h][0]}" for _, h in plan}
+    close = os.environ.get("ZSH_FUTURE_CLOSE") == "1"
+    if not close:
+        api.get_many([page_path[h] for _, h in plan])
+
+    # months are kept when at least MIN_SHARE of their planned pages were obtained; design
+    # weights use the pages actually obtained (missing pages treated as missing at random)
+    MIN_SHARE = 0.95
+    got = {}
+    for m, h in plan:
+        got.setdefault(m, 0)
+        if api.json(page_path[h]) is not None:
+            got[m] += 1
+    for mm in manifest["months"]:
+        mm["pages_obtained"] = got[mm["month"]]
+        mm["kept"] = got[mm["month"]] >= MIN_SHARE * mm["blocks_sampled"]
+    kept = {mm["month"] for mm in manifest["months"] if mm["kept"]}
+    if not close and len(kept) < len(months):
+        log(f"  incomplete months after collection: {sorted(set(months) - kept)}")
+    manifest["closed_early"] = close
+    manifest["min_page_share"] = MIN_SHARE
 
     # 5. parse
     tagmap = load_tagmap()
     per_month = {x["month"]: x for x in manifest["months"]}
     recs = []
     for m, h in plan:
+        if m not in kept:
+            continue
         start, n_pages = pages[h]
-        txs = api.json(f"/block/{hashes[h]}/txs/{start}")
+        txs = api.json(page_path[h])
         if txs is None:
             log(f"  missing page for height {h}")
             continue
         mm = per_month[m]
-        w = n_pages * mm["blocks_in_month"] / mm["blocks_sampled"]
+        w = n_pages * mm["blocks_in_month"] / mm["pages_obtained"]
         for j, tx in enumerate(txs):
             r = base_from_esplora(tx, tagmap)
             r.update({"month": m, "page_start": start, "page_index": j, "pages_in_block": n_pages,
