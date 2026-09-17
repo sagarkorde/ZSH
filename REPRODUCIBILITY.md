@@ -7,7 +7,7 @@ uv venv --python 3.12 .venv
 uv pip install --python .venv -r env/requirements.lock
 ```
 
-Reference machine: Windows 11, Intel Core i9 (13th gen, 32 logical cores),
+Reference machine: Windows 11, Intel Core i9-13900HX (32 logical cores),
 64 GB RAM. All computation is on the CPU; experiments limit numerical
 libraries to 16 threads.
 
@@ -59,3 +59,12 @@ python RUN_ALL.py e01 e10    # a range of steps
 requests. Block data on a public chain do not change after sufficient
 confirmations, so a fresh collection with the same seeds selects the same
 blocks and pages.
+
+## 5. Run-to-run agreement
+
+All seeds are fixed, but multithreaded K-means on millions of rows is not
+guaranteed to be bit-identical across runs. E10 was run twice (the first run
+was interrupted after writing its main tables). Every variant reproduced
+exactly except the upsampled corpus (2.4 million rows), whose AP lifts
+differed by at most 0.15 (exchange tag 18.47 vs 18.32); its number of clusters
+and geometry were identical. No conclusion depends on differences of this size.

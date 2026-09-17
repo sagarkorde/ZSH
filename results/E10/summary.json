@@ -1,0 +1,19 @@
+{
+  "rows": 1000000,
+  "upsampled_rows": 2360184,
+  "strata_sizes": [
+    944074,
+    12654,
+    26883,
+    162,
+    16164,
+    63,
+    0,
+    0
+  ],
+  "upsample_target_rows": 283222,
+  "skipped": {
+    "L4:miner": 219,
+    "L4:coinjoin": 0
+  }
+}
