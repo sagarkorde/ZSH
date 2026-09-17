@@ -82,7 +82,14 @@ def pval(p):
 def save(df, name, align=None):
     cols = list(df.columns)
     align = align or ["l"] + ["r"] * (len(cols) - 1)
-    sep = ["---:" if a == "r" else (":---:" if a == "c" else ":---") for a in align]
+    # dash counts set the relative column widths when pandoc wraps a wide table
+    widths = []
+    for i, c in enumerate(cols):
+        cells = ["" if pd.isna(v) else str(v) for v in df.iloc[:, i]]
+        longest_word = max(len(w) for w in str(c).split())
+        widths.append(min(max([longest_word + 2, 7] + [len(x) + 1 for x in cells]), 30))
+    sep = [("-" * (w - 1) + ":") if a == "r" else (":" + "-" * (w - 2) + ":" if a == "c" else ":" + "-" * (w - 1))
+           for a, w in zip(align, widths)]
     lines = ["| " + " | ".join(cols) + " |", "|" + "|".join(sep) + "|"]
     for _, r in df.iterrows():
         lines.append("| " + " | ".join("" if pd.isna(v) else str(v) for v in r) + " |")
@@ -128,6 +135,21 @@ def elliptic_counts():
            "train_illicit": int((tr & (df.label.to_numpy() == 1)).sum()),
            "test_illicit": int((~tr & (df.label.to_numpy() == 1)).sum())}
     json.dump(out, open(p, "w"), indent=1)
+
+
+def t_rules():
+    p = pd.read_csv(R("E0") / "annotation_prevalence.csv")
+    p = p[p.annotation == "L1-rule"].pivot_table(index="label", columns="split", values="share")
+    der = js("E0/rule_derivability.json")
+    defs = {"ManyInManyOut": ("coinjoin-like", "inputs > 3 and outputs > 3"),
+            "SingleInFanOut": ("batch payment", "inputs = 1 and outputs > 5"),
+            "FanIn": ("consolidation", "inputs > outputs and inputs > 2"),
+            "FanOut": ("distribution", "outputs > inputs and outputs > 2"),
+            "OneInOneOut": ("peer-to-peer", "inputs = 1 and outputs = 1")}
+    rows = [[old, rule, pct(p.loc[k, 0]), pct(p.loc[k, 1]), f(100 * der[k]["accuracy"], 2)]
+            for k, (old, rule) in defs.items()]
+    save(pd.DataFrame(rows, columns=["Flag in the published sample", "Definition", "Development (%)", "Test (%)",
+                                     "Recovered by depth-3 tree (%)"]), "T_rules", ["l", "l", "r", "r", "r"])
 
 
 def t_features():
@@ -459,7 +481,7 @@ def t_loo():
     save(pd.DataFrame(rows, columns=cols), "T_loo", ["l", "l", "r", "r", "r", "r"])
 
 
-BUILDERS = [elliptic_counts, t_data, t_features, t_annotations, t_profiles, t_methods, t_factorial,
+BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
             t_sensitivity, t_loo]
 
