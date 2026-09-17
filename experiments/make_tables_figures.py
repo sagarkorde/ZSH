@@ -624,17 +624,17 @@ def fig_elliptic():
     ax = axes[0]
     cur = s["AF-165"]["curves"]
     order = [("ZSH", ps.SERIES[0]), ("K-means++ (K)", ps.SERIES[1]), ("rank-power K-means (K)", ps.SERIES[2]),
-             ("uniform + refinement", ps.SERIES[3]), ("GMM diag (K)", ps.SERIES[4])]
+             ("uniform + refinement", ps.SERIES[3])]
+    grid = np.linspace(0.005, 1, 200)
     for m, col in order:
         if m in cur:
-            c = cur[m][0]
-            ax.step(c["coverage"], np.asarray(c["precision"]), where="post", color=col, lw=1.3, label=m)
-    ax.axhline(cur["ZSH"][0]["base_rate"], color=ps.MUTED, lw=0.7, ls=":")
+            ax.plot(grid, _avg_curve(cur[m], grid), color=col, lw=1.3, label=m)
+    ax.axhline(1, color=ps.MUTED, lw=0.7, ls=":")
     ax.set_xlabel("coverage of test illicit transactions")
-    ax.set_ylabel("precision")
-    ax.set_ylim(0, 1)
-    ax.legend(loc="upper right", fontsize=6)
-    ax.set_title("(a) Precision–coverage, test steps", loc="left")
+    ax.set_ylabel("precision / base rate (6.5%)")
+    ax.set_ylim(0, None)
+    ax.legend(loc="lower left", fontsize=6)
+    ax.set_title("(a) Enrichment at each coverage, test steps", loc="left")
     ax = axes[1]
     for m, col in order[:2]:
         d = ts[(ts.setting == "AF-165") & (ts.method == m)]
@@ -646,7 +646,7 @@ def fig_elliptic():
     ax.set_xlabel("time step")
     ax.set_ylim(0, 1)
     ax.set_title("(b) Top clusters per test step", loc="left")
-    ax.legend(loc="lower left", fontsize=5.8)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=5.8)
     _ = last
     fig.tight_layout()
     savefig(fig, "F10_elliptic")

@@ -78,7 +78,12 @@ def main():
             if setting == "AF-165":
                 models["rank-power K-means (K)"] = PlainKMeans(feats, K, weighting="rpw", init="ward").fit(train, seed)
                 models["uniform + refinement"] = ZSH(feats, weighting="uniform", k0=ec["k0"]).fit(train, seed)
-                models["GMM diag (K)"] = GMMU(feats, K).fit(train, seed)
+                gmm = GMMU(feats, K).fit(train, seed)
+                if gmm.failed:
+                    log("GMM diag (K): no fit at reg_covar 1e-4, 1e-3 or 1e-2; reported as failed")
+                    summary["failed_baselines"] = ["GMM diag (K), AF-165"]
+                else:
+                    models["GMM diag (K)"] = gmm
             labs = {m: np.asarray(mod.predict(df_lab)) for m, mod in models.items()}
             for m, mod in models.items():
                 joblib.dump(mod, mdir / f"elliptic_{setting}_{m.split(' ')[0].replace('+', 'p')}.joblib")

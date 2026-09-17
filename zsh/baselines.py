@@ -63,11 +63,12 @@ class GMMU(_Base):
     def fit(self, df, seed):
         t = time.time()
         X = self._prep(df).astype(np.float64)
+        self.m, self.reg_covar, self.failed = None, None, True
         for reg in (1e-4, 1e-3, 1e-2):
             try:
                 self.m = GaussianMixture(self.kk, covariance_type="diag", max_iter=200, n_init=1,
                                          init_params="k-means++", reg_covar=reg, random_state=seed).fit(X)
-                self.reg_covar = reg
+                self.reg_covar, self.failed = reg, False
                 break
             except ValueError:
                 continue
