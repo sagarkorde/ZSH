@@ -1,0 +1,11 @@
+| Data                         | Score / target                     |       n |   Positives |   ROC-AUC | ROC-AUC 95% CI   |   PR-AUC |   Base rate | H6 decision                           |
+|:-----------------------------|:-----------------------------------|--------:|------------:|----------:|:-----------------|---------:|------------:|:--------------------------------------|
+| Elliptic test (steps 35–49)  | IF (rank-power space) / illicit    |   16670 |        1083 |     0.175 | 0.118–0.278      |   0.0367 |     0.065   | supported (not positively associated) |
+| Elliptic test (steps 35–49)  | IF (unweighted space) / illicit    |   16670 |        1083 |     0.182 | 0.121–0.297      |   0.0368 |     0.065   | supported (not positively associated) |
+| Elliptic test (steps 35–49)  | LOF (rank-power space) / illicit   |   16670 |        1083 |     0.508 | 0.454–0.555      |   0.0603 |     0.065   | inconclusive                          |
+| Elliptic test (steps 35–49)  | distance to ZSH centroid / illicit |   16670 |        1083 |     0.269 | 0.199–0.373      |   0.041  |     0.065   | supported (not positively associated) |
+| Bitcoin TEST (exploratory)   | IF (ZSH space) / runes             | 2584530 |     1041406 |     0.926 | 0.926–0.927      |   0.779  |     0.403   |                                       |
+| Bitcoin TEST (exploratory)   | IF (ZSH space) / exchange_tag      | 2584530 |        8649 |     0.728 | 0.723–0.734      |   0.0229 |     0.00335 |                                       |
+| Bitcoin TEST (exploratory)   | IF (ZSH space) / P2WSH_inputs      | 2584530 |       36881 |     0.343 | 0.339–0.346      |   0.0101 |     0.0143  |                                       |
+| Bitcoin FUTURE (exploratory) | IF (ZSH space) / eocj              |  456292 |         388 |     0.907 | 0.892–0.918      |   0.0354 |     0.00085 |                                       |
+| Bitcoin FUTURE (exploratory) | IF (ZSH space) / runes             |  456292 |      137087 |     0.952 | 0.951–0.954      |   0.798  |     0.3     |                                       |

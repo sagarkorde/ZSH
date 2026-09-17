@@ -1,0 +1,8 @@
+| Period   | Partition              |   Runes transactions |   Profiles holding 80% |   Profiles holding 95% |   Profiles ≥ 90% Runes |   Share of Runes in such profiles |
+|:---------|:-----------------------|---------------------:|-----------------------:|-----------------------:|-----------------------:|----------------------------------:|
+| TEST     | ZSH, transferred       |              1041406 |                      4 |                      8 |                      0 |                          0        |
+| TEST     | ZSH, refitted          |              1041406 |                      7 |                     17 |                      2 |                          0.358    |
+| TEST     | K-means++, transferred |              1041406 |                      2 |                      9 |                      0 |                          0        |
+| FUTURE   | ZSH, transferred       |               137087 |                      2 |                      5 |                      1 |                          6.57e-05 |
+| FUTURE   | ZSH, refitted          |               137087 |                      8 |                     17 |                      3 |                          0.539    |
+| FUTURE   | K-means++, transferred |               137087 |                      2 |                      4 |                      1 |                          8.75e-05 |

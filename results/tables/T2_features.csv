@@ -1,0 +1,28 @@
+Feature,Most frequent value share,Kept,Reason if removed,rank,mi,weight
+input_count,0.8124527217712607,yes,,10.0,0.6084920539392211,0.0154498398258958
+output_count,0.46398520312666686,yes,,6.0,0.7423950685959486,0.0332427624151481
+vsize,0.09125940715525685,yes,,2.0,1.4610869521482606,0.1727344604609332
+total_input_value,0.0021902548660207733,yes,,7.0,0.6898711806083235,0.0263801293850637
+total_output_value,0.13814759050750147,no,|Spearman rho| = 0.9829 with kept feature total_input_value,,,
+fee,0.0027694131680777397,yes,,3.0,1.0501792495213895,0.0940247309164982
+fee_rate_sat_per_vbyte,0.002039934343875166,yes,,5.0,0.9620590375249152,0.0436987460365477
+avg_input_value,0.0022069234723070806,no,|Spearman rho| = 0.9852 with kept feature total_input_value,,,
+avg_output_value,0.13792695877338454,yes,,9.0,0.6281332180782235,0.0180950679017074
+input_output_ratio,0.0020978198675239783,yes,,8.0,0.6783539277112993,0.0215918075576166
+weight,0.053833233927826754,no,|Spearman rho| = 0.9994 with kept feature vsize,,,
+size,0.08008416736977879,yes,,1.0,1.494359575878552,0.4885668333461017
+input_address_count,0.9996281385470309,no,most frequent value covers 0.99963 of DEV rows,,,
+output_address_count,0.9998314955437239,no,most frequent value covers 0.99983 of DEV rows,,,
+input_script_count,0.9996284416125998,no,most frequent value covers 0.99963 of DEV rows,,,
+total_addresses,0.9994596340907548,no,most frequent value covers 0.99946 of DEV rows,,,
+value_difference,0.0027694131680777397,no,|Spearman rho| = 1.0000 with kept feature fee,,,
+fee_rate_sat_per_byte,0.0017020162346163916,yes,,4.0,0.9775095290818788,0.0610708541682627
+has_coinbase,0.9996284416125998,no,most frequent value covers 0.99963 of DEV rows,,,
+has_op_return,0.9871982073065472,yes,,12.0,0.0090831579935767,0.0117530913645622
+rbf_enabled,0.513353675094314,yes,,11.0,0.0873450241022504,0.0133916766216621
+value_concentration_ratio,0.8989076304636661,no,audit-only column (not a v2 candidate),,,
+is_consolidation,,no,count rule; used only as annotation (L1),,,
+is_distribution,,no,count rule; used only as annotation (L1),,,
+is_peer_to_peer,,no,count rule; used only as annotation (L1),,,
+is_batch_payment,,no,count rule; used only as annotation (L1),,,
+is_coinjoin_like,,no,count rule; used only as annotation (L1),,,

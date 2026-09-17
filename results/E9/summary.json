@@ -1,0 +1,154 @@
+{
+  "elliptic": {
+    "IF (rank-power space)": {
+      "n": 16670,
+      "positives": 1083,
+      "base_rate": 0.06496700659868027,
+      "roc_auc": 0.17520685283525508,
+      "pr_auc": 0.036677557541989446,
+      "roc_auc_ci": [
+        0.11760741041236826,
+        0.2783700059804292
+      ],
+      "pr_auc_ci": [
+        0.023997393128993336,
+        0.050920909181789674
+      ],
+      "h6_decision": "supported (not positively associated)"
+    },
+    "IF (unweighted space)": {
+      "n": 16670,
+      "positives": 1083,
+      "base_rate": 0.06496700659868027,
+      "roc_auc": 0.1817333513183471,
+      "pr_auc": 0.03684601574205023,
+      "roc_auc_ci": [
+        0.12139883899947242,
+        0.2968607890887897
+      ],
+      "pr_auc_ci": [
+        0.02437100369732675,
+        0.0519920350348897
+      ],
+      "h6_decision": "supported (not positively associated)"
+    },
+    "LOF (rank-power space)": {
+      "n": 16670,
+      "positives": 1083,
+      "base_rate": 0.06496700659868027,
+      "roc_auc": 0.5083678594060053,
+      "pr_auc": 0.06027877372101887,
+      "roc_auc_ci": [
+        0.45412989344226345,
+        0.5546430651724322
+      ],
+      "pr_auc_ci": [
+        0.035255156930117285,
+        0.08541180356148098
+      ],
+      "h6_decision": "inconclusive"
+    },
+    "distance to ZSH centroid": {
+      "n": 16670,
+      "positives": 1083,
+      "base_rate": 0.06496700659868027,
+      "roc_auc": 0.26933043914415744,
+      "pr_auc": 0.04095897705807699,
+      "roc_auc_ci": [
+        0.19945183855880558,
+        0.372569457491662
+      ],
+      "pr_auc_ci": [
+        0.026703535579533384,
+        0.055570284026269186
+      ],
+      "h6_decision": "supported (not positively associated)"
+    }
+  },
+  "bitcoin": {
+    "TEST": {
+      "runes": {
+        "n": 2584530,
+        "positives": 1041406,
+        "base_rate": 0.4029382518291527,
+        "roc_auc": 0.9263827053180256,
+        "pr_auc": 0.7791804525392055,
+        "roc_auc_ci": [
+          0.9256312853237094,
+          0.9271957299535475
+        ],
+        "pr_auc_ci": [
+          0.7761216850180317,
+          0.7817776423116023
+        ],
+        "h6_decision": "contradicted (positively associated)"
+      },
+      "exchange_tag": {
+        "n": 2584530,
+        "positives": 8649,
+        "base_rate": 0.003346449838075008,
+        "roc_auc": 0.7281020456757904,
+        "pr_auc": 0.022867511785752078,
+        "roc_auc_ci": [
+          0.7227150791169725,
+          0.73362111238453
+        ],
+        "pr_auc_ci": [
+          0.021439056151989884,
+          0.02428947383871284
+        ],
+        "h6_decision": "contradicted (positively associated)"
+      },
+      "P2WSH_inputs": {
+        "n": 2584530,
+        "positives": 36881,
+        "base_rate": 0.014269905940345053,
+        "roc_auc": 0.3425803942236906,
+        "pr_auc": 0.01013774902100021,
+        "roc_auc_ci": [
+          0.3389614231869984,
+          0.3458521315342624
+        ],
+        "pr_auc_ci": [
+          0.00996587190687032,
+          0.01034589401250677
+        ],
+        "h6_decision": "supported (not positively associated)"
+      }
+    },
+    "FUTURE": {
+      "eocj": {
+        "n": 456292,
+        "positives": 388,
+        "base_rate": 0.0008503326817038212,
+        "roc_auc": 0.9066607620052404,
+        "pr_auc": 0.03536512433287839,
+        "roc_auc_ci": [
+          0.892462738149473,
+          0.9179223532697867
+        ],
+        "pr_auc_ci": [
+          0.023969007208551076,
+          0.05491863401916956
+        ],
+        "h6_decision": "contradicted (positively associated)"
+      },
+      "runes": {
+        "n": 456292,
+        "positives": 137087,
+        "base_rate": 0.3004370008678653,
+        "roc_auc": 0.9524083505210323,
+        "pr_auc": 0.7981912839280911,
+        "roc_auc_ci": [
+          0.9505992089084399,
+          0.9539823815824011
+        ],
+        "pr_auc_ci": [
+          0.7906848338860406,
+          0.8047290911234483
+        ],
+        "h6_decision": "contradicted (positively associated)"
+      }
+    }
+  }
+}
