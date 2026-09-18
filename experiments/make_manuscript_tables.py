@@ -520,9 +520,25 @@ def t_proxy_k():
     save(pd.DataFrame(rows, columns=cols), "T_proxy_k", ["l", "r", "r", "l", "r", "r", "r", "r", "r"])
 
 
+def t_support():
+    """Appendix: share of each profile per period with block-bootstrap intervals, and Jaccard spread."""
+    d = pd.read_csv(R("E12") / "profile_support.csv")
+    rows = []
+    for _, r in d.iterrows():
+        row = [f"P{int(r.profile):02d}"]
+        for key in ("deve", "test", "pros"):
+            if f"{key}_share" in d.columns:
+                row.append(f"{pct(r[f'{key}_share'], 2)} ({pct(r[f'{key}_lo'], 2)}–{pct(r[f'{key}_hi'], 2)})")
+        row.append(f"{f(r.jaccard_mean, 2)} ({f(r.jaccard_p05, 2)}–{f(r.jaccard_p95, 2)})")
+        rows.append(row)
+    cols = ["Profile", "Development (%)", "Test (%)", "Prospective (%)", "Jaccard (5th–95th)"]
+    save(pd.DataFrame(rows, columns=cols[:len(rows[0])]), "T_support",
+         ["l"] + ["r"] * (len(rows[0]) - 1))
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
-            t_sensitivity, t_proxy_k, t_loo, t_representatives]
+            t_sensitivity, t_proxy_k, t_loo, t_representatives, t_support]
 
 
 def main():

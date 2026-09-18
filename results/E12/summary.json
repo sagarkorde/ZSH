@@ -1,0 +1,23 @@
+{
+  "profiles": 31,
+  "bootstrap_B": 1000,
+  "periods": {
+    "Development": {
+      "rows": 3299616,
+      "blocks": 63075
+    },
+    "Test": {
+      "rows": 2584530,
+      "blocks": 36259
+    },
+    "Prospective": {
+      "rows": 456292,
+      "blocks": 18400
+    }
+  },
+  "widest_share_interval_points": {
+    "Development": 0.5029122331901392,
+    "Test": 0.7336981774412721,
+    "Prospective": 1.270269238493077
+  }
+}
