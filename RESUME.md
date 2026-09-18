@@ -1,4 +1,4 @@
-# State — 18 Sep 2026, 03:10 IST
+# State — 19 Sep 2026, 01:00 IST
 
 All confirmatory experiments are finished and their results are committed.
 
@@ -33,6 +33,8 @@ Changes made after `v2-frozen` are listed with reasons in `DEVIATIONS.md`.
 | E8 | Elliptic, temporal split (Gaussian mixture failed to fit; logged) | done |
 | E9 | atypicality scores | done |
 | E10 | sensitivity and ablations | done |
+| E11–E16 | proxy size, profile support, actor hold-out, external CoinJoin labels, oracle weights, profile matching (all added after the freeze) | done |
+| E17 | the whole evaluation for seven clustering families (added after the freeze) | done |
 
 Rebuild tables and figures: `make_tables_figures.py`, then `make_manuscript_tables.py`.
 
@@ -42,6 +44,11 @@ Rebuild tables and figures: `make_tables_figures.py`, then `make_manuscript_tabl
   refinement caps cluster size but changes concentration by ≤ 0.21 AP lift.
 * All eleven non-input annotations are concentrated above their base rates in the
   test period; K-means++ is stronger for exchange tags and mixed-script inputs.
+* Read against the ceiling 1/π, the profiles capture 78–84% of what is attainable for
+  common annotations and under 11% for rare ones; oracle weights do not lift this.
+* Seven clustering families share the ceiling on rare annotations, the collapse of the
+  partition by 2026 and the failure of profile matching; ZSH has the highest median
+  attained share (22.6%) and much the strongest P2PKH concentration (80.9%).
 * Refits reproduce the partition (ARI 0.83; permuted-data reference 0.61);
   13 of 31 profiles are stable in Hennig's sense.
 * Transfer is weak: a 2024 refit agrees with the transferred partition at
