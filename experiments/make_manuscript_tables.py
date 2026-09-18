@@ -339,12 +339,13 @@ def t_concentration():
             b = k.loc[t]
             rows.append([lab, TARGET.get(t, t), n(a.positives), pct(a.base_rate, 2),
                          f"{f(a.ap_lift, 1)} ({ci(a.ap_lift_lo, a.ap_lift_hi, 1)})",
-                         pct(a["prec@0.25"], 1), int(a["clusters@0.25"]),
+                         f(1 / a.base_rate, 1) if a.base_rate > 0.01 else n(1 / a.base_rate),
+                         pct(a.ap, 1), pct(a["prec@0.25"], 1), int(a["clusters@0.25"]),
                          f(b.ap_lift, 1), f"{fa(-b.d_ap_lift)} ({ci(-b.d_ap_lift_hi, -b.d_ap_lift_lo, 2 if abs(b.d_ap_lift) < 1 else 1)})",
                          pval(b.d_ap_lift_p_holm)])
-    cols = ["Period", "Annotation", "Positives", "Base (%)", "ZSH AP lift (95% CI)",
-            "Prec. (%)", "Profiles", "KM++", "Difference (95% CI)", "p"]
-    save(pd.DataFrame(rows, columns=cols), "T_concentration", ["l", "l"] + ["r"] * 8)
+    cols = ["Period", "Annotation", "Positives", "Base (%)", "ZSH AP lift (95% CI)", "Maximum lift",
+            "Attained (%)", "Prec. (%)", "Profiles", "KM++", "Difference (95% CI)", "p"]
+    save(pd.DataFrame(rows, columns=cols), "T_concentration", ["l", "l"] + ["r"] * 10)
 
 
 def t_heuristic():
@@ -388,20 +389,20 @@ def t_elliptic():
     rows = []
     for _, r in c.iterrows():
         rows.append([r.setting, name.get(r.method, r.method), int(r.k),
-                     f"{f(r.ap_lift)} ({ci(r.ap_lift_lo, r.ap_lift_hi)})",
+                     f"{f(r.ap_lift)} ({ci(r.ap_lift_lo, r.ap_lift_hi)})", pct(r.ap, 1),
                      f"{f(r['enrich@0.25'])} ({ci(r['enrich@0.25_lo'], r['enrich@0.25_hi'])})",
                      pct(r["prec@0.25"]),
                      "" if pd.isna(r.get("d_ap_lift")) else
                      f"{f(-r.d_ap_lift)} ({ci(-r.d_ap_lift_hi, -r.d_ap_lift_lo)})",
                      pval(r.get("d_ap_lift_p_holm", np.nan))])
     for m in s.get("failed_baselines", []):
-        rows.append([m.split(", ")[-1], "Gaussian mixture (diag.)", "", "failed to fit", "", "", "", ""])
+        rows.append([m.split(", ")[-1], "Gaussian mixture (diag.)", "", "failed to fit", "", "", "", "", ""])
     rf = s["random_forest_reference"]
-    rows.append(["AF-165", "Random forest (supervised)", "", f(rf["ap"] / rf["base_rate"]), "",
+    rows.append(["AF-165", "Random forest (supervised)", "", f(rf["ap"] / rf["base_rate"]), pct(rf["ap"], 1), "",
                  f"{pct(rf['precision'])} (recall {pct(rf['recall'])})", "", ""])
-    cols = ["Features", "Method", "K", "AP lift (95% CI)", "Enrichment (95% CI)", "Prec. (%)",
-            "Difference (95% CI)", "p"]
-    save(pd.DataFrame(rows, columns=cols), "T_elliptic", ["l", "l", "r", "r", "r", "r", "r", "r"])
+    cols = ["Features", "Method", "K", "AP lift (95% CI)", "Attained (%)", "Enrichment (95% CI)",
+            "Prec. (%)", "Difference (95% CI)", "p"]
+    save(pd.DataFrame(rows, columns=cols), "T_elliptic", ["l", "l", "r", "r", "r", "r", "r", "r", "r"])
 
 
 def t_atypicality():
@@ -553,9 +554,44 @@ def t_cjsource():
          "T_cjsource", ["l", "r", "r", "r", "r"])
 
 
+def t_matching():
+    """Can profiles be followed across refits (E16)?"""
+    d = pd.read_csv(R("E16") / "matching.csv")
+    rows = [[r.period, r.method, int(r.profiles), int(r.refit_clusters), f(r.median_jaccard, 2),
+             f(r.mean_jaccard, 2), str(int(r["matched_0.5"])), pct(r["share_matched_0.5"], 1),
+             str(int(r["matched_0.75"]))] for _, r in d.iterrows()]
+    save(pd.DataFrame(rows, columns=["Period", "Method", "Profiles", "Refit clusters", "Median J",
+                                     "Mean J", "Matched at 0.5", "Their share (%)", "Matched at 0.75"]),
+         "T_matching", ["l", "l", "r", "r", "r", "r", "r", "r", "r"])
+
+
+def t_oracle():
+    """Oracle-weight upper bound (E15): concentration attained with weights from the annotation."""
+    c = pd.read_csv(R("E15") / "oracle_concentration.csv")
+    ref = "reference (unsupervised)"
+    rows = []
+    for t in [x for x in TARGET if x in set(c.target)]:
+        g = c[c.target == t].set_index("method")
+        if ref not in g.index:
+            continue
+        base = g.loc[ref, "base_rate"]
+        own_rp = f"oracle rank-power: {t}"
+        own_mi = f"oracle MI-direct: {t}"
+        best_other = g.drop(index=[i for i in (ref, own_rp, own_mi) if i in g.index]).ap_lift.max()
+        rows.append([TARGET[t], pct(base, 2), f(g.loc[ref, "ap_lift"], 1), pct(g.loc[ref, "ap"], 1),
+                     f(g.loc[own_rp, "ap_lift"], 1) if own_rp in g.index else "",
+                     pct(g.loc[own_rp, "ap"], 1) if own_rp in g.index else "",
+                     f(g.loc[own_mi, "ap_lift"], 1) if own_mi in g.index else "",
+                     f(best_other, 1) if pd.notna(best_other) else ""])
+    save(pd.DataFrame(rows, columns=["Annotation", "Base (%)", "ZSH lift", "ZSH attained (%)",
+                                     "Oracle lift", "Oracle attained (%)", "Oracle MI-direct lift",
+                                     "Best other oracle"]),
+         "T_oracle", ["l", "r", "r", "r", "r", "r", "r", "r"])
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
-            t_sensitivity, t_proxy_k, t_cjsource, t_loo, t_representatives, t_support]
+            t_sensitivity, t_proxy_k, t_cjsource, t_oracle, t_matching, t_loo, t_representatives, t_support]
 
 
 def main():
