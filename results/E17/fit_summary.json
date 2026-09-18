@@ -1,0 +1,13 @@
+{
+  "K": 31,
+  "dev_rows": 3299616,
+  "reference_rows": 200000,
+  "periods": {
+    "test": 2584530,
+    "future": 456292
+  },
+  "fit_caps": {
+    "BIRCH": 1000000,
+    "VKV-partial (K*)": 1000000
+  }
+}

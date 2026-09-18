@@ -335,6 +335,65 @@ for fam in ("ManyInManyOut", "SingleInFanOut"):
 check("LOO FanOut seeded", f"{piv.loc['FanOut', 'seeded, all families']:.1f}")
 check("LOO FanOut unseeded", f"{piv.loc['FanOut', 'unseeded ZSH']:.1f}")
 
+# ---------------------------------------------------------------- benchmark (E17)
+b_fit = csv("E17/fit_and_assignment.csv").set_index("method")
+b_st = csv("E17/stability_by_method.csv").set_index("method")
+b_tr = csv("E17/transfer_by_method.csv")
+b_c = csv("E17/test_independent.csv")
+b_cf = csv("E17/future_independent.csv")
+BM = ["ZSH", "K-means++ (K*)", "MiniBatchKMeans", "GMM (diag)", "BIRCH", "Ward (sample + NC)",
+      "VKV-partial (K*)"]
+check("benchmark fit rows", f"{int(b_fit.loc['ZSH', 'fit_rows']):,}")
+check("benchmark subsample rows", f"{int(b_fit.loc['BIRCH', 'fit_rows']):,}")
+check("benchmark largest test min", pct(b_fit.test_max_share.min(), 1))
+check("benchmark largest test max", pct(b_fit.test_max_share.max(), 1))
+check("benchmark largest prospective min", pct(b_fit.future_max_share.min(), 1))
+check("benchmark largest prospective max", pct(b_fit.future_max_share.max(), 1))
+check("benchmark top-3 prospective min", pct(b_fit.future_top3_share.min(), 1))
+check("benchmark top-3 prospective max", pct(b_fit.future_top3_share.max(), 1))
+for m, lab in (("ZSH", "ZSH"), ("GMM (diag)", "mixture"), ("K-means++ (K*)", "K-means++"),
+               ("BIRCH", "BIRCH"), ("VKV-partial (K*)", "Vlahavas")):
+    check(f"benchmark refit ARI {lab}", f"{b_st.loc[m, 'ari_mean']:.2f}")
+check("benchmark VKV ARI sd", f"{b_st.loc['VKV-partial (K*)', 'ari_sd']:.2f}")
+check("benchmark VKV ARI min", f"{b_st.loc['VKV-partial (K*)', 'ari_min']:.2f}")
+ap_t = b_c.pivot(index="target", columns="method", values="ap")
+med_t = (100 * ap_t.median()).round(1)
+for m, lab in (("ZSH", "ZSH"), ("GMM (diag)", "mixture"), ("K-means++ (K*)", "K-means++"),
+               ("MiniBatchKMeans", "mini-batch"), ("Ward (sample + NC)", "Ward"), ("BIRCH", "BIRCH"),
+               ("VKV-partial (K*)", "Vlahavas")):
+    check(f"benchmark median attained {lab}", f"{med_t[m]:.1f}%")
+med_f = (100 * b_cf.pivot(index="target", columns="method", values="ap").median()).round(1)
+for m, lab in (("ZSH", "ZSH"), ("GMM (diag)", "mixture"), ("MiniBatchKMeans", "mini-batch"),
+               ("K-means++ (K*)", "K-means++"), ("Ward (sample + NC)", "Ward"), ("BIRCH", "BIRCH"),
+               ("VKV-partial (K*)", "Vlahavas")):
+    check(f"benchmark median attained prospective {lab}", f"{med_f[m]:.1f}%")
+common = ["L2:P2WPKH", "L2:P2TR", "L3:runes"]
+rare = ["L2:coinbase", "L3:omni", "L4:exchange", "L3:other_opreturn", "L2:P2WSH"]
+check("benchmark common attained min", pct(ap_t.loc[common].min().min(), 1))
+check("benchmark common attained max", pct(ap_t.loc[common].max().max(), 1))
+for t, lab in (("L2:coinbase", "coinbase"), ("L3:omni", "Omni"), ("L4:exchange", "exchange"),
+               ("L3:other_opreturn", "other OP_RETURN"), ("L2:P2WSH", "P2WSH")):
+    check(f"benchmark rare ceiling {lab}", pct(ap_t.loc[t].max(), 1))
+for m, lab in (("ZSH", "ZSH"), ("MiniBatchKMeans", "mini-batch"), ("Ward (sample + NC)", "Ward"),
+               ("K-means++ (K*)", "K-means++")):
+    check(f"benchmark P2PKH attained {lab}", pct(ap_t.loc["L2:P2PKH", m], 1))
+check("benchmark mixed K-means++", pct(ap_t.loc["L2:mixed", "K-means++ (K*)"], 1))
+check("benchmark runes mixture", pct(ap_t.loc["L3:runes", "GMM (diag)"], 1))
+check("benchmark runes Vlahavas", pct(ap_t.loc["L3:runes", "VKV-partial (K*)"], 1))
+check("benchmark P2PKH prospective ZSH",
+      pct(b_cf.pivot(index="target", columns="method", values="ap").loc["L2:P2PKH", "ZSH"], 1))
+tt = b_tr[b_tr.period == "test"].set_index("method")
+tf = b_tr[b_tr.period == "future"].set_index("method")
+check("benchmark refit K test", str(int(tt.loc["ZSH", "refit_k"])))
+check("benchmark refit K prospective", str(int(tf.loc["ZSH", "refit_k"])))
+check("benchmark matched Vlahavas test", str(int(tt.loc["VKV-partial (K*)", "n_matched_ge_0.5"])))
+check("benchmark matched Vlahavas test share", pct(tt.loc["VKV-partial (K*)", "share_matched_ge_0.5"], 1))
+check("benchmark matched Vlahavas prospective", str(int(tf.loc["VKV-partial (K*)", "n_matched_ge_0.5"])))
+check("benchmark matched Vlahavas prospective share",
+      pct(tf.loc["VKV-partial (K*)", "share_matched_ge_0.5"], 1))
+check("benchmark matched BIRCH prospective share", pct(tf.loc["BIRCH", "share_matched_ge_0.5"], 1))
+check("benchmark matched K-means++ test share", pct(tt.loc["K-means++ (K*)", "share_matched_ge_0.5"], 1))
+
 # ---------------------------------------------------------------- report
 missing = []
 for label, variants in CHECKS:

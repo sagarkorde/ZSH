@@ -589,9 +589,58 @@ def t_oracle():
          "T_oracle", ["l", "r", "r", "r", "r", "r", "r", "r"])
 
 
+def fmt_matched(g):
+    return str(int(g["n_matched_ge_0.5"].iloc[0])) + "/" + str(int(g.profiles.iloc[0]))
+
+
+BENCH_SHORT = {"ZSH": "ZSH", "K-means++ (K*)": "KM++", "MiniBatchKMeans": "MBK", "GMM (diag)": "GMM",
+               "BIRCH": "BIRCH", "Ward (sample + NC)": "Ward", "VKV-partial (K*)": "VKV"}
+BENCH_LONG = {"ZSH": "ZSH", "K-means++ (K*)": "K-means++", "MiniBatchKMeans": "Mini-batch K-means",
+              "GMM (diag)": "Gaussian mixture (diag.)", "BIRCH": "BIRCH",
+              "Ward (sample + NC)": "Ward (sample)", "VKV-partial (K*)": "Vlahavas et al., partial"}
+
+
+def t_bench_battery():
+    """E17: every clustering family through the same battery."""
+    fa_ = pd.read_csv(R("E17") / "fit_and_assignment.csv").set_index("method")
+    st = pd.read_csv(R("E17") / "stability_by_method.csv").set_index("method")
+    tr = pd.read_csv(R("E17") / "transfer_by_method.csv")
+    rows = []
+    for m in BENCH_SHORT:
+        if m not in fa_.index:
+            continue
+        t = tr[(tr.method == m) & (tr.period == "test")]
+        p = tr[(tr.method == m) & (tr.period == "future")]
+        rows.append([BENCH_LONG[m], pct(fa_.loc[m, "test_max_share"], 1), pct(fa_.loc[m, "future_max_share"], 1),
+                     f(st.loc[m, "ari_mean"], 2) if m in st.index else "",
+                     f(t.ari.iloc[0], 2) if len(t) else "",
+                     f(p.ari.iloc[0], 2) if len(p) else "",
+                     fmt_matched(t) if len(t) else "",
+                     fmt_matched(p) if len(p) else ""])
+    save(pd.DataFrame(rows, columns=["Method", "Largest, test (%)", "Largest, prosp. (%)", "Refit ARI",
+                                     "ARI, test", "ARI, prosp.", "Matched, test", "Matched, prosp."]),
+         "T_bench_battery", ["l", "r", "r", "r", "r", "r", "r", "r"])
+
+
+def t_bench_attained():
+    """E17: share of the attainable concentration reached by each family, test period."""
+    c = pd.read_csv(R("E17") / "test_independent.csv")
+    methods = [m for m in BENCH_SHORT if m in set(c.method)]
+    rows = []
+    for t in [x for x in TARGET if x in set(c.target)]:
+        g = c[c.target == t].set_index("method")
+        rows.append([TARGET[t], pct(g.base_rate.iloc[0], 2), f(1.0 / g.base_rate.iloc[0], 0)]
+                    + [pct(g.loc[m, "ap"], 1) if m in g.index else "" for m in methods])
+    med = c.groupby("method").ap.median()
+    rows.append(["Median", "", ""] + [pct(med.get(m, np.nan), 1) for m in methods])
+    save(pd.DataFrame(rows, columns=["Annotation", "Base (%)", "Ceiling"] + [BENCH_SHORT[m] for m in methods]),
+         "T_bench_attained", ["l"] + ["r"] * (2 + len(methods)))
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
-            t_sensitivity, t_proxy_k, t_cjsource, t_oracle, t_matching, t_loo, t_representatives, t_support]
+            t_sensitivity, t_proxy_k, t_cjsource, t_oracle, t_matching, t_bench_battery,
+            t_bench_attained, t_loo, t_representatives, t_support]
 
 
 def main():

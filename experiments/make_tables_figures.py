@@ -752,12 +752,46 @@ def fig_sensitivity():
     savefig(fig, "F12_sensitivity")
 
 
+# ---------------------------------------------------------------------------
+# E17 benchmark across clustering families (added after the freeze)
+# ---------------------------------------------------------------------------
+BENCH_ORDER = ["ZSH", "K-means++ (K*)", "MiniBatchKMeans", "GMM (diag)", "BIRCH",
+               "Ward (sample + NC)", "VKV-partial (K*)"]
+BENCH_LABEL = {"ZSH": "ZSH", "K-means++ (K*)": "K-means++", "MiniBatchKMeans": "mini-batch K-means",
+               "GMM (diag)": "Gaussian mixture", "BIRCH": "BIRCH", "Ward (sample + NC)": "Ward",
+               "VKV-partial (K*)": "VKV-partial"}
+
+
+def fig_bench():
+    """Heat map: share of the attainable concentration reached by each family, test period."""
+    c = pd.read_csv(R("E17") / "test_independent.csv")
+    methods = [m for m in BENCH_ORDER if m in set(c.method)]
+    targets = list(dict.fromkeys(c.target))
+    piv = c.pivot(index="method", columns="target", values="ap").loc[methods, targets] * 100
+    base = c.groupby("target").base_rate.first()[targets]
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 2.9))
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("seq", ps.SEQ)
+    im = ax.imshow(piv.to_numpy(), aspect="auto", cmap=cmap, vmin=0, vmax=100)
+    for i in range(piv.shape[0]):
+        for j in range(piv.shape[1]):
+            v = piv.iloc[i, j]
+            ax.text(j, i, f"{v:.0f}" if v >= 10 else f"{v:.1f}", ha="center", va="center", fontsize=6,
+                    color=ps.INK if v < 55 else "white", weight="bold" if i == 0 else "normal")
+    ax.set_xticks(range(len(targets)),
+                  [f"{tlabel(t)}\n{100 * base[t]:.2f}%" for t in targets], rotation=35, ha="right")
+    ax.set_yticks(range(len(methods)), [BENCH_LABEL[m] for m in methods])
+    ax.grid(False)
+    cb = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
+    cb.set_label("attained share of the ceiling (%)", fontsize=6.5)
+    savefig(fig, "F13_bench")
+
+
 BUILDERS = [table_data, table_features, table_annotations, table_profiles,
             fig_pipeline, fig_design, fig_weights, fig_profiles,
             table_methods, fig_methods, table_factorial, fig_factorial,
             table_stability, fig_stability, table_transfer, fig_drift,
             table_concentration, fig_curves, table_heuristic,
-            table_elliptic, fig_elliptic, table_atypicality, fig_atypicality,
+            table_elliptic, fig_elliptic, table_atypicality, fig_atypicality, fig_bench,
             table_sensitivity, fig_sensitivity]
 
 
