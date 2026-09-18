@@ -1,0 +1,13 @@
+feature,K_p=10 (reference),K_p=5,K_p=20,K_p=50
+input_count,10,6,10,10
+output_count,6,3,8,8
+vsize,2,1,1,4
+total_input_value,8,5,7,7
+fee,3,8,4,5
+fee_rate_sat_per_vbyte,5,9,5,2
+avg_output_value,9,4,9,9
+input_output_ratio,7,7,6,6
+size,1,2,2,3
+fee_rate_sat_per_byte,4,10,3,1
+has_op_return,12,12,12,12
+rbf_enabled,11,11,11,11

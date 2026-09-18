@@ -30,9 +30,9 @@ def ranks_from_scores(scores, higher_is_better=True):
     return ranks
 
 
-def proxy_partition(X, seed, sample_weight=None):
+def proxy_partition(X, seed, sample_weight=None, proxy_k=None):
     wc = CFG["weighting"]
-    km = MiniBatchKMeans(n_clusters=wc["proxy_k"], n_init=wc["proxy_n_init"],
+    km = MiniBatchKMeans(n_clusters=wc["proxy_k"] if proxy_k is None else proxy_k, n_init=wc["proxy_n_init"],
                          batch_size=CFG["fit"]["batch_size"], random_state=seed)
     km.fit(X, sample_weight=sample_weight)
     return km.predict(X)
@@ -88,7 +88,7 @@ def laplacian_scores(X, seed):
     return scores
 
 
-def fit_weights(X, is_binary, scheme, s, seed, sample_weight=None):
+def fit_weights(X, is_binary, scheme, s, seed, sample_weight=None, proxy_k=None):
     """Return dict with weights and the relevance information behind them.
 
     scheme: 'uniform' | 'rpw' (MI rank-power) | 'mi_direct' | 'laplacian_rpw'
@@ -99,7 +99,7 @@ def fit_weights(X, is_binary, scheme, s, seed, sample_weight=None):
         info["w"] = np.full(d, 1.0 / d)
         return info
     if scheme in ("rpw", "mi_direct"):
-        proxy = proxy_partition(X, seed, sample_weight)
+        proxy = proxy_partition(X, seed, sample_weight, proxy_k)
         scores = mi_scores(X, proxy, is_binary, seed, sample_weight)
         info["scores"] = scores
         info["proxy_sizes"] = np.bincount(proxy).tolist()

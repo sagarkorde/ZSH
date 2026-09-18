@@ -497,9 +497,32 @@ def t_representatives():
          "T_representatives", ["l", "r", "L", "L"])
 
 
+def t_proxy_k():
+    """Sensitivity to the size of the proxy partition (E11)."""
+    g = pd.read_csv(R("E11") / "variants_geometry.csv")
+    c = pd.read_csv(R("E11") / "variants_independent.csv")
+    ref = f"K_p={js('E11/summary.json')['proxy_k_reference']} (reference)"
+    rows = []
+    for _, r in g.sort_values("proxy_k").iterrows():
+        d = c[c.method == r.variant]
+        hi = lo = ""
+        if r.variant != ref:
+            hi = int(((d.d_ap_lift_lo > 0) & (d.d_ap_lift_p_holm < 0.05)).sum())
+            lo = int(((d.d_ap_lift_hi < 0) & (d.d_ap_lift_p_holm < 0.05)).sum())
+        rows.append([str(int(r.proxy_k)) + (" (reference)" if r.variant == ref else ""),
+                     int(r.k), f(r.kendall_tau_vs_reference, 2), NICE.get(r.top_feature, r.top_feature),
+                     f(r.common_silhouette, 3), f(d.ap_lift.median(), 2),
+                     f(d[d.target == "L2:P2PKH"].ap_lift.iloc[0], 1),
+                     f(d[d.target == "L3:omni"].ap_lift.iloc[0], 1),
+                     f"{hi} / {lo}" if hi != "" else ""])
+    cols = ["Proxy clusters", "K", "τ", "Top-ranked feature", "Silh.", "Median lift", "P2PKH", "Omni",
+            "Higher / lower"]
+    save(pd.DataFrame(rows, columns=cols), "T_proxy_k", ["l", "r", "r", "l", "r", "r", "r", "r", "r"])
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
-            t_sensitivity, t_loo, t_representatives]
+            t_sensitivity, t_proxy_k, t_loo, t_representatives]
 
 
 def main():
