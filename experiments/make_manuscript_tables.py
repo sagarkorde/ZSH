@@ -88,12 +88,15 @@ def save(df, name, align=None):
         cells = ["" if pd.isna(v) else str(v) for v in df.iloc[:, i]]
         longest_word = max(len(w) for w in str(c).split())
         longest_cell = max([len(x) for x in cells] + [0])
-        if align[i] == "l":
+        if align[i] == "L":                      # wide text column
+            widths.append(min(max(longest_word + 2, longest_cell + 1), 44))
+        elif align[i] == "l":
             widths.append(min(max(longest_word + 2, min(longest_cell + 1, 14)), 14))
         else:
             widths.append(max(longest_word + 2, min(longest_cell + 3, 18), 9))
     sep = [("-" * (w - 1) + ":") if a == "r" else (":" + "-" * (w - 2) + ":" if a == "c" else ":" + "-" * (w - 1))
            for a, w in zip(align, widths)]
+    align = ["l" if a == "L" else a for a in align]
     lines = ["| " + " | ".join(cols) + " |", "|" + "|".join(sep) + "|"]
     for _, r in df.iterrows():
         lines.append("| " + " | ".join("" if pd.isna(v) else str(v) for v in r) + " |")
@@ -482,9 +485,21 @@ def t_loo():
     save(pd.DataFrame(rows, columns=cols), "T_loo", ["l", "l", "r", "r", "r", "r"])
 
 
+def t_representatives():
+    """Appendix: the transaction closest to each profile centroid, with the profile descriptor."""
+    d = pd.read_csv(R("E1") / "profiles_dev.csv")
+    rows = []
+    for _, r in d.iterrows():
+        t = str(r.representative_txid)
+        rows.append([f"P{int(r.profile):02d}", pct(r.share), r.descriptor, t[:32] + " " + t[32:]])
+    save(pd.DataFrame(rows, columns=["Profile", "Share (%)", "Description of its members",
+                                     "Transaction closest to the centroid"]),
+         "T_representatives", ["l", "r", "L", "L"])
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
-            t_sensitivity, t_loo]
+            t_sensitivity, t_loo, t_representatives]
 
 
 def main():
