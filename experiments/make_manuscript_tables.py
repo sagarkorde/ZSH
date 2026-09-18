@@ -536,9 +536,26 @@ def t_support():
          ["l"] + ["r"] * (len(rows[0]) - 1))
 
 
+def t_cjsource():
+    """External CoinJoin labels against the two rules (E14)."""
+    d = pd.read_csv(R("E14") / "coinjoin_source.csv")
+    rows = []
+    for _, r in d.iterrows():
+        cj = int(r.known_coinjoins)
+        rows.append([r.period, n(r.transactions), str(cj),
+                     "" if not cj else f"{pct(r.count_rule_recall)} ({pct(r.count_rule_recall_lo)}–"
+                                       f"{pct(r.count_rule_recall_hi)})",
+                     "" if pd.isna(r.get("equal_output_recall")) else
+                     f"{pct(r.equal_output_recall)} ({pct(r.equal_output_recall_lo)}–"
+                     f"{pct(r.equal_output_recall_hi)})"])
+    save(pd.DataFrame(rows, columns=["Period", "Transactions", "On the external list",
+                                     "Count rule recall (%)", "Equal-output recall (%)"]),
+         "T_cjsource", ["l", "r", "r", "r", "r"])
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
-            t_sensitivity, t_proxy_k, t_loo, t_representatives, t_support]
+            t_sensitivity, t_proxy_k, t_cjsource, t_loo, t_representatives, t_support]
 
 
 def main():

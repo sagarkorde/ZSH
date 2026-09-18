@@ -1,0 +1,4 @@
+period,transactions,known_coinjoins,count_rule_recall,count_rule_recall_lo,count_rule_recall_hi,equal_output_recall,known_among_rule_flagged,rule_flagged,equal_output_recall_lo,equal_output_recall_hi,known_among_equal_output,equal_output_flagged
+Development,3299616,0,,,,,0,53261,,,,
+Test,2584530,175,0.9885714285714285,0.9592938747417158,0.9968602579166367,,173,57088,,,,
+Prospective,456292,45,1.0,0.921348400123914,0.9999999999999999,0.9777777777777777,45,5152,0.8843331811799517,0.9960664011606768,44.0,388.0
