@@ -1,0 +1,15 @@
+{
+ "note": "descriptive audit numbers quoted in Section 3.3; computed after the freeze, presentation only",
+ "all_rows": {
+  "rows": 5884387,
+  "value_difference_equals_fee_share": 0.9996587579980718,
+  "value_concentration_ratio_is_one_share": 0.9998402552381412,
+  "rows_with_zero_output_value": 940
+ },
+ "development": {
+  "rows": 3299616,
+  "value_difference_equals_fee_share": 0.9996226833667917,
+  "value_concentration_ratio_is_one_share": 0.9998324047404304,
+  "rows_with_zero_output_value": 553
+ }
+}
