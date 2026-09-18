@@ -261,6 +261,17 @@ check("kmeans++ start P2PKH", f"{c10.loc['init=k-means++', 'L2:P2PKH']:.1f}")
 check("kmeans++ start exchange", f"{c10.loc['init=k-means++', 'L4:exchange']:.1f}")
 check("blend P2SH", f"{c10.loc['init=seed-Ward blend', 'L2:P2SH']:.1f}")
 check("blend Omni", f"{c10.loc['init=seed-Ward blend', 'L3:omni']:.1f}")
+# ---------------------------------------------------------------- proxy partition size (E11)
+g11 = csv("E11/variants_geometry.csv").set_index("proxy_k")
+c11 = csv("E11/variants_independent.csv")
+for kp in (5, 20, 50):
+    check(f"proxy K={kp} tau", f"{g11.loc[kp, 'kendall_tau_vs_reference']:.2f}")
+v11 = c11.pivot(index="method", columns="target", values="ap_lift")
+check("proxy K=5 P2PKH", f"{v11.loc['K_p=5', 'L2:P2PKH']:.1f}")
+check("proxy K=50 P2PKH", f"{v11.loc['K_p=50', 'L2:P2PKH']:.1f}")
+check("proxy K=50 Omni", f"{v11.loc['K_p=50', 'L3:omni']:.1f}")
+check("proxy K=5 K", str(int(g11.loc[5, "k"])))
+
 loo = csv("E10/loo_seeded.csv")
 piv = loo.pivot_table(index="family", columns="method", values="ap_lift")
 for fam in ("ManyInManyOut", "SingleInFanOut"):

@@ -1,0 +1,13 @@
+{
+  "rows": 1000000,
+  "proxy_k_reference": 10,
+  "proxy_k_values": [
+    5,
+    20,
+    50
+  ],
+  "skipped": {
+    "L4:miner": 219,
+    "L4:coinjoin": 0
+  }
+}

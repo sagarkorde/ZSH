@@ -192,7 +192,7 @@ def finalize(X, labels, sample_weight=None):
 # ---------------------------------------------------------------------------
 class ZSH:
     def __init__(self, features, weighting="rpw", s=None, init="ward", k0=None, cap=None,
-                 depth=None, refine=True, lam=None, exclude_family=None, name="ZSH"):
+                 depth=None, refine=True, lam=None, exclude_family=None, proxy_k=None, name="ZSH"):
         self.features = list(features)
         self.weighting = weighting
         self.s = CFG["weighting"]["s"] if s is None else s
@@ -203,6 +203,7 @@ class ZSH:
         self.refine_on = refine and self.cap is not None
         self.lam = CFG["e10"]["blend_lambda"] if lam is None else lam
         self.exclude_family = exclude_family
+        self.proxy_k = proxy_k          # None = the configured value (10)
         self.name = name
         self.timing = {}
 
@@ -211,7 +212,8 @@ class ZSH:
                 "s": self.s, "init": self.init, "k0": self.k0,
                 "cap": self.cap if self.refine_on else None, "depth": self.depth,
                 "lam": self.lam if self.init == "blend" else None,
-                "exclude_family": self.exclude_family}
+                "exclude_family": self.exclude_family,
+                "proxy_k": self.proxy_k or CFG["weighting"]["proxy_k"]}
 
     def fit(self, df, seed, sample_weight=None, log=None):
         t = time.time()
@@ -220,7 +222,8 @@ class ZSH:
         self.timing["preprocess"] = time.time() - t
 
         t = time.time()
-        self.winfo = fit_weights(X, self.prep.is_binary, self.weighting, self.s, seed, sample_weight)
+        self.winfo = fit_weights(X, self.prep.is_binary, self.weighting, self.s, seed, sample_weight,
+                                 self.proxy_k)
         self.w = np.asarray(self.winfo["w"], dtype=np.float64)
         self.sqrt_w = np.sqrt(self.w).astype(np.float32)
         Xw = X * self.sqrt_w
