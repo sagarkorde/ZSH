@@ -192,7 +192,8 @@ def finalize(X, labels, sample_weight=None):
 # ---------------------------------------------------------------------------
 class ZSH:
     def __init__(self, features, weighting="rpw", s=None, init="ward", k0=None, cap=None,
-                 depth=None, refine=True, lam=None, exclude_family=None, proxy_k=None, name="ZSH"):
+                 depth=None, refine=True, lam=None, exclude_family=None, proxy_k=None, fixed_w=None,
+                 name="ZSH"):
         self.features = list(features)
         self.weighting = weighting
         self.s = CFG["weighting"]["s"] if s is None else s
@@ -204,6 +205,7 @@ class ZSH:
         self.lam = CFG["e10"]["blend_lambda"] if lam is None else lam
         self.exclude_family = exclude_family
         self.proxy_k = proxy_k          # None = the configured value (10)
+        self.fixed_w = None if fixed_w is None else np.asarray(fixed_w, dtype=np.float64)
         self.name = name
         self.timing = {}
 
@@ -213,7 +215,8 @@ class ZSH:
                 "cap": self.cap if self.refine_on else None, "depth": self.depth,
                 "lam": self.lam if self.init == "blend" else None,
                 "exclude_family": self.exclude_family,
-                "proxy_k": self.proxy_k or CFG["weighting"]["proxy_k"]}
+                "proxy_k": self.proxy_k or CFG["weighting"]["proxy_k"],
+                "fixed_w": None if self.fixed_w is None else self.fixed_w.round(6).tolist()}
 
     def fit(self, df, seed, sample_weight=None, log=None):
         t = time.time()
@@ -222,8 +225,12 @@ class ZSH:
         self.timing["preprocess"] = time.time() - t
 
         t = time.time()
-        self.winfo = fit_weights(X, self.prep.is_binary, self.weighting, self.s, seed, sample_weight,
-                                 self.proxy_k)
+        if self.fixed_w is not None:
+            self.winfo = {"scheme": "fixed", "s": self.s, "w": self.fixed_w,
+                          "ranks": np.argsort(np.argsort(-self.fixed_w)) + 1}
+        else:
+            self.winfo = fit_weights(X, self.prep.is_binary, self.weighting, self.s, seed, sample_weight,
+                                     self.proxy_k)
         self.w = np.asarray(self.winfo["w"], dtype=np.float64)
         self.sqrt_w = np.sqrt(self.w).astype(np.float32)
         Xw = X * self.sqrt_w

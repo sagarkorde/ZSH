@@ -1,0 +1,12 @@
+{
+  "rows": 1000000,
+  "targets": [
+    "L2:P2PKH",
+    "L2:P2SH",
+    "L2:P2WSH",
+    "L4:exchange"
+  ],
+  "skipped": {},
+  "s": 1.5,
+  "mi_rows": 200000
+}
