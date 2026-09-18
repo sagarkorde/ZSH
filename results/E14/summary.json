@@ -1,0 +1,42 @@
+{
+  "source": {
+    "file": "wasabi2_txid_coord.json",
+    "sha256": "09ab68ff0651db257a36f1672cb0d767fff704cd1d0accbaf5c0d99b92ebd12a",
+    "transactions": 42241,
+    "coordinators": [
+      "btip",
+      "coinjoin_nl",
+      "dragonordnance",
+      "gingerwallet",
+      "kruw",
+      "mega",
+      "opencoordinator",
+      "unknown_2024_28ce7b",
+      "unknown_2024_e85631",
+      "wasabicoordinator",
+      "wasabist"
+    ]
+  },
+  "prospective_coordinators": {
+    "kruw": 20,
+    "opencoordinator": 15,
+    "gingerwallet": 8,
+    "coinjoin_nl": 2
+  },
+  "profiles": {
+    "Test": {
+      "known": 175,
+      "profiles_used": 11,
+      "largest_profile": 29,
+      "largest_share": 0.4114285714285714,
+      "profiles_for_80pct": 4
+    },
+    "Prospective": {
+      "known": 45,
+      "profiles_used": 5,
+      "largest_profile": 30,
+      "largest_share": 0.4222222222222222,
+      "profiles_for_80pct": 3
+    }
+  }
+}

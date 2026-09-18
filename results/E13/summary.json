@@ -1,0 +1,34 @@
+{
+  "inputs": {
+    "AddrTx_edgelist.csv": "f5f903f752387f66a1bccaeff54e293b2e8470fcddf5eb56b88aa06fd23a8f3b",
+    "TxAddr_edgelist.csv": "9f5afbdde7bc3d91fb7a4655be55799d6504cd0063ae55a0753a5a41189932b8"
+  },
+  "components": {
+    "transactions_with_addresses": 202804,
+    "addresses": 822942,
+    "components": 2,
+    "largest_component_transactions": 202803,
+    "largest_component_share": 0.9999950691307864
+  },
+  "random_address_split": {
+    "transactions": 46045,
+    "addresses": 345278,
+    "addresses_per_transaction_median": 3.0,
+    "clean_share_mean": 0.2031563325732074,
+    "clean_share_by_seed": [
+      0.20086871538712128,
+      0.20430014116625042,
+      0.20430014116625042
+    ]
+  },
+  "holdout": {
+    "labelled_training": 29894,
+    "training_with_addresses": 29699,
+    "training_actor_disjoint": 18641,
+    "training_actor_disjoint_share": 0.6276642311188929,
+    "evaluation_transactions": 16346
+  },
+  "evaluated_rows": 34987,
+  "illicit_in_ranking_set": 3438,
+  "illicit_in_evaluation_set": 1083
+}
