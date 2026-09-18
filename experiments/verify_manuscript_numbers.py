@@ -261,6 +261,16 @@ check("kmeans++ start P2PKH", f"{c10.loc['init=k-means++', 'L2:P2PKH']:.1f}")
 check("kmeans++ start exchange", f"{c10.loc['init=k-means++', 'L4:exchange']:.1f}")
 check("blend P2SH", f"{c10.loc['init=seed-Ward blend', 'L2:P2SH']:.1f}")
 check("blend Omni", f"{c10.loc['init=seed-Ward blend', 'L3:omni']:.1f}")
+# ---------------------------------------------------------------- profile support (E12)
+s12 = js("E12/summary.json")["widest_share_interval_points"]
+for per in s12:
+    check(f"widest share interval {per}", f"{s12[per]:.2f}")
+sup = csv("E12/profile_support.csv")
+check("widest Jaccard spread", f"{(sup.jaccard_p95 - sup.jaccard_p05).max():.2f}")
+check("mean Jaccard spread", f"{(sup.jaccard_p95 - sup.jaccard_p05).mean():.2f}")
+check("relative width of development intervals",
+      pct(((sup.deve_hi - sup.deve_lo) / sup.deve_share).max(), 1))
+
 # ---------------------------------------------------------------- proxy partition size (E11)
 g11 = csv("E11/variants_geometry.csv").set_index("proxy_k")
 c11 = csv("E11/variants_independent.csv")
