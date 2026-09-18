@@ -1,0 +1,31 @@
+{
+  "test": {
+    "independent": {
+      "skipped": {
+        "L4:miner": 219,
+        "L4:coinjoin": 0
+      },
+      "targets": 11
+    },
+    "structural": {
+      "skipped": {},
+      "targets": 5
+    }
+  },
+  "future": {
+    "independent": {
+      "skipped": {
+        "L2:coinbase": 284,
+        "L3:omni": 16,
+        "L4:miner": 6,
+        "L4:coinjoin": 0,
+        "L5:eocj": 388
+      },
+      "targets": 9
+    },
+    "structural": {
+      "skipped": {},
+      "targets": 5
+    }
+  }
+}
