@@ -397,6 +397,20 @@ check("benchmark matched Vlahavas prospective share",
 check("benchmark matched BIRCH prospective share", pct(tf.loc["BIRCH", "share_matched_ge_0.5"], 1))
 check("benchmark matched K-means++ test share", pct(tt.loc["K-means++ (K*)", "share_matched_ge_0.5"], 1))
 
+# ---------------------------------------------------------------- feature ceiling (E18)
+fc = csv("E18/feature_ceiling.csv")
+piv18 = fc.pivot(index="target", columns="method", values="ap")
+b18 = fc.groupby("target").base_rate.first()
+for t, lab in (("L2:P2SH", "P2SH"), ("L2:mixed", "mixed"), ("L2:coinbase", "coinbase"),
+               ("L2:P2WSH", "P2WSH"), ("L3:other_opreturn", "other OP_RETURN"),
+               ("L2:P2PKH", "P2PKH"), ("L4:exchange", "exchange"), ("L3:omni", "Omni")):
+    check(f"supervised in-period {lab}", pct(piv18.loc[t, "supervised in-period"], 1))
+for t, lab in (("L2:coinbase", "coinbase"), ("L3:other_opreturn", "other OP_RETURN"),
+               ("L4:exchange", "exchange"), ("L3:omni", "Omni")):
+    check(f"supervised transfer {lab}", pct(piv18.loc[t, "supervised transfer"], 1))
+check("supervised common classes", pct(piv18.loc[["L2:P2WPKH", "L2:P2TR"], "supervised in-period"].min(), 1))
+check("E18 Omni positives", f"{int(fc[(fc.target == 'L3:omni') & (fc.method == 'ZSH')].positives.iloc[0]):,}")
+
 # ---------------------------------------------------------------- report
 missing = []
 for label, variants in CHECKS:

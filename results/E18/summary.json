@@ -1,0 +1,8 @@
+{
+  "K": 31,
+  "train_rows": 1500000,
+  "skipped": {
+    "L4:miner": 219
+  },
+  "model": "HistGradientBoostingClassifier(max_iter=200, max_leaf_nodes=31)"
+}
