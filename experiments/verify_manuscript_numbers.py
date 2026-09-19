@@ -19,6 +19,9 @@ HERE = Path(__file__).resolve().parent.parent  # repository root
 RES = HERE / "results"
 MS = Path(os.environ.get("ZSH_MANUSCRIPT", HERE.parent / "Fintech MDPI" / "Fintech MDPI Revised" / "v2_work" / "manuscript.md"))
 TEXT = MS.read_text(encoding="utf-8") if MS.exists() else ""
+SUPP = MS.parent / "supplementary.md"     # numbers may live in the Supplementary Materials
+if SUPP.exists():
+    TEXT += chr(10) + SUPP.read_text(encoding="utf-8")
 VERBOSE = "-v" in sys.argv
 
 
