@@ -1,0 +1,19 @@
+{
+  "K": 31,
+  "annotations": [
+    "L2:coinbase",
+    "L2:P2PKH",
+    "L2:P2SH",
+    "L2:P2WPKH",
+    "L2:P2WSH",
+    "L2:P2TR",
+    "L2:mixed",
+    "L3:runes",
+    "L3:omni",
+    "L3:other_opreturn",
+    "L4:exchange",
+    "L4:miner"
+  ],
+  "rows": 2584530,
+  "construction": "eleven out-of-fold gradient-boosted scores per transaction, standardised, partitioned by K-means into K* clusters"
+}

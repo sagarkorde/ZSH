@@ -642,15 +642,20 @@ def t_ceiling():
     c = pd.read_csv(R("E18") / "feature_ceiling.csv")
     piv = c.pivot(index="target", columns="method", values="ap")
     base = c.groupby("target").base_rate.first()
+    cols = [("supervised in-period, equal cells", "Equal cells (%)"),
+            ("supervised in-period, free cells", "Bound (%)"),
+            ("supervised transfer, free cells", "A year earlier (%)")]
     rows = []
     for t in [x for x in TARGET if x in piv.index]:
         prof = piv.loc[t, "ZSH"]
-        ip = piv.loc[t].get("supervised in-period", np.nan)
-        tr = piv.loc[t].get("supervised transfer", np.nan)
-        rows.append([TARGET[t], pct(base[t], 2), f(1.0 / base[t], 0), pct(prof, 1),
-                     pct(ip, 1), pct(tr, 1), fa(100 * (ip - prof), 0)])
-    save(pd.DataFrame(rows, columns=["Annotation", "Base (%)", "Ceiling", "Profiles (%)",
-                                     "Supervised (%)", "A year earlier (%)", "Gap"]),
+        r = [TARGET[t], pct(base[t], 2), f(1.0 / base[t], 0), pct(prof, 1)]
+        r += [pct(piv.loc[t][m], 1) if m in piv.columns else "" for m, _ in cols]
+        rows.append(r)
+    med = ["Median", "", "", pct(piv["ZSH"].median(), 1)]
+    med += [pct(piv[m].median(), 1) if m in piv.columns else "" for m, _ in cols]
+    rows.append(med)
+    save(pd.DataFrame(rows, columns=["Annotation", "Base (%)", "Ceiling", "Profiles (%)"]
+                      + [h for _, h in cols]),
          "T_ceiling", ["l", "r", "r", "r", "r", "r", "r"])
 
 
