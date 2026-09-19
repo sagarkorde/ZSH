@@ -400,29 +400,40 @@ check("benchmark matched K-means++ test share", pct(tt.loc["K-means++ (K*)", "sh
 # ---------------------------------------------------------------- feature ceiling (E18)
 fc = csv("E18/feature_ceiling.csv")
 piv18 = fc.pivot(index="target", columns="method", values="ap")
-b18 = fc.groupby("target").base_rate.first()
+FREE, EQUAL, TRANS = ("supervised in-period, free cells", "supervised in-period, equal cells",
+                      "supervised transfer, free cells")
 for t, lab in (("L2:P2SH", "P2SH"), ("L2:mixed", "mixed"), ("L2:coinbase", "coinbase"),
                ("L2:P2WSH", "P2WSH"), ("L3:other_opreturn", "other OP_RETURN"),
                ("L2:P2PKH", "P2PKH"), ("L4:exchange", "exchange"), ("L3:omni", "Omni")):
-    check(f"supervised in-period {lab}", pct(piv18.loc[t, "supervised in-period"], 1))
-for t, lab in (("L2:coinbase", "coinbase"), ("L3:other_opreturn", "other OP_RETURN"),
-               ("L4:exchange", "exchange"), ("L3:omni", "Omni")):
-    check(f"supervised transfer {lab}", pct(piv18.loc[t, "supervised transfer"], 1))
-check("supervised common classes", pct(piv18.loc[["L2:P2WPKH", "L2:P2TR"], "supervised in-period"].min(), 1))
-check("E18 Omni positives", f"{int(fc[(fc.target == 'L3:omni') & (fc.method == 'ZSH')].positives.iloc[0]):,}")
+    check(f"bound free cells {lab}", pct(piv18.loc[t, FREE], 1))
+for t, lab in (("L2:P2SH", "P2SH"), ("L2:P2PKH", "P2PKH"), ("L2:P2WSH", "P2WSH"),
+               ("L2:coinbase", "coinbase"), ("L4:exchange", "exchange"),
+               ("L3:other_opreturn", "other OP_RETURN"), ("L3:omni", "Omni")):
+    check(f"bound a year earlier {lab}", pct(piv18.loc[t, TRANS], 1))
+for t, lab in (("L2:P2WSH", "P2WSH"), ("L4:exchange", "exchange")):
+    check(f"bound equal cells {lab}", pct(piv18.loc[t, EQUAL], 1))
+check("bound median free cells", pct(piv18[FREE].median(), 1))
+check("profiles median attained", pct(piv18["ZSH"].median(), 1))
+check("profiles P2SH attained", pct(piv18.loc["L2:P2SH", "ZSH"], 1))
+check("profiles exchange attained", pct(piv18.loc["L4:exchange", "ZSH"], 1))
 
 # ---------------------------------------------------------------- richer features (E19)
 rf19 = csv("E19/richer_features.csv")
 p19 = rf19.pivot(index="target", columns="method", values="ap")
-for t, lab in (("L4:exchange", "exchange"), ("L3:other_opreturn", "other OP_RETURN")):
-    check(f"E19 supervised 12 {lab}", pct(p19.loc[t, "supervised (12 features)"], 1))
-    check(f"E19 supervised 24 {lab}", pct(p19.loc[t, "supervised (12 + address features)"], 1))
-    check(f"E19 frozen {lab}", pct(p19.loc[t, "ZSH (frozen, 12 features)"], 1))
-    check(f"E19 refit 24 {lab}", pct(p19.loc[t, "ZSH refit (12 + address features)"], 1))
+S12, S24 = "supervised (12 features)", "supervised (12 + address features)"
+for t, lab in (("L4:exchange", "exchange"), ("L3:other_opreturn", "other OP_RETURN"),
+               ("L3:runes", "Runes")):
+    check(f"E19 bound 12 {lab}", pct(p19.loc[t, S12], 1))
+    check(f"E19 bound 24 {lab}", pct(p19.loc[t, S24], 1))
+check("E19 exchange gain", f"{100 * (p19.loc['L4:exchange', S24] - p19.loc['L4:exchange', S12]):.0f}")
+check("E19 frozen exchange", pct(p19.loc["L4:exchange", "ZSH (frozen, 12 features)"], 1))
+check("E19 refit24 exchange", pct(p19.loc["L4:exchange", "ZSH refit (12 + address features)"], 1))
+check("E19 frozen other OP_RETURN", pct(p19.loc["L3:other_opreturn", "ZSH (frozen, 12 features)"], 1))
+check("E19 refit24 other OP_RETURN",
+      pct(p19.loc["L3:other_opreturn", "ZSH refit (12 + address features)"], 1))
 s19 = js("E19/summary.json")
 check("E19 rows", f"{s19['rows']:,}")
 check("E19 new features", str(len(s19["new_features"])))
-check("E19 exchange positives", f"{int(rf19[rf19.target == 'L4:exchange'].positives.iloc[0]):,}")
 
 # ---------------------------------------------------------------- report
 missing = []

@@ -1,11 +1,14 @@
-"""E19 (added after the freeze): can richer features lift the one ceiling that is real?
+"""E19 (added after the freeze): do address-level features add anything the twelve lack?
 
-Section 6.8 finds that for eight of ten annotations the twelve features carry more
-than the profiles recover, so the clustering objective is the limit. Exchange tags are
-the exception: a supervised model on the twelve features attains 7.4% of the ceiling
-against 7.0% for the profiles, so those features are empty for that annotation. Since
-exchanges reuse addresses heavily, address-level features are the natural test of
-whether that particular ceiling can be lifted at all.
+Section 6.8 finds that the twelve features carry much more about every annotation than
+the profiles recover, so the clustering objective rather than the feature set is the
+binding constraint. Exchange tags are the weakest case for the profiles, and exchanges
+reuse addresses heavily, so address-level features are the natural test of whether a
+richer description helps where the profiles do worst.
+
+(The first version of this script compared supervised bounds cut into equal-size cells.
+Equal-size cells cannot isolate a rare annotation, which understated every bound on the
+rarer annotations; the bound now lets cell sizes vary, as in E18.)
 
 The cached responses of the prospective collection hold the full transaction records,
 so for those 456,292 transactions we can compute features the published sample does
@@ -36,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import joblib  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
+from sklearn.cluster import KMeans  # noqa: E402
 from sklearn.ensemble import HistGradientBoostingClassifier  # noqa: E402
 from threadpoolctl import threadpool_limits  # noqa: E402
 
@@ -119,15 +123,19 @@ def scan_cache(wanted, log):
     return out
 
 
-def bins_from_scores(score, k):
-    qs = np.unique(np.quantile(score, np.linspace(0, 1, k + 1)[1:-1]))
-    lab = np.searchsorted(qs, score, side="right").astype(np.int32)
+def free_cells(score, k, seed):
+    """Cut a score into k cells of unconstrained size (K-means on the score).
+
+    Equal-size cells cannot isolate a rare annotation, so the bound on what a partition
+    of these features could reach must let the cell sizes vary (see E18).
+    """
+    lab = KMeans(k, n_init=5, random_state=seed).fit_predict(np.asarray(score).reshape(-1, 1))
     _, lab = np.unique(lab, return_inverse=True)
     return lab.astype(np.int32)
 
 
 def supervised_bins(X, y, parity, k, seed):
-    """Fit on one block-parity half, score the other, then bin the scores."""
+    """Fit on one block-parity half, score the other, then cut the scores into k cells."""
     sc = np.empty(len(X), dtype=np.float64)
     for half in (0, 1):
         tr, ev = np.flatnonzero(parity == half), np.flatnonzero(parity == 1 - half)
@@ -135,7 +143,7 @@ def supervised_bins(X, y, parity, k, seed):
                                            validation_fraction=0.1, random_state=seed + half)
         m.fit(X[tr], y[tr])
         sc[ev] = m.predict_proba(X[ev])[:, 1]
-    return bins_from_scores(sc, k)
+    return free_cells(sc, k, seed)
 
 
 def main():

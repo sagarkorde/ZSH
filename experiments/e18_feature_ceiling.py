@@ -8,11 +8,15 @@ find it. This script separates them by replacing the clustering with a supervise
 model on exactly the same twelve features and scoring it with exactly the same
 protocol.
 
-For every annotation a gradient-boosted tree is fitted on the features and its score
-is cut into K* quantile bins. Those bins are then treated as a partition and passed
-through the same cross-fitted ranking, block bootstrap and average-precision machinery
-as the profiles, so the numbers are directly comparable with Tables 8 and 12. Two
-variants are fitted:
+For every annotation a gradient-boosted tree is fitted on the features and its score is
+cut into K* cells. Those cells are then treated as a partition and passed through the
+same cross-fitted ranking, block bootstrap and average-precision machinery as the
+profiles, so the numbers are directly comparable with Tables 8 and 12. The score is cut
+two ways: into cells of equal size, and into cells whose sizes are free (K-means on the
+score). The second is the bound that matters, because a clustering is under no
+obligation to make its clusters equal: with equal-size cells a 0.03% annotation cannot
+exceed about 1% purity whatever the score, which understates the bound for every rare
+annotation. Two fitting variants are used:
 
   transfer   trained on the development period, evaluated on the test period; this is
              what a supervised model would actually deliver a year later.
@@ -33,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import joblib  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
+from sklearn.cluster import KMeans  # noqa: E402
 from sklearn.ensemble import HistGradientBoostingClassifier  # noqa: E402
 from threadpoolctl import threadpool_limits  # noqa: E402
 
@@ -43,12 +48,22 @@ from zsh.io import SMOKE, dev_test, selected_features  # noqa: E402
 MAX_TRAIN = 1_500_000        # rows used to fit each supervised model
 
 
-def bins_from_scores(score, k, rng):
-    """Cut a score into k quantile bins, returned as a partition label array."""
-    qs = np.quantile(score, np.linspace(0, 1, k + 1)[1:-1])
-    qs = np.unique(qs)
+def equal_cells(score, k, rng):
+    """Cut a score into k cells of equal size (quantile bins)."""
+    qs = np.unique(np.quantile(score, np.linspace(0, 1, k + 1)[1:-1]))
     lab = np.searchsorted(qs, score, side="right").astype(np.int32)
-    # a degenerate score (many ties) can leave empty bins; relabel to a dense range
+    _, lab = np.unique(lab, return_inverse=True)
+    return lab.astype(np.int32)
+
+
+def free_cells(score, k, seed):
+    """Cut a score into k cells of unconstrained size (K-means on the score).
+
+    Equal-size cells cannot isolate a rare annotation: with a base rate of 0.03% no cell
+    holding 1/k of the data can be pure. A clustering is under no such constraint, so the
+    bound on what a partition of these features could reach must let cell sizes vary.
+    """
+    lab = KMeans(k, n_init=5, random_state=seed).fit_predict(np.asarray(score).reshape(-1, 1))
     _, lab = np.unique(lab, return_inverse=True)
     return lab.astype(np.int32)
 
@@ -100,7 +115,11 @@ def main():
             t = time.time()
             score = fit_predict(Xd[idx], y_dev[idx], Xt, seed_for("E18", "transfer", name))
             row["transfer_seconds"] = time.time() - t
-            label_sets[f"supervised transfer: {name}"] = bins_from_scores(score, K, rng)
+            label_sets[f"supervised transfer, equal cells: {name}"] = equal_cells(score, K, rng)
+            label_sets[f"supervised transfer, free cells: {name}"] = free_cells(
+                score, K, seed_for("E18", "cells_t", name))
+            np.save(out_dir("labels" + sfx) / f"e18_transfer_{name.replace(chr(58), chr(95))}.npy",
+                    score.astype(np.float32))
 
             # in-period: fit on one parity half, score the other, so no row scores its own model
             t = time.time()
@@ -113,7 +132,9 @@ def main():
                 sc[ev] = fit_predict(Xt[tr], y_test.astype(np.int8)[tr], Xt[ev],
                                      seed_for("E18", "inperiod", name, half))
             row["inperiod_seconds"] = time.time() - t
-            label_sets[f"supervised in-period: {name}"] = bins_from_scores(sc, K, rng)
+            label_sets[f"supervised in-period, equal cells: {name}"] = equal_cells(sc, K, rng)
+            label_sets[f"supervised in-period, free cells: {name}"] = free_cells(
+                sc, K, seed_for("E18", "cells_i", name))
             rows.append(row)
             log(f"  {name}: models fitted ({row['transfer_seconds']:.0f}s / {row['inperiod_seconds']:.0f}s)")
 
@@ -123,7 +144,8 @@ def main():
     parts, skipped = [], {}
     for name, y in targets.items():
         arms = {"ZSH": label_sets["ZSH"]}
-        for kind in ("transfer", "in-period"):
+        for kind in ("transfer, equal cells", "transfer, free cells",
+                     "in-period, equal cells", "in-period, free cells"):
             key = f"supervised {kind}: {name}"
             if key in label_sets:
                 arms[f"supervised {kind}"] = label_sets[key]

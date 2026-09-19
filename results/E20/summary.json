@@ -1,0 +1,8 @@
+{
+  "K": 31,
+  "periods": {
+    "test": 2584530,
+    "future": 456292
+  },
+  "note": "scaler and weights frozen; only centroids re-estimated, started at the development centroids"
+}
