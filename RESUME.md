@@ -1,4 +1,4 @@
-# State — 19 Sep 2026, 01:00 IST
+# State — 19 Sep 2026, 13:20 IST
 
 All confirmatory experiments are finished and their results are committed.
 
@@ -35,6 +35,8 @@ Changes made after `v2-frozen` are listed with reasons in `DEVIATIONS.md`.
 | E10 | sensitivity and ablations | done |
 | E11–E16 | proxy size, profile support, actor hold-out, external CoinJoin labels, oracle weights, profile matching (all added after the freeze) | done |
 | E17 | the whole evaluation for seven clustering families (added after the freeze) | done |
+| E18 | supervised bound on the same twelve features (added after the freeze) | done |
+| E19 | address-level features from the prospective cache (added after the freeze) | done |
 
 Rebuild tables and figures: `make_tables_figures.py`, then `make_manuscript_tables.py`.
 
@@ -46,6 +48,10 @@ Rebuild tables and figures: `make_tables_figures.py`, then `make_manuscript_tabl
   test period; K-means++ is stronger for exchange tags and mixed-script inputs.
 * Read against the ceiling 1/π, the profiles capture 78–84% of what is attainable for
   common annotations and under 11% for rare ones; oracle weights do not lift this.
+* The binding limit is the objective, not the features: a supervised model on the same
+  twelve features attains 90.9% of the ceiling for P2SH inputs against 23.6% for the
+  profiles. Exchange tags are the exception (7.4% against 7.0%), and adding address
+  reuse and witness features does not lift them (4.8% with 24 features).
 * Seven clustering families share the ceiling on rare annotations, the collapse of the
   partition by 2026 and the failure of profile matching; ZSH has the highest median
   attained share (22.6%) and much the strongest P2PKH concentration (80.9%).
