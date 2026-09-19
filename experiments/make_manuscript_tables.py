@@ -654,10 +654,27 @@ def t_ceiling():
          "T_ceiling", ["l", "r", "r", "r", "r", "r", "r"])
 
 
+def t_richer():
+    """E19: address-level features on the prospective sample, against the twelve."""
+    c = pd.read_csv(R("E19") / "richer_features.csv")
+    cols = ["ZSH (frozen, 12 features)", "ZSH refit (12 features)", "ZSH refit (12 + address features)",
+            "supervised (12 features)", "supervised (12 + address features)"]
+    piv = c.pivot(index="target", columns="method", values="ap")
+    base = c.groupby("target").base_rate.first()
+    pos = c.groupby("target").positives.first()
+    rows = []
+    for t in [x for x in TARGET if x in piv.index]:
+        rows.append([TARGET[t], n(pos[t]), pct(base[t], 2), f(1.0 / base[t], 0)]
+                    + [pct(piv.loc[t, m], 1) if m in piv.columns else "" for m in cols])
+    save(pd.DataFrame(rows, columns=["Annotation", "Positives", "Base (%)", "Ceiling", "Frozen (%)",
+                                     "Refit 12 (%)", "Refit 24 (%)", "Sup. 12 (%)", "Sup. 24 (%)"]),
+         "T_richer", ["l", "r", "r", "r", "r", "r", "r", "r", "r"])
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
             t_sensitivity, t_proxy_k, t_cjsource, t_oracle, t_matching, t_bench_battery,
-            t_bench_attained, t_ceiling, t_loo, t_representatives, t_support]
+            t_bench_attained, t_ceiling, t_richer, t_loo, t_representatives, t_support]
 
 
 def main():
