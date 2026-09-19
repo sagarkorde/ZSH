@@ -435,6 +435,39 @@ s19 = js("E19/summary.json")
 check("E19 rows", f"{s19['rows']:,}")
 check("E19 new features", str(len(s19["new_features"])))
 
+# ---------------------------------------------------------------- constrained refit (E20)
+w20 = csv("E20/warm_refit.csv").set_index("period")
+c20 = csv("E20/warm_refit_concentration.csv")
+for per, lab in (("test", "test"), ("future", "prospective")):
+    if per not in w20.index:
+        continue
+    check(f"constrained refit ARI {lab}", f"{w20.loc[per, 'warm_vs_transferred_ari']:.2f}")
+    check(f"constrained refit followed {lab}", str(int(w20.loc[per, "n_matched_ge_0.5"])))
+    g = c20[c20.period == per]
+    check(f"constrained refit median attained {lab}",
+          pct(g[g.method == "constrained refit"].ap.median(), 1))
+    check(f"frozen median attained {lab}", pct(g[g.method == "frozen (transferred)"].ap.median(), 1))
+check("constrained refit share test", pct(w20.loc["test", "share_matched_ge_0.5"], 1))
+check("constrained refit share prospective", pct(w20.loc["future", "share_matched_ge_0.5"], 1))
+check("constrained refit iterations test", str(int(w20.loc["test", "iterations"])))
+check("constrained refit iterations prospective", str(int(w20.loc["future", "iterations"])))
+check("constrained refit shift test", f"{w20.loc['test', 'mean_centroid_shift']:.2f}")
+check("constrained refit shift prospective", f"{w20.loc['future', 'mean_centroid_shift']:.2f}")
+cf = c20[c20.period == "future"].pivot(index="target", columns="method", values="ap")
+for t, lab in (("L2:P2PKH", "P2PKH"), ("L3:runes", "Runes"), ("L3:other_opreturn", "other OP_RETURN")):
+    check(f"constrained refit prospective {lab}", pct(cf.loc[t, "constrained refit"], 1))
+ct = c20[c20.period == "test"].pivot(index="target", columns="method", values="ap")
+check("constrained refit test P2PKH", pct(ct.loc["L2:P2PKH", "constrained refit"], 1))
+check("constrained refit test Runes", pct(ct.loc["L3:runes", "constrained refit"], 1))
+
+# ---------------------------------------------------------------- shared partition (E21)
+sb = csv("E21/shared_bound.csv")
+p21 = sb.pivot(index="target", columns="method", values="ap")
+check("shared bound median", pct(p21["shared bound"].median(), 1))
+check("single bound median", pct(p21["single bound"].median(), 1))
+check("shared bound better count",
+      str(int((p21["shared bound"] > p21["single bound"]).sum())))
+
 # ---------------------------------------------------------------- report
 missing = []
 for label, variants in CHECKS:

@@ -676,10 +676,65 @@ def t_richer():
          "T_richer", ["l", "r", "r", "r", "r", "r", "r", "r", "r"])
 
 
+def t_warm():
+    """E20: a refit constrained to the previous centroids, against the cold refit."""
+    w = pd.read_csv(R("E20") / "warm_refit.csv").set_index("period")
+    c = pd.read_csv(R("E20") / "warm_refit_concentration.csv")
+    rows = []
+    for p, lab in (("test", "Test period"), ("future", "Prospective sample")):
+        if p not in w.index:
+            continue
+        r = w.loc[p]
+        g = c[c.period == p]
+        med_f = g[g.method == "frozen (transferred)"].ap.median()
+        med_w = g[g.method == "constrained refit"].ap.median()
+        rows.append([lab, f(r.get("cold_ari"), 2), f(r["warm_vs_transferred_ari"], 2),
+                     f"{int(r.get('cold_n_matched_ge_0.5', 0))}/{int(r['profiles'])}",
+                     f"{int(r['n_matched_ge_0.5'])}/{int(r['profiles'])}",
+                     pct(r["share_matched_ge_0.5"], 1), f(r["median_matched_jaccard"], 2),
+                     pct(med_f, 1), pct(med_w, 1)])
+    save(pd.DataFrame(rows, columns=["Period", "ARI, free refit", "ARI, constrained", "Followed, free",
+                                     "Followed, constrained", "Their share (%)", "Median J",
+                                     "Attained, frozen (%)", "Attained, constrained (%)"]),
+         "T_warm", ["l", "r", "r", "r", "r", "r", "r", "r", "r"])
+
+
+def t_prespec():
+    """Which analyses were pre-specified and which were added after the freeze."""
+    rows = [
+        ["Primary model and profiles", "6.1", "Confirmatory", ""],
+        ["Method comparison at matched K", "6.2", "Confirmatory", ""],
+        ["Weighting × refinement factorial (H1, H2)", "6.2", "Confirmatory", ""],
+        ["Stability: seeds, block bootstrap, permuted null (H3)", "6.3", "Confirmatory", ""],
+        ["Transfer to later periods (H4)", "6.3", "Confirmatory", ""],
+        ["Concentration of non-input annotations (H5)", "6.4", "Confirmatory", ""],
+        ["Count rule against the equal-output rule", "6.4", "Confirmatory", ""],
+        ["Elliptic with a temporal split", "6.5", "Confirmatory", ""],
+        ["Atypicality on Elliptic (H6)", "6.5", "Confirmatory", ""],
+        ["Sensitivity to every fixed setting", "6.6", "Confirmatory", ""],
+        ["Feature-ranking drift across refits", "6.3", "Exploratory", "the test refit agreed poorly with the transferred partition"],
+        ["Atypicality on Bitcoin annotations", "6.5", "Exploratory", "descriptive counterpart to H6"],
+        ["Size of the proxy partition", "6.6", "Exploratory", "a reviewer asked for sensitivity to this choice"],
+        ["Profile-share and Jaccard intervals", "6.3", "Exploratory", "a reviewer asked for profile-support intervals"],
+        ["Actor-disjoint Elliptic evaluation", "6.5", "Exploratory", "reviewers asked for source-level held-out evaluation"],
+        ["External CoinJoin labels", "6.4", "Exploratory", "a reviewer asked for validation against external labels"],
+        ["Concentration read against its ceiling", "5.3, 6.4", "Exploratory", "AP lift alone cannot separate a weak partition from a rare annotation"],
+        ["Oracle-weight upper bound", "6.6", "Exploratory", "to separate a poor weighting from an uninformative feature set"],
+        ["Profile matching across refits", "6.3", "Exploratory", "refitting is useful only if profiles can be followed"],
+        ["Refit constrained to the previous centroids", "6.3", "Exploratory", "to test the remedy this article proposes"],
+        ["The same evaluation for seven families", "6.7", "Exploratory", "to attribute the limits to ZSH or to the task"],
+        ["Supervised bound on the same features", "6.8", "Exploratory", "to separate the feature set from the objective"],
+        ["One partition serving all annotations", "6.8", "Exploratory", "to price the constraint of sharing a partition"],
+        ["Address-level features", "6.8", "Exploratory", "to test whether richer features lift the weakest case"],
+    ]
+    save(pd.DataFrame(rows, columns=["Analysis", "Section", "Status", "Reason it was added"]),
+         "T_prespec", ["L", "l", "l", "L"])
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
             t_sensitivity, t_proxy_k, t_cjsource, t_oracle, t_matching, t_bench_battery,
-            t_bench_attained, t_ceiling, t_richer, t_loo, t_representatives, t_support]
+            t_bench_attained, t_ceiling, t_richer, t_warm, t_prespec, t_loo, t_representatives, t_support]
 
 
 def main():
