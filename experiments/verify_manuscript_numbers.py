@@ -411,6 +411,19 @@ for t, lab in (("L2:coinbase", "coinbase"), ("L3:other_opreturn", "other OP_RETU
 check("supervised common classes", pct(piv18.loc[["L2:P2WPKH", "L2:P2TR"], "supervised in-period"].min(), 1))
 check("E18 Omni positives", f"{int(fc[(fc.target == 'L3:omni') & (fc.method == 'ZSH')].positives.iloc[0]):,}")
 
+# ---------------------------------------------------------------- richer features (E19)
+rf19 = csv("E19/richer_features.csv")
+p19 = rf19.pivot(index="target", columns="method", values="ap")
+for t, lab in (("L4:exchange", "exchange"), ("L3:other_opreturn", "other OP_RETURN")):
+    check(f"E19 supervised 12 {lab}", pct(p19.loc[t, "supervised (12 features)"], 1))
+    check(f"E19 supervised 24 {lab}", pct(p19.loc[t, "supervised (12 + address features)"], 1))
+    check(f"E19 frozen {lab}", pct(p19.loc[t, "ZSH (frozen, 12 features)"], 1))
+    check(f"E19 refit 24 {lab}", pct(p19.loc[t, "ZSH refit (12 + address features)"], 1))
+s19 = js("E19/summary.json")
+check("E19 rows", f"{s19['rows']:,}")
+check("E19 new features", str(len(s19["new_features"])))
+check("E19 exchange positives", f"{int(rf19[rf19.target == 'L4:exchange'].positives.iloc[0]):,}")
+
 # ---------------------------------------------------------------- report
 missing = []
 for label, variants in CHECKS:

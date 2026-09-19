@@ -1,0 +1,28 @@
+{
+  "rows": 456292,
+  "coverage": 1.0,
+  "new_features": [
+    "in_reuse_max",
+    "in_reuse_mean",
+    "out_reuse_max",
+    "out_reuse_mean",
+    "self_transfer",
+    "witness_items",
+    "witness_bytes",
+    "sigops",
+    "locktime_set",
+    "seq_nonfinal",
+    "in_value_cv",
+    "out_value_cv"
+  ],
+  "targets": [
+    "L3:runes",
+    "L3:omni",
+    "L3:other_opreturn",
+    "L4:exchange",
+    "L4:miner",
+    "L4:coinjoin",
+    "L5:eocj"
+  ],
+  "K": 31
+}
