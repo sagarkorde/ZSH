@@ -637,10 +637,27 @@ def t_bench_attained():
          "T_bench_attained", ["l"] + ["r"] * (2 + len(methods)))
 
 
+def t_ceiling():
+    """E18: what the same twelve features give a supervised model, against the profiles."""
+    c = pd.read_csv(R("E18") / "feature_ceiling.csv")
+    piv = c.pivot(index="target", columns="method", values="ap")
+    base = c.groupby("target").base_rate.first()
+    rows = []
+    for t in [x for x in TARGET if x in piv.index]:
+        prof = piv.loc[t, "ZSH"]
+        ip = piv.loc[t].get("supervised in-period", np.nan)
+        tr = piv.loc[t].get("supervised transfer", np.nan)
+        rows.append([TARGET[t], pct(base[t], 2), f(1.0 / base[t], 0), pct(prof, 1),
+                     pct(ip, 1), pct(tr, 1), fa(100 * (ip - prof), 0)])
+    save(pd.DataFrame(rows, columns=["Annotation", "Base (%)", "Ceiling", "Profiles (%)",
+                                     "Supervised (%)", "A year earlier (%)", "Gap"]),
+         "T_ceiling", ["l", "r", "r", "r", "r", "r", "r"])
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
             t_sensitivity, t_proxy_k, t_cjsource, t_oracle, t_matching, t_bench_battery,
-            t_bench_attained, t_loo, t_representatives, t_support]
+            t_bench_attained, t_ceiling, t_loo, t_representatives, t_support]
 
 
 def main():
