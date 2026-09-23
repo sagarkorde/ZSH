@@ -152,9 +152,20 @@ def matched_centroid_shift(X_ref, ref_labels, other_labels):
 # cross-fitted concentration with block bootstrap
 # ---------------------------------------------------------------------------
 class ConcentrationData:
-    """Block x cluster count matrices for one partition and one binary target."""
+    """Block x cluster count matrices for one partition and one binary target.
 
-    def __init__(self, labels, target, block, k=None, fold_fn=None):
+    `row_weights` are design weights: every cell holds the weighted number of
+    transactions the sampled rows represent, so fold totals estimate population
+    counts rather than sample counts. Ranking on the calibration fold uses Kish
+    effective counts (sum w)^2 / sum w^2, so that large weights do not inflate
+    the apparent precision of a cluster carried by few sampled transactions.
+    With `row_weights=None` every quantity reduces exactly to the unweighted one.
+
+    `strata` (one label per row, e.g. calendar month) groups blocks for a
+    month-stratified block bootstrap; blocks nest inside months.
+    """
+
+    def __init__(self, labels, target, block, k=None, fold_fn=None, row_weights=None, strata=None):
         labels = np.asarray(labels, dtype=np.int64)
         target = np.asarray(target, dtype=bool)
         block = np.asarray(block, dtype=np.int64)
@@ -162,20 +173,51 @@ class ConcentrationData:
         ub, bi = np.unique(block, return_inverse=True)
         self.fold_of_block = (ub % 2 if fold_fn is None else fold_fn(ub)).astype(np.int8)
         nb = len(ub)
+        self.weighted = row_weights is not None
+        rw = np.ones(len(labels)) if row_weights is None else np.asarray(row_weights, dtype=np.float64)
         tot = np.zeros(nb * self.k)
         pos = np.zeros(nb * self.k)
+        tot2 = np.zeros(nb * self.k)
         key = bi * self.k + labels
-        np.add.at(tot, key, 1)
-        np.add.at(pos, key[target], 1)
+        np.add.at(tot, key, rw)
+        np.add.at(pos, key[target], rw[target])
+        np.add.at(tot2, key, rw * rw)
         self.tot = tot.reshape(nb, self.k)
         self.pos = pos.reshape(nb, self.k)
+        self.tot2 = tot2.reshape(nb, self.k)
         self.blocks_in_fold = [np.flatnonzero(self.fold_of_block == f) for f in (0, 1)]
+        # month (or other) stratum of each block, as positions within each fold
+        self.strata_in_fold = None
+        if strata is not None:
+            s = np.asarray(strata)
+            # blocks nest inside months, so any row of a block gives its stratum
+            rep = np.zeros(nb, dtype=np.int64)
+            rep[bi] = np.arange(len(s))
+            sb = s[rep]
+            self.stratum_of_block = sb
+            self.strata_in_fold = []
+            for f in (0, 1):
+                b = self.blocks_in_fold[f]
+                groups = {}
+                for pos_i, lab in enumerate(sb[b]):
+                    groups.setdefault(lab, []).append(pos_i)
+                self.strata_in_fold.append([np.asarray(v, dtype=np.int64) for v in groups.values()])
 
-    def fold_counts(self, f, weights=None):
+    def fold_counts(self, f, weights=None, eff=False):
+        """Weighted totals for fold `f`; `eff=True` returns Kish effective counts."""
         b = self.blocks_in_fold[f]
         if weights is None:
-            return self.tot[b].sum(0), self.pos[b].sum(0)
-        return self.tot[b].T @ weights, self.pos[b].T @ weights
+            n, p = self.tot[b].sum(0), self.pos[b].sum(0)
+            n2 = self.tot2[b].sum(0) if eff else None
+        else:
+            n, p = self.tot[b].T @ weights, self.pos[b].T @ weights
+            n2 = (self.tot2[b].T @ weights) if eff else None
+        if not eff or not self.weighted:
+            return n, p
+        with np.errstate(invalid="ignore", divide="ignore"):
+            n_eff = np.where(n2 > 0, n * n / n2, 0.0)
+            rate = np.where(n > 0, p / n, 0.0)
+        return n_eff, rate * n_eff
 
 
 def _curve(n_cal, p_cal, n_ev, p_ev, min_members):
@@ -212,8 +254,8 @@ def crossfit(cd, weights=(None, None), with_curve=False, directions=((0, 1), (1,
     res = []
     curves = []
     for a, b in directions:
-        n_a, p_a = cd.fold_counts(a, weights[a])
-        n_b, p_b = cd.fold_counts(b, weights[b])
+        n_a, p_a = cd.fold_counts(a, weights[a], eff=True)   # calibration: rank only
+        n_b, p_b = cd.fold_counts(b, weights[b])              # evaluation: population estimate
         order, cov, prec, base, P, N = _curve(n_a, p_a, n_b, p_b, mm)
         s = _summ(cov, prec, base, ev["coverages"])
         cum_n = np.cumsum(n_b[order])
@@ -232,15 +274,20 @@ def crossfit(cd, weights=(None, None), with_curve=False, directions=((0, 1), (1,
 
 def concentration_many(label_sets, target, block, B, seed, metrics=("ap_lift", "enrich@0.10",
                        "enrich@0.25", "enrich@0.50"), reference=None, fold_fn=None,
-                       directions=((0, 1), (1, 0)), min_members=None):
+                       directions=((0, 1), (1, 0)), min_members=None,
+                       row_weights=None, strata=None):
     """Point estimates, block-bootstrap CIs and paired differences vs `reference`.
 
     label_sets: dict name -> labels (same rows)
+    row_weights: design weights; estimates are then for the sampled population.
+    strata: per-row stratum (e.g. month); blocks are resampled within strata.
     """
     target = np.asarray(target, dtype=bool)
-    cds = {m: ConcentrationData(l, target, block, fold_fn=fold_fn) for m, l in label_sets.items()}
+    cds = {m: ConcentrationData(l, target, block, fold_fn=fold_fn, row_weights=row_weights,
+                                strata=strata) for m, l in label_sets.items()}
     any_cd = next(iter(cds.values()))
     nb = [len(any_cd.blocks_in_fold[0]), len(any_cd.blocks_in_fold[1])]
+    sif = any_cd.strata_in_fold
     out = {}
     curves = {}
     for m, cd in cds.items():
@@ -248,8 +295,17 @@ def concentration_many(label_sets, target, block, B, seed, metrics=("ap_lift", "
     rng = np.random.default_rng(seed)
     boots = {m: {k: [] for k in metrics} for m in cds}
     for _ in range(B):
-        w = [np.bincount(rng.integers(nb[f], size=nb[f]), minlength=nb[f]).astype(np.float64)
-             for f in (0, 1)]
+        if sif is None:
+            w = [np.bincount(rng.integers(nb[f], size=nb[f]), minlength=nb[f]).astype(np.float64)
+                 for f in (0, 1)]
+        else:
+            w = []
+            for f in (0, 1):
+                wf = np.zeros(nb[f], dtype=np.float64)
+                for g in sif[f]:                       # resample blocks within each month
+                    pick = g[rng.integers(len(g), size=len(g))]
+                    np.add.at(wf, pick, 1.0)
+                w.append(wf)
         for m, cd in cds.items():
             r = crossfit(cd, weights=w, directions=directions, min_members=min_members)
             for k in metrics:

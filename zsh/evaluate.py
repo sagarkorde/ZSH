@@ -39,15 +39,23 @@ def eligible(target, block):
     return int(target[b == 0].sum()) >= mn and int(target[b == 1].sum()) >= mn
 
 
-def evaluate_targets(label_sets, df, targets, B, seed, reference, log=None):
-    """Concentration for every eligible target; paired differences vs reference; Holm on AP lift."""
+def evaluate_targets(label_sets, df, targets, B, seed, reference, log=None,
+                     row_weights=None, strata=None):
+    """Concentration for every eligible target; paired differences vs reference; Holm on AP lift.
+
+    `row_weights` (design weights) make every estimate a population estimate for the
+    sampled frame; `strata` (e.g. month) switches the block bootstrap to a
+    month-stratified one. Eligibility stays on *sampled* positives, so the weighted
+    and unweighted runs evaluate exactly the same set of targets.
+    """
     block = df["block_height"].to_numpy()
     rows, curves_all, skipped = [], {}, {}
     for ti, (tname, tgt) in enumerate(targets.items()):
         if not eligible(tgt, block):
             skipped[tname] = int(tgt.sum())
             continue
-        res, curves = concentration_many(label_sets, tgt, block, B, seed + ti, reference=reference)
+        res, curves = concentration_many(label_sets, tgt, block, B, seed + ti, reference=reference,
+                                         row_weights=row_weights, strata=strata)
         curves_all[tname] = curves
         for m, r in res.items():
             row = {"target": tname, "method": m, "positives": int(tgt.sum()), "base_rate": r["base_rate"]}
