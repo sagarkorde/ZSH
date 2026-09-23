@@ -146,8 +146,10 @@ def stage_concentration(log, res):
         log(f"{pname}: {len(df):,} rows, {len(labs)} methods")
         for kind, targets, tag in (("independent", independent_targets(df, include_eocj=True), "i"),
                                    ("structural", structural_targets(df), "s")):
+            rw, st_ = _design(df)
             tab, curves, skipped = evaluate_targets(labs, df, targets, B, seed_for("E17", pname, tag),
-                                                    reference="ZSH", log=log)
+                                                    reference="ZSH", log=log,
+                                                    row_weights=rw, strata=st_)
             if len(tab):
                 tab["max_lift"] = 1.0 / tab["base_rate"]
                 tab["attained"] = tab["ap"]
@@ -254,9 +256,17 @@ def stage_transfer(log, res):
     pd.DataFrame(per_profile).to_csv(res / "transfer_matching_long.csv", index=False)
 
 
+def _design(df):
+    """Design weights and month strata for the prospective sample; (None, None) elsewhere."""
+    if "design_weight" not in df:
+        return None, None
+    return df["design_weight"].to_numpy(), df["month"].to_numpy()
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["fit", "concentration", "stability", "transfer", "all"])
+    # default "all" so that `python RUN_ALL.py` (which passes no arguments) runs this step
+    ap.add_argument("stage", nargs="?", default="all",
+                    choices=["fit", "concentration", "stability", "transfer", "all"])
     ap.add_argument("--bootstrap", type=int, default=10)
     a = ap.parse_args()
     sfx = "_smoke" if SMOKE else ""

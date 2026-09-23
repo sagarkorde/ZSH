@@ -55,6 +55,12 @@ def lloyd_from(Xw, C0, max_iter=MAX_ITER, tol=TOL):
     return C, lab, it + 1, int((np.bincount(lab, minlength=len(C)) == 0).sum())
 
 
+def _design(df):
+    """Design weights and month strata for the prospective sample; (None, None) elsewhere."""
+    if "design_weight" not in df:
+        return None, None
+    return df["design_weight"].to_numpy(), df["month"].to_numpy()
+
 def main():
     sfx = "_smoke" if SMOKE else ""
     log = Log(out_dir("logs") / f"e20_warm_refit{sfx}.log")
@@ -116,9 +122,10 @@ def main():
         for pname, df in periods.items():
             arms = {"frozen (transferred)": labels[pname]["transferred"],
                     "constrained refit": labels[pname]["warm"]}
+            rw, st_ = _design(df)
             tab, _, _ = evaluate_targets(arms, df, independent_targets(df, include_eocj=True), B,
                                          seed_for("E20", "boot", pname), reference="frozen (transferred)",
-                                         log=log)
+                                         log=log, row_weights=rw, strata=st_)
             if len(tab):
                 tab["period"] = pname
                 tab["attained"] = tab["ap"]

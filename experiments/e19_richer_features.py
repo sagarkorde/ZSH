@@ -146,6 +146,12 @@ def supervised_bins(X, y, parity, k, seed):
     return free_cells(sc, k, seed)
 
 
+def _design(df):
+    """Design weights and month strata for the prospective sample; (None, None) elsewhere."""
+    if "design_weight" not in df:
+        return None, None
+    return df["design_weight"].to_numpy(), df["month"].to_numpy()
+
 def main():
     sfx = "_smoke" if SMOKE else ""
     log = Log(out_dir("logs") / f"e19_richer_features{sfx}.log")
@@ -197,8 +203,10 @@ def main():
             a["supervised (12 features)"] = supervised_bins(X12, yy, parity, K, seed_for("E19", "s12", name))
             a["supervised (12 + address features)"] = supervised_bins(
                 Xall, yy, parity, K, seed_for("E19", "sall", name))
+            rw, st_ = _design(df)
             tab, _, _ = evaluate_targets(a, df, {name: y}, B, seed_for("E19", "boot", name),
-                                         reference="ZSH (frozen, 12 features)", log=log)
+                                         reference="ZSH (frozen, 12 features)", log=log,
+                                         row_weights=rw, strata=st_)
             parts.append(tab)
     out = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
     if len(out):
