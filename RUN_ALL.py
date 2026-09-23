@@ -1,6 +1,17 @@
 """Run the v2 study in order. Usage: python RUN_ALL.py [first_step] [last_step]
 
-Steps: e00a e00b e00c e00d e01 e02 e03 e04 e05 e06 e07 e08 e09 e10 figures
+Steps, in order:
+    e00a e00b e00c e00d            data
+    e01 e02 e03 e04 e05 e05b e06 e07 e08 e09 e10        pre-specified analyses
+    e11 e12 e13 e14 e15 e16 e17 e18 e19 e20 e21         analyses added after the freeze
+    figures tables verify                                manuscript outputs and checks
+
+`python RUN_ALL.py` with no arguments runs every reported analysis and then
+regenerates every table and figure in the article and the supplementary file.
+`figures` writes results/figures and results/tables; `tables` writes the
+numbered manuscript tables; `verify` re-checks every numerical claim in the
+manuscript against the saved result files and fails if any disagree.
+
 Set ZSH_SMOKE=1 for a quick run on DEV data only (no evaluation data touched).
 """
 import subprocess
@@ -25,7 +36,21 @@ STEPS = [
     ("e08", "experiments/e08_elliptic.py"),
     ("e09", "experiments/e09_atypicality.py"),
     ("e10", "experiments/e10_sensitivity.py"),
+    # added after the analysis freeze; see DEVIATIONS.md
+    ("e11", "experiments/e11_proxy_k.py"),
+    ("e12", "experiments/e12_profile_support.py"),
+    ("e13", "experiments/e13_actor_holdout.py"),
+    ("e14", "experiments/e14_coinjoin_source.py"),
+    ("e15", "experiments/e15_oracle_weights.py"),
+    ("e16", "experiments/e16_profile_matching.py"),
+    ("e17", "experiments/e17_benchmark.py"),
+    ("e18", "experiments/e18_feature_ceiling.py"),
+    ("e19", "experiments/e19_richer_features.py"),
+    ("e20", "experiments/e20_warm_refit.py"),
+    ("e21", "experiments/e21_shared_bound.py"),
     ("figures", "experiments/make_tables_figures.py"),
+    ("tables", "experiments/make_manuscript_tables.py"),
+    ("verify", "experiments/verify_manuscript_numbers.py"),
 ]
 
 
