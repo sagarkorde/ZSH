@@ -54,7 +54,9 @@ def save_table(df, name, floatfmt=None):
 
 
 def savefig(fig, name):
-    fig.savefig(FIG / f"{name}.png")
+    # bbox_inches="tight" keeps multi-line tick labels and outer legends from being
+    # clipped at the canvas edge (Figure 7 was clipped without it).
+    fig.savefig(FIG / f"{name}.png", bbox_inches="tight", pad_inches=0.03)
     plt.close(fig)
     print(f"figure {name}")
 
@@ -407,7 +409,7 @@ def fig_stability():
     jac = pd.read_csv(R("E4") / "clusterwise_jaccard_long.csv", keep_default_na=False, na_values=[""])
     methods = ["ZSH", "KMeans++ K*", "RPW K* (no refinement)"]
     names = {"ZSH": "ZSH", "KMeans++ K*": "K-means++", "RPW K* (no refinement)": "rank-power,\nno refinement"}
-    fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 2.8), gridspec_kw={"width_ratios": [1, 1.25]})
+    fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 3.15), gridspec_kw={"width_ratios": [1, 1.25]})
     ax = axes[0]
     for i, kind in enumerate(("seed", "bootstrap")):
         for j, m in enumerate(methods):
@@ -421,6 +423,8 @@ def fig_stability():
                 ax.scatter(np.full(len(v), x) + jit, v, s=10, color=ps.SERIES[j], lw=0, alpha=0.85,
                            label="30 block-bootstrap refits (filled)" if j == 0 else None)
     ax.set_xticks(range(len(methods)), [names[m] for m in methods])
+    ax.tick_params(axis="x", labelsize=7)
+    ax.set_xlim(-0.65, len(methods) - 0.35)
     ax.set_ylabel("ARI with the full-DEV fit")
     ax.set_ylim(0, 1)
     from matplotlib.lines import Line2D

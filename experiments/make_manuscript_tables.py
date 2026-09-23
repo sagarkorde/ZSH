@@ -700,41 +700,79 @@ def t_warm():
 
 
 def t_prespec():
-    """Which analyses were pre-specified and which were added after the freeze."""
+    """Which analyses were pre-specified and which were added after the freeze.
+
+    Status has three values. 'Frozen reanalysis' marks analyses whose hypotheses and
+    code were fixed before the reported runs, but whose data had already been examined
+    in the earlier submitted version of this work, so they are not blind confirmatory
+    tests. 'Prospective' marks analyses of the 2024-2026 sample, which did not exist at
+    the freeze. 'Exploratory' marks analyses added after the freeze.
+    """
+    FR, PR, EX = "Frozen reanalysis", "Frozen reanalysis; prospective on 2024-26", "Exploratory"
     rows = [
-        ["Primary model and profiles", "6.1", "Confirmatory", ""],
-        ["Method comparison at matched K", "6.2", "Confirmatory", ""],
-        ["Weighting × refinement factorial (H1, H2)", "6.2", "Confirmatory", ""],
-        ["Stability: seeds, block bootstrap, permuted null (H3)", "6.3", "Confirmatory", ""],
-        ["Transfer to later periods (H4)", "6.3", "Confirmatory", ""],
-        ["Concentration of non-input annotations (H5)", "6.4", "Confirmatory", ""],
-        ["Count rule against the equal-output rule", "6.4", "Confirmatory", ""],
-        ["Elliptic with a temporal split", "6.5", "Confirmatory", ""],
-        ["Atypicality on Elliptic (H6)", "6.5", "Confirmatory", ""],
-        ["Sensitivity to every fixed setting", "6.6", "Confirmatory", ""],
-        ["Feature-ranking drift across refits", "6.3", "Exploratory", "the test refit agreed poorly with the transferred partition"],
-        ["Atypicality on Bitcoin annotations", "6.5", "Exploratory", "descriptive counterpart to H6"],
-        ["Size of the proxy partition", "6.6", "Exploratory", "a reviewer asked for sensitivity to this choice"],
-        ["Profile-share and Jaccard intervals", "6.3", "Exploratory", "a reviewer asked for profile-support intervals"],
-        ["Actor-disjoint Elliptic evaluation", "6.5", "Exploratory", "reviewers asked for source-level held-out evaluation"],
-        ["External CoinJoin labels", "6.4", "Exploratory", "a reviewer asked for validation against external labels"],
-        ["Concentration read against its ceiling", "5.3, 6.4", "Exploratory", "AP lift alone cannot separate a weak partition from a rare annotation"],
-        ["Oracle-weight upper bound", "6.6", "Exploratory", "to separate a poor weighting from an uninformative feature set"],
-        ["Profile matching across refits", "6.3", "Exploratory", "refitting is useful only if profiles can be followed"],
-        ["Refit constrained to the previous centroids", "6.3", "Exploratory", "to test the remedy this article proposes"],
-        ["The same evaluation for seven families", "6.7", "Exploratory", "to attribute the limits to ZSH or to the task"],
-        ["Supervised bound on the same features", "6.8", "Exploratory", "to separate the feature set from the objective"],
-        ["One partition serving all annotations", "6.8", "Exploratory", "to price the constraint of sharing a partition"],
-        ["Address-level features", "6.8", "Exploratory", "to test whether richer features lift the weakest case"],
+        ["Primary model and profiles", "6.1", FR, ""],
+        ["Method comparison at matched K", "6.2", FR, ""],
+        ["Weighting × refinement factorial (H1, H2)", "6.2", FR, ""],
+        ["Stability: seeds, block bootstrap, permuted null (H3)", "6.3", FR, ""],
+        ["Transfer to later periods (H4)", "6.3", PR, ""],
+        ["Concentration of non-input annotations (H5)", "6.4", PR, ""],
+        ["Count rule against the equal-output rule", "6.4", PR, ""],
+        ["Elliptic with a temporal split", "6.5", FR, ""],
+        ["Atypicality on Elliptic (H6)", "6.5", FR, ""],
+        ["Sensitivity to every fixed setting", "6.6", FR, ""],
+        ["Feature-ranking drift across refits", "6.3", EX, "the test refit agreed poorly with the transferred partition"],
+        ["Atypicality on Bitcoin annotations", "6.5", EX, "descriptive counterpart to H6"],
+        ["Size of the proxy partition", "6.6", EX, "a reviewer asked for sensitivity to this choice"],
+        ["Profile-share and Jaccard intervals", "6.3", EX, "a reviewer asked for profile-support intervals"],
+        ["Actor-disjoint Elliptic evaluation", "6.5", EX, "reviewers asked for source-level held-out evaluation"],
+        ["External CoinJoin labels", "6.4", EX, "a reviewer asked for validation against external labels"],
+        ["Concentration read against its ceiling", "5.3, 6.4", EX, "AP lift alone cannot separate a weak partition from a rare annotation"],
+        ["Oracle-weight upper bound", "6.6", EX, "to separate a poor weighting from an uninformative feature set"],
+        ["Profile matching across refits", "6.3", EX, "refitting is useful only if profiles can be followed"],
+        ["Refit constrained to the previous centroids", "6.3", EX, "to test the remedy this article proposes"],
+        ["The same evaluation for seven families", "6.7", EX, "to attribute the limits to ZSH or to the task"],
+        ["Supervised benchmark on the same features", "6.8", EX, "to separate the feature set from the objective"],
+        ["One partition serving all annotations", "6.8", EX, "to price the constraint of sharing a partition"],
+        ["Address-level features", "6.8", EX, "to test whether richer features lift the weakest case"],
+        ["Design-weighted prospective estimates", "5.4, 6.4", EX, "the prospective sample was drawn with unequal inclusion probabilities"],
     ]
     save(pd.DataFrame(rows, columns=["Analysis", "Section", "Status", "Reason it was added"]),
          "T_prespec", ["L", "l", "l", "L"])
 
 
+def t_weighting():
+    """Appendix: design-weighted against unweighted prospective concentration (R1.2)."""
+    pw = R("E6") / "future_independent.csv"
+    pu = R("E6") / "future_independent_unweighted.csv"
+    if not (pw.exists() and pu.exists()):
+        return
+    w = pd.read_csv(pw)
+    u = pd.read_csv(pu)
+    w = w[w.method == "ZSH"].set_index("target")
+    u = u[u.method == "ZSH"].set_index("target")
+    rows = []
+    for t in w.index:
+        if t not in u.index:
+            continue
+        a, b = w.loc[t], u.loc[t]
+        rows.append([TARGET.get(t, t), n(b.positives),
+                     pct(a.base_rate, 3), pct(b.base_rate, 3),
+                     f"{f(a.ap_lift, 2)} ({ci(a.ap_lift_lo, a.ap_lift_hi, 2)})",
+                     f"{f(b.ap_lift, 2)} ({ci(b.ap_lift_lo, b.ap_lift_hi, 2)})",
+                     pct(a.ap, 1), pct(b.ap, 1),
+                     pct(a["prec@0.25"], 1), pct(b["prec@0.25"], 1)])
+    cols = ["Annotation", "Positives", "Base wtd (%)", "Base unwtd (%)",
+            "AP lift wtd (95% CI)", "AP lift unwtd (95% CI)",
+            "Attained wtd (%)", "Attained unwtd (%)", "Prec@25% wtd", "Prec@25% unwtd"]
+    save(pd.DataFrame(rows, columns=cols), "T_weighting",
+         ["L", "r", "r", "r", "r", "r", "r", "r", "r", "r"])
+
+
 BUILDERS = [elliptic_counts, t_data, t_rules, t_features, t_annotations, t_profiles, t_methods, t_factorial,
             t_contrasts, t_stability, t_transfer, t_concentration, t_heuristic, t_elliptic, t_atypicality,
             t_sensitivity, t_proxy_k, t_cjsource, t_oracle, t_matching, t_bench_battery,
-            t_bench_attained, t_ceiling, t_richer, t_warm, t_prespec, t_loo, t_representatives, t_support]
+            t_bench_attained, t_ceiling, t_richer, t_warm, t_prespec, t_loo, t_representatives, t_support,
+            t_weighting]
 
 
 def main():
