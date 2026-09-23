@@ -643,7 +643,7 @@ def t_ceiling():
     piv = c.pivot(index="target", columns="method", values="ap")
     base = c.groupby("target").base_rate.first()
     cols = [("supervised in-period, equal cells", "Equal cells (%)"),
-            ("supervised in-period, free cells", "Bound (%)"),
+            ("supervised in-period, free cells", "Benchmark (%)"),
             ("supervised transfer, free cells", "A year earlier (%)")]
     rows = []
     for t in [x for x in TARGET if x in piv.index]:

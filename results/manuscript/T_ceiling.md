@@ -1,5 +1,5 @@
-| Annotation | Base (%) | Ceiling | Profiles (%) | Equal cells (%) | Bound (%) | A year earlier (%) |
-|:-------------|--------:|--------:|---------:|--------:|--------:|--------:|
+| Annotation | Base (%) | Ceiling | Profiles (%) | Equal cells (%) | Benchmark (%) | A year earlier (%) |
+|:-------------|--------:|--------:|---------:|--------:|----------:|--------:|
 | Coinbase | 0.03 | 3451 | 0.6 | 49.9 | 88.9 | 90.4 |
 | P2PKH inputs | 3.46 | 29 | 80.9 | 96.7 | 98.7 | 96.9 |
 | P2SH inputs | 4.35 | 23 | 23.6 | 90.9 | 98.5 | 95.0 |
