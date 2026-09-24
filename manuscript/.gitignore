@@ -1,0 +1,9 @@
+# Build artefacts of assemble.py
+figs/                 # copied from ../results/figures at build time
+author_notes.md       # regenerated list of items left for the authors
+__pycache__/
+*.bak
+
+# Built documents are written to the repository root by assemble.py
+/ZSH_FinTech_MDPI_manuscript_v2*.docx
+/ZSH_supplementary_v2*.docx
