@@ -1,3 +1,14 @@
+# Correspondence with the reviewers and the editor. Kept here so that
+# assemble.py can build the reply letters, but never committed while the
+# article is under review. See README.md.
+response_to_reviewers.md
+response_resolved.md
+response_reviewer_*.md
+response2_reviewer_*.md
+letter_openings.md
+editor_replies.md
+cover_letter*.md
+
 # Build artefacts of assemble.py
 figs/                 # copied from ../results/figures at build time
 author_notes.md       # regenerated list of items left for the authors
