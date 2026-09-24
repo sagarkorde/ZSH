@@ -120,7 +120,15 @@ is prospective. The main contributions are:
    only about one time in ten. On Elliptic, the profiles carry little
    information about illicit status, and atypicality scores point the wrong
    way (Sections 6.3–6.5).
-5. A public, versioned repository with the frozen analysis plan, the code, the
+5. Evidence on where the limit lies, added after the freeze and reported
+   throughout as exploratory. Six other clustering families reach the same low
+   shares of the ceiling for the least frequent annotations, so those limits
+   belong to the task rather than to ZSH; and a supervised model on the same
+   twelve features attains far more than any of them, which places the limit in
+   the clustering objective rather than in the features — except for exchange
+   tags, where richer features do raise what supervision can extract
+   (Sections 6.7 and 6.8).
+6. A public, versioned repository with the frozen analysis plan, the code, the
    prospective-data collector and all result files.
 
 Section 2 reviews related work, Section 3 describes the data and the audit,
