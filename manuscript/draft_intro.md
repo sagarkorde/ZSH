@@ -49,9 +49,12 @@ checks that do not depend on the clustering itself:
 * **RQ4.** Do the profiles, or an atypicality score, carry information about
   illicit activity?
 
-The study was specified and its code frozen before any evaluation data were
-analysed, and a new sample of transactions from October 2024 to August 2026 was
-collected after the freeze. The main contributions are:
+The study was specified and its code frozen before the reported runs. The freeze
+is not blindness: an earlier submitted version of this work had already examined the
+same Bitcoin corpus and the labelled Elliptic data, so the analyses of those data are
+a frozen reanalysis rather than a blind confirmatory test (Section 5.1). Only the new
+sample of transactions from October 2024 to August 2026, collected after the freeze,
+is prospective. The main contributions are:
 
 1. A corrected and fully documented profiling pipeline. An audit of the
    published transaction sample removed count-derived rule flags, constant and

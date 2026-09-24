@@ -128,7 +128,7 @@ the training steps, labelled or not, are used to fit the clustering; labels
 are used only to rank clusters and to evaluate them. Recent work reports that
 the construction of the Elliptic features was not disclosed and that
 information leaks between commonly used splits [@Safar2026]; we return to this
-in Section 7.7.
+in Section 7.8.
 
 ### 3.6. External labels used only for validation
 

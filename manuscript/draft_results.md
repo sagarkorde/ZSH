@@ -732,9 +732,10 @@ form its coordinates, and K-means cuts that space into 31 clusters. Sharing cost
 little, and we price it against the benchmark this section argues for rather than the
 one it rejects: the shared partition attains a median of 92.8% against 96.4% for the
 per-annotation benchmark with free cell sizes, so sharing costs about four points of the
-ceiling. It is higher than the single-annotation benchmark for two of the ten annotations
-of Table {T_ceiling} and equal for one, because eleven coordinates describe a transaction
-better than one does. Against the equal-cell variant the shared partition looks far
+ceiling. It beats the single-annotation benchmark for two of the ten annotations of
+Table {T_ceiling} and matches it for one, so eleven coordinates are sometimes a better
+description of a transaction than the one fitted for the annotation at hand, but not
+usually. Against the equal-cell variant the shared partition looks far
 stronger still (92.8% against 74.1%), but that comparison inherits the constraint we have
 just rejected and we do not rest anything on it. The gap between the profiles and the benchmark is therefore not an artefact
 of asking one partition to do eleven jobs.

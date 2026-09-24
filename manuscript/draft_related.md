@@ -61,8 +61,10 @@ unsupervised clustering [@FeatWeight2025].
 Unsupervised filters such as the Laplacian score rank features by how well they
 preserve local structure [@He2005]. Our weighting is simpler: it ranks features
 by mutual information with a proxy partition and assigns weights that decay as
-a power of the rank. Constrained K-means adds minimum or maximum cluster sizes to the objective [@BalancedClust2026]; we use recursive splitting, which is cheaper at
-the scale of millions of rows but gives no guarantee.
+a power of the rank. Other work builds the size constraint into the clustering itself: MST-DHC balances
+cluster sizes through a minimum spanning tree and needs no size parameter
+[@BalancedClust2026]. We use recursive splitting, which is cheaper at the scale of
+millions of rows but gives no guarantee.
 
 ### 2.5. Validating a clustering without labels
 

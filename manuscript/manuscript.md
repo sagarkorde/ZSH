@@ -20,20 +20,20 @@ Sagar D. Korde ^1,2,\*^ and Narendra M. Shekokar ^1^
 
 ::: {custom-style="MDPI_1.7_abstract"}
 **Abstract:** Bitcoin's ledger records what each transaction moves but not what it
-does; unsupervised profiles describe that activity without labels, yet are rarely tested
-against information the clustering never saw. We evaluate ZSH, which weights twelve
-features by the rank of their mutual information with a proxy partition, initialises
-K-means hierarchically and caps cluster size; the plan and code were frozen before
-evaluation. It was fitted on 3.3 million transactions from 2022–2023 and tested on 2.6
-million from 2024 and 456,292 collected to August 2026. Its 31 profiles reached 78–84%
-of the ceiling for the four annotations they capture best and under 11% for the five
-least frequent. Neither oracle weights nor six other clustering families changed this,
-yet for P2SH inputs supervision on the same features reached 95% against
-the profiles' 24%. Refits agreed at an adjusted Rand index of 0.83, yet by 2026 three
-profiles held three quarters of the sample and none survived a free refit; constraining
-it to the previous centroids followed 24 of 31 in 2024 but 14 in 2026. For most annotations the limit is the clustering objective rather than the
-features; for exchange tags richer features raise what supervision extracts, not what
-the profiles recover. These profiles are a readable map of activity, not a detector.
+does; unsupervised profiles describe it without labels, but are rarely tested against
+information the clustering never saw. We evaluate ZSH, which weights twelve features by
+the rank of their mutual information with a proxy partition, initialises K-means
+hierarchically and caps cluster size; plan and code were frozen before the reported runs.
+Fitted on 3.3 million transactions from 2022–2023, it was tested on 2.6 million from 2024
+and 456,292 collected to August 2026. Its 31 profiles reached 78–84% of the ceiling for
+the four annotations they capture best, under 11% for the five least frequent. Neither
+oracle weights nor six other families changed this, though for P2SH inputs supervision on
+the same features reached 95% against the profiles' 24%. Refits agreed at an adjusted
+Rand index of 0.83, yet by 2026 three profiles held three quarters of the sample and none
+survived a free refit; constraining it to the previous centroids followed 24 of 31 in
+2024 and 14 in 2026. For most annotations the limit is the clustering objective, not the
+features; for exchange tags richer features raise what supervision extracts, not what the
+profiles recover. These profiles are a readable map of activity, not a detector.
 
 :::
 
@@ -90,9 +90,12 @@ checks that do not depend on the clustering itself:
 * **RQ4.** Do the profiles, or an atypicality score, carry information about
   illicit activity?
 
-The study was specified and its code frozen before any evaluation data were
-analysed, and a new sample of transactions from October 2024 to August 2026 was
-collected after the freeze. The main contributions are:
+The study was specified and its code frozen before the reported runs. The freeze
+is not blindness: an earlier submitted version of this work had already examined the
+same Bitcoin corpus and the labelled Elliptic data, so the analyses of those data are
+a frozen reanalysis rather than a blind confirmatory test (Section 5.1). Only the new
+sample of transactions from October 2024 to August 2026, collected after the freeze,
+is prospective. The main contributions are:
 
 1. A corrected and fully documented profiling pipeline. An audit of the
    published transaction sample removed count-derived rule flags, constant and
@@ -185,8 +188,10 @@ unsupervised clustering [@FeatWeight2025].
 Unsupervised filters such as the Laplacian score rank features by how well they
 preserve local structure [@He2005]. Our weighting is simpler: it ranks features
 by mutual information with a proxy partition and assigns weights that decay as
-a power of the rank. Constrained K-means adds minimum or maximum cluster sizes to the objective [@BalancedClust2026]; we use recursive splitting, which is cheaper at
-the scale of millions of rows but gives no guarantee.
+a power of the rank. Other work builds the size constraint into the clustering itself: MST-DHC balances
+cluster sizes through a minimum spanning tree and needs no size parameter
+[@BalancedClust2026]. We use recursive splitting, which is cheaper at the scale of
+millions of rows but gives no guarantee.
 
 ## 2.5. Validating a clustering without labels
 
@@ -385,7 +390,7 @@ the training steps, labelled or not, are used to fit the clustering; labels
 are used only to rank clusters and to evaluate them. Recent work reports that
 the construction of the Elliptic features was not disclosed and that
 information leaks between commonly used splits [@Safar2026]; we return to this
-in Section 7.7.
+in Section 7.8.
 
 ## 3.6. External labels used only for validation
 
@@ -1609,9 +1614,10 @@ form its coordinates, and K-means cuts that space into 31 clusters. Sharing cost
 little, and we price it against the benchmark this section argues for rather than the
 one it rejects: the shared partition attains a median of 92.8% against 96.4% for the
 per-annotation benchmark with free cell sizes, so sharing costs about four points of the
-ceiling. It is higher than the single-annotation benchmark for two of the ten annotations
-of Table 14 and equal for one, because eleven coordinates describe a transaction
-better than one does. Against the equal-cell variant the shared partition looks far
+ceiling. It beats the single-annotation benchmark for two of the ten annotations of
+Table 14 and matches it for one, so eleven coordinates are sometimes a better
+description of a transaction than the one fitted for the annotation at hand, but not
+usually. Against the equal-cell variant the shared partition looks far
 stronger still (92.8% against 74.1%), but that comparison inherits the constraint we have
 just rejected and we do not rest anything on it. The gap between the profiles and the benchmark is therefore not an artefact
 of asking one partition to do eleven jobs.
