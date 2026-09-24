@@ -141,7 +141,7 @@ TAB = {
                    "two member sets. 'Their share' is the share of the period's transactions held by the "
                    "profiles matched at 0.5. The 0.5 criterion is a minimum-continuity threshold: it asks only "
                    "whether a profile remains recognisable across the refit, and is deliberately weaker than the "
-                   "0.75 used in Section 6.2 as a criterion for cluster stability in Hennig's sense."),
+                   "0.75 used in Section 6.3 as a criterion for cluster stability in Hennig's sense."),
     "T_bench_battery": ("T_bench_battery.md", "The whole evaluation applied to seven clustering families; exploratory, added after the freeze. Every method is fitted on the development period at K = 31 and uses the same twelve features, with one exception: the partial reproduction of Vlahavas et al. uses the five features of that study, as in Table {T_methods}; BIRCH and the Vlahavas reproduction are fitted on a 1,000,000-transaction subsample and Ward on its own 30,000-row subsample, as in Table {T_methods}. Largest: share of the period transactions held by the largest cluster. Refit ARI: mean adjusted Rand index between the development partition and ten block-bootstrap refits. ARI: agreement between the transferred partition and a refit on the period itself. Matched: profiles whose minimum-cost match with that refit reaches a Jaccard similarity of 0.5. ZSH chooses its own number of clusters when refitted (37 in the test period, 38 in the prospective sample); the other families are refitted at K = 31."),
     "T_warm": ("T_warm.md", "A refit constrained to the previous centroids; exploratory, added after the freeze. Free refit: the whole pipeline refitted on the period, as in Table {T_matching}. Constrained: the scaler and the rank-power weights of the frozen model are kept and only the centroids are re-estimated, started at the development centroids. Followed: profiles whose minimum-cost match with the refit reaches a Jaccard similarity of 0.5, the minimum-continuity threshold of Table {T_matching} rather than the stricter 0.75 stability criterion, and the share of the period transactions they hold. Median J: median Jaccard of the matched pairs. Attained: median share of the ceiling over the annotations of that period, for the frozen model and for the constrained refit."),
     "T_prespec": ("T_prespec.md", "Analyses of this study, by when they were specified and what kind of evidence they provide. All non-exploratory analyses had their hypotheses written into the analysis plan and their code frozen (repository tag `v2-frozen`) before the reported runs. They are nevertheless labelled *frozen reanalysis* rather than confirmatory, because an earlier submitted version of this work had already examined the same Bitcoin corpus and the complete labelled Elliptic data set: the freeze prevents the analysis from being tuned to its result, but the outcomes were not unknown to the authors. Rows marked *prospective on 2024-26* are additionally prospective when applied to the 2024-2026 sample, whose transactions had not been mined at the freeze. Exploratory analyses were added after the freeze; each is recorded with its reason and commit in the deviations log and labelled where it appears."),
@@ -429,9 +429,15 @@ def main():
 
     # list of supplementary items for the back matter
     def first_sentence(c):
+        """First sentence of a caption, never cut mid-word."""
         c = re.sub(r"\s+", " ", c).strip()
-        m = re.match(r"(.{0,150}?[.])(\s|$)", c)
-        return (m.group(1) if m else c[:150]).rstrip(".")
+        m = re.match(r"(.{0,260}?[.])(\s|$)", c)
+        if m:
+            return m.group(1).rstrip(".")
+        cut = c[:260]
+        if " " in cut:
+            cut = cut[:cut.rindex(" ")]
+        return cut.rstrip(" ,;:-") + "…"
     items = [f"Table {tnum[k]}: " + first_sentence((TAB.get(k) or APP_TAB[k])[1]) for k in supp_t]
     items += [f"Figure {fnum[k]}: " + first_sentence(FIG[k][2]) for k in supp_f]
     body = body.replace("{SUPP_LIST}", "; ".join(items))

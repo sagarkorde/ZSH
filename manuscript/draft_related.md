@@ -48,10 +48,7 @@ blockchain data more widely [@Qi2024]. These models need labels, which are scarc
 quickly outdated, and they return a risk score rather than a description of
 activity. Their benchmarks also carry their own problems: the construction of
 the Elliptic features was never fully disclosed, and information leaks between
-commonly used splits [@Safar2026]. Pérez-Cano and Jurado recently compared unsupervised detectors on the same
-data — Isolation Forest, the local outlier factor, k-means clustering and graph
-autoencoders — with a supervised heterogeneous graph transformer, and found the
-unsupervised methods far behind the supervised one [@PerezCano2025]. We use
+commonly used splits [@Safar2026]. The comparison of Section 2.2 makes the same point for detection [@PerezCano2025]. We use
 Elliptic only as an external check of whether unsupervised profiles concentrate
 labelled illicit activity.
 

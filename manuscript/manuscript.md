@@ -20,28 +20,25 @@ Sagar D. Korde ^1,2,\*^ and Narendra M. Shekokar ^1^
 
 ::: {custom-style="MDPI_1.7_abstract"}
 **Abstract:** Bitcoin's ledger records what each transaction moves but not what it
-does; unsupervised profiles describe that activity without labels. They are rarely
-tested against information the clustering never saw, and a lift over the base rate
-cannot separate a weak method from a rare property. We evaluate ZSH, which weights
-twelve features by the rank of their mutual information with a proxy partition, starts
-K-means from merged micro-clusters and caps cluster size; the plan and code were frozen
-before evaluation. It was fitted on 3.3 million transactions from 2022–2023 and tested
-on 2.6 million from 2024 and 456,292 collected to August 2026. ZSH produced 31 profiles,
-reaching 78–84% of the ceiling each base rate sets for the three dominant single-script
-classes, near 23% for P2SH and mixed-script inputs, and under 11% for the five least
-frequent annotations (base rates 1.4% to 0.03%). Neither oracle weights nor six other
-clustering families changed this, yet for P2SH inputs supervision on the same features
-reached 95% against the profiles' 24%. Refits agreed at an adjusted Rand index of 0.83,
-yet by 2026 three profiles held three quarters of the sample and none survived an
-unconstrained refit; constraining it to the previous centroids followed 24 of 31
-profiles in 2024 but only 14 of 31 in 2026. For most annotations the binding limit is
-the clustering objective rather than the twelve features, though exchange tags improve
-markedly with richer features. These profiles are a readable map of activity, not a
-detector.
+does; unsupervised profiles describe that activity without labels, yet are rarely tested
+against information the clustering never saw. We evaluate ZSH, which weights twelve
+features by the rank of their mutual information with a proxy partition, initialises
+K-means hierarchically and caps cluster size; the plan and code were frozen before
+evaluation. It was fitted on 3.3 million transactions from 2022–2023 and tested on 2.6
+million from 2024 and 456,292 collected to August 2026. Its 31 profiles reached 78–84%
+of the ceiling for the four annotations they capture best and under 11% for the five
+least frequent. Neither oracle weights nor six other clustering families changed this,
+yet for P2SH inputs supervision on the same features reached 95% against
+the profiles' 24%. Refits agreed at an adjusted Rand index of 0.83, yet by 2026 three
+profiles held three quarters of the sample and none survived a free refit; constraining
+it to the previous centroids followed 24 of 31 in 2024 but 14 in 2026. For most annotations the limit is the clustering objective rather than the
+features; for exchange tags richer features raise what supervision extracts, not what
+the profiles recover. These profiles are a readable map of activity, not a detector.
+
 :::
 
 ::: {custom-style="MDPI_1.8_keywords"}
-**Keywords:** Bitcoin; cluster stability; clustering; CoinJoin; distribution shift; Elliptic data set; feature weighting; transaction profiling.
+**Keywords:** Bitcoin; cluster stability; clustering; CoinJoin; distribution shift; Elliptic data set; feature weighting; transaction profiling
 :::
 
 # 1. Introduction
@@ -175,10 +172,7 @@ blockchain data more widely [@Qi2024]. These models need labels, which are scarc
 quickly outdated, and they return a risk score rather than a description of
 activity. Their benchmarks also carry their own problems: the construction of
 the Elliptic features was never fully disclosed, and information leaks between
-commonly used splits [@Safar2026]. Pérez-Cano and Jurado recently compared unsupervised detectors on the same
-data — Isolation Forest, the local outlier factor, k-means clustering and graph
-autoencoders — with a supervised heterogeneous graph transformer, and found the
-unsupervised methods far behind the supervised one [@PerezCano2025]. We use
+commonly used splits [@Safar2026]. The comparison of Section 2.2 makes the same point for detection [@PerezCano2025]. We use
 Elliptic only as an external check of whether unsupervised profiles concentrate
 labelled illicit activity.
 
@@ -573,7 +567,7 @@ therefore came *after* exposure to those outcomes. Accordingly we distinguish
 three tiers of evidence, and use the corresponding terms throughout:
 
 * **Frozen reanalysis after prior exposure.** H5 and H6, and every Elliptic
-  result in Section 6.6, together with all analyses of the 2022–2024 Bitcoin
+  result in Section 6.5, together with all analyses of the 2022–2024 Bitcoin
   corpus. The hypotheses and the code were fixed in advance of the reported
   runs, which rules out tuning the analysis to its result, but the outcomes were
   not unknown to us when the plan was written. These are *not* blind
@@ -906,7 +900,7 @@ fell below 0.5 (Figure 3b). Following Hennig's rule of thumb
 [@Hennig2007], the first group can be treated as stable, the second as
 indicating a pattern whose boundaries move, and the last as not reliable.
 K-means++ had 12, 14 and 5 clusters in these groups. Centroids moved less for
-ZSH than for K-means++ (mean matched displacement 0.31 against 0.36 of the
+ZSH than for K-means++ (mean matched displacement 0.30 against 0.36 of the
 within-cluster root-mean-square distance).
 
 **Transfer to later periods (H4).** The profiles were fitted once on 2022–2023 data
@@ -987,7 +981,7 @@ than an updated one, which is a practical limit on using these profiles for
 monitoring: either the frozen assignment is kept and its drift accepted, or the
 series of profile shares starts again at each refit.
 
-Table: **Table 7.** Following profiles across a refit; exploratory, added after the freeze. Each of the 31 development profiles is paired with one cluster of the refit of the same period by minimum-cost assignment on the transactions they share; J is the Jaccard similarity of the two member sets. 'Their share' is the share of the period's transactions held by the profiles matched at 0.5. The 0.5 criterion is a minimum-continuity threshold: it asks only whether a profile remains recognisable across the refit, and is deliberately weaker than the 0.75 used in Section 6.2 as a criterion for cluster stability in Hennig's sense.
+Table: **Table 7.** Following profiles across a refit; exploratory, added after the freeze. Each of the 31 development profiles is paired with one cluster of the refit of the same period by minimum-cost assignment on the transactions they share; J is the Jaccard similarity of the two member sets. 'Their share' is the share of the period's transactions held by the profiles matched at 0.5. The 0.5 criterion is a minimum-continuity threshold: it asks only whether a profile remains recognisable across the refit, and is deliberately weaker than the 0.75 used in Section 6.3 as a criterion for cluster stability in Hennig's sense.
 
 | Period | Method | Profiles | Refit clusters | Median J | Mean J | Matched at 0.5 | Their share (%) | Matched at 0.75 |
 |:-----------|:---------|---------:|---------:|--------:|--------:|--------:|--------:|--------:|
@@ -1031,9 +1025,8 @@ against a single free one, with no design that separates drift from the other
 things a refit changes — it cannot establish that centroid drift is the principal
 cause, and we do not claim it is. The practical implication stands: where a
 deployed partition must keep its identity, recentring alone recovers a large part
-of the loss. The part of Section 6.3 that does not survive refitting is
-the feature ranking: it is what the constrained refit holds fixed, and holding it fixed
-is what lets the profiles keep their identity.
+of the loss. What a free refit loses, and the constrained refit keeps, is the feature ranking:
+holding it fixed is what lets the profiles keep their identity.
 
 ## 6.4. RQ3 — What the profiles concentrate
 
@@ -1043,7 +1036,7 @@ the precision–coverage curves. For every annotation the lower 95% bound of the
 AP lift of ZSH lies above one, so all eleven are concentrated above their base
 rates. How much this means depends on what was attainable. Read against the
 ceiling $1/\pi$, the profiles capture most of what a partition could capture
-for the four common annotations — 84% for P2TR inputs, 83% for P2WPKH, 81% for
+for the four annotations it captures best — 84% for P2TR inputs, 83% for P2WPKH, 81% for
 P2PKH and 78% for Runes — but little for the rare ones: 24% for P2SH inputs,
 23% for mixed-script inputs, 10% for P2WSH, 7% for exchange tags and under 1%
 for coinbase and Omni transactions, whose large lifts (22 and 26) are small
@@ -1107,16 +1100,16 @@ except for P2PKH inputs (17.3), where the hierarchical initialisation helps.
 
 In the prospective sample, nine of the twelve annotations had enough positives
 for the rule of Section 5.3 (at least 200 in each half); coinbase transactions
-(284), Omni transactions (16), miner tags (6) and equal-output CoinJoins (388)
+(284), Omni transactions (16) and equal-output CoinJoins (388)
 were too rare to evaluate. All nine remaining annotations are again
 concentrated above their base rates, with lower bounds above one, so the
 frozen profiles still carry information about properties they never saw two
 years after they were fitted. These prospective estimates are design-weighted and
-their intervals come from a month-stratified block bootstrap (Section 5.4); the
+their intervals come from a month-stratified block bootstrap (Section 5.3); the
 unweighted, sample-specific versions are in Table S8. The strength is
 lower than in the test period for seven of the nine: the AP lift for P2PKH inputs
 falls from 23.3 to 9.3, for P2WSH inputs from 7.3 to 3.3 and for other OP_RETURN
-use from 7.2 to 3.3, while P2TR inputs (2.5) and exchange tags (29.6) are higher
+use from 7.2 to 3.3, while P2TR inputs (2.4) and exchange tags (29.6) are higher
 than in 2024. Two profiles still contain a quarter of the P2PKH-input
 transactions at a precision of 97%, and one profile contains a quarter of the
 exchange-tagged transactions at a precision of 15%. ZSH concentrates seven of the
@@ -1419,8 +1412,7 @@ of that study, as in Section 6.2, since reproducing it means reproducing its
 feature set. BIRCH and the Vlahavas pipeline were fitted on a
 random subsample of 1,000,000 transactions because their cost grows faster than
 linearly in the number of rows, and Ward on its own 30,000-row subsample as in
-Section 6.2; the other four use all 3,299,616. This comparison was added after
-the freeze and is exploratory.
+Section 6.2; the other four use all 3,299,616.
 
 Table: **Table 12.** The whole evaluation applied to seven clustering families; exploratory, added after the freeze. Every method is fitted on the development period at K = 31 and uses the same twelve features, with one exception: the partial reproduction of Vlahavas et al. uses the five features of that study, as in Table 4; BIRCH and the Vlahavas reproduction are fitted on a 1,000,000-transaction subsample and Ward on its own 30,000-row subsample, as in Table 4. Largest: share of the period transactions held by the largest cluster. Refit ARI: mean adjusted Rand index between the development partition and ten block-bootstrap refits. ARI: agreement between the transferred partition and a refit on the period itself. Matched: profiles whose minimum-cost match with that refit reaches a Jaccard similarity of 0.5. ZSH chooses its own number of clusters when refitted (37 in the test period, 38 in the prospective sample); the other families are refitted at K = 31.
 
@@ -1437,11 +1429,11 @@ Table: **Table 12.** The whole evaluation applied to seven clustering families; 
 **Concentration against the ceiling.** Table 13 and
 Figure 7 give the attained share of every family for every annotation
 on the test period. Read across a row and the families differ; read down a
-column and the annotation decides. For the three common annotations every
+column and the annotation decides. For the three most frequent annotations every
 family attains between 45.6% and 97.0% of the ceiling. For coinbase
 transactions no family passes 2.5%, for Omni 0.9%, for exchange tags 10.3%,
 for other OP_RETURN use 9.8% and for P2WSH inputs 20.1%. Seven families that
-build clusters in different ways — around centroids, around densities, by
+build clusters in different ways — around centroids, by
 merging a hierarchy and by summarising a feature tree — fail on the same
 annotations, which is what Section 6.4 implies: these annotations are too rare
 for 31 clusters of these features to isolate, whatever builds the clusters.
@@ -1580,8 +1572,11 @@ profiles recover, for every annotation without exception. P2SH inputs are the cl
 case: the profiles attain 23.6% of the ceiling and a supervised split of the same
 features attains 98.5%. Mixed-script inputs go from 22.6% to 95.6%, P2WSH inputs from
 10.4% to 95.9%, other OP_RETURN use from 9.8% to 97.0% and coinbase transactions from
-0.6% to 88.9%. The median over the ten annotations is 16.5% for the profiles and 96.4%
-for the benchmark. Even where the profiles do well they leave something: 80.9% against
+0.6% to 88.9%. Table 14 covers ten annotations rather than the eleven used elsewhere:
+Runes is a test-period protocol and has no development-period positives, so the
+transfer column cannot be computed for it. The median over those ten is 16.5% for the
+profiles and 96.4% for the benchmark, lower than the 22.6% median quoted in Section 6.7
+because that one includes Runes, which the profiles capture well. Even where the profiles do well they leave something: 80.9% against
 98.7% for P2PKH inputs and about 84% against 100% for the two common witness classes.
 The information is in the twelve numbers, and K-means at K = 31 does not put it into
 separate clusters.
@@ -1611,10 +1606,14 @@ fitted for one annotation at a time, whereas the profiles are a single partition
 has to serve all of them at once. We priced that constraint by building one partition
 from all eleven annotations together — the eleven out-of-fold scores of a transaction
 form its coordinates, and K-means cuts that space into 31 clusters. Sharing costs
-almost nothing: the shared partition attains a median of 92.8% against 74.1% for the
-per-annotation benchmark cut into equal cells, and it is higher than the single-annotation
-benchmark for eight of the eleven, because eleven coordinates describe a transaction better
-than one does. The gap between the profiles and the benchmark is therefore not an artefact
+little, and we price it against the benchmark this section argues for rather than the
+one it rejects: the shared partition attains a median of 92.8% against 96.4% for the
+per-annotation benchmark with free cell sizes, so sharing costs about four points of the
+ceiling. It is higher than the single-annotation benchmark for two of the ten annotations
+of Table 14 and equal for one, because eleven coordinates describe a transaction
+better than one does. Against the equal-cell variant the shared partition looks far
+stronger still (92.8% against 74.1%), but that comparison inherits the constraint we have
+just rejected and we do not rest anything on it. The gap between the profiles and the benchmark is therefore not an artefact
 of asking one partition to do eleven jobs.
 
 **Do address-level features add anything?** *Exploratory, added after the freeze.*
@@ -1739,9 +1738,10 @@ the frozen model and re-estimating only the centroids, started at the developmen
 centroids, lets 24 of the 31 profiles be followed into 2024 and 14 into 2026, and on
 the prospective sample it also recovers most of the concentration the frozen model had
 lost — the median attained share rises from 10.8% to 26.1% and legacy spending from
-42.8% to 84.2%. The instability of a free refit is therefore not mainly the data moving
-but the model moving with it: what the constrained refit holds fixed is the feature
-ranking, and holding it fixed is what lets the profiles keep their identity. For a
+42.8% to 84.2%. This is consistent with much of the instability of a free refit being the model
+moving rather than the data, though the exploratory comparison of Section 6.3 cannot
+separate the two; what the constrained refit holds fixed is the feature ranking, and
+holding it fixed is what lets the profiles keep their identity. For a
 monitoring system this is the practical recipe — freeze the space, re-estimate the
 centroids, and match the profiles across refits — rather than a choice between a
 drifting frozen model and a series that restarts. This is not a problem of one method: of the seven
@@ -1789,7 +1789,8 @@ two. A supervised model on exactly the same twelve features, fitted a year earli
 the development period and using no test-period label, attains 95.0% of the ceiling for
 P2SH inputs where the profiles attain 23.6%, 89.1% against 22.6% for mixed-script
 inputs and 90.4% against 0.6% for coinbase transactions (Section 6.8). Over the ten
-annotations the median is 96.4% for a bound fitted within the period and 16.5% for the
+annotations the median is 96.4% for a benchmark fitted within the period, 89.8% for one
+fitted a year earlier, and 16.5% for the
 profiles, with no annotation exempt. The information is in the twelve numbers. What the
 profiles lack is not better features and not better weights but an objective that looks
 for this structure: K-means minimises within-cluster variance, and a partition of
@@ -1797,7 +1798,7 @@ minimum variance is not a partition of maximum concentration. The same pattern a
 on Elliptic, where clusters of the 165 features attain 10.2% and a random forest on
 those same features 78% (Section 6.5).
 
-Two earlier readings of ours did not survive this measurement, and we report them
+An earlier reading of ours did not survive this measurement, and we report it
 because the correction is part of the result. The first version of this analysis cut the
 supervised score into cells of equal size, which no clustering is obliged to do and
 which caps what any rare annotation can reach; it made exchange tags and Omni look like
@@ -1917,7 +1918,8 @@ because the model was never given, and cannot recover, who that party is.
   transactions), so the transfer results describe this particular change.
 * The prospective sample is one page of up to 25 consecutive transactions
   from each of 800 blocks per month, so it describes months well but single
-  blocks only partly. Every sampled page was obtained.
+  blocks only partly. Every planned page was in fact obtained, so there is no
+  non-response to adjust for.
 * The freeze is not blindness, and for part of this evaluation it is weaker than
   that. The code was frozen before the reported runs, but an earlier submitted
   version of this work had already analysed the same Bitcoin corpus *and the
@@ -1969,8 +1971,8 @@ profiles capture most of what is attainable for common transaction properties an
 almost none of it for rare ones. Weights computed from the annotations themselves do
 not change that, and neither would better features: a supervised model on the same
 twelve features, fitted a year earlier, attains 95.0% of the ceiling for P2SH inputs
-where the profiles attain 23.6%, and over the ten annotations the median bound is
-96.4% against 16.5% for the profiles. The information is present and the clustering
+where the profiles attain 23.6%, and over the ten annotations its median is 89.8%
+against 16.5% for the profiles, rising to 96.4% when it is fitted within the period. The information is present and the clustering
 objective does not isolate it. And when the model is refitted freely, the new profiles cannot be matched to the old
 ones; but a refit that keeps the learned space and re-estimates only the centroids
 follows 24 of the 31 profiles into 2024 and recovers most of the concentration lost by
@@ -1999,7 +2001,7 @@ worth building on.
 ::: {custom-style="MDPI_6.2_back_matter"}
 
 **Supplementary Materials:** The following supporting information can be
-downloaded at https://www.mdpi.com/article/[DOI]/s1. Table S1: Count-rule flags of the published sample; Table S2: Analyses of this study, by when they were specified and what kind of evidence they provide; Table S3: The 31 ZSH profiles; Table S4: One-line description of each profile and the development transaction closest to its centroid; Table S5: Arms of the factorial design, all fitted on the full development period; Table S6: Primary contrasts of H1 (rank-power against uniform weights, A3 − A4) and H2 (refinement against none, A1 − A3) on the test period: differences in AP ; Table S7: Share of each profile in every period with a 95% interval from resampling blocks (1,000 resamples; the prospective sample uses its design weights), an; Table S8: Design-weighted against unweighted concentration in the prospective sample; Table S9: The count rule 'more than three inputs and more than three outputs', published as 'coinjoin-like', compared with the equal-output CoinJoin rule; Table S10: The two CoinJoin rules against an external list of Wasabi 2.x CoinJoin transactions with a known coordinator [@Svenda2026]; exploratory, added after t; Table S11: Atypicality scores against illicit status on the Elliptic test steps and, as exploratory analyses, against annotations of the Bitcoin data; Table S12: Sensitivity of ZSH to its settings; Table S13: Sensitivity to the size of the proxy partition; exploratory, added after the freeze; Table S14: Leave-one-family-out analysis of the seeded variant: AP lift of each count-rule family on the test period for the unseeded model, the model seeded wit; Figure S1: Rank-power weights of the twelve features on development data, with the mutual information (MI) of each feature with the proxy partition; Figure S2: Profile descriptors on development data; Figure S3: AP lift of the eleven non-input annotations on the test period for methods fitted on the same development sample with the same K (log scale); Figure S4: Primary contrasts of the factorial design on the test period: (left) rank-power against uniform weights without refinement (H1); (right) refinement ag; Figure S5: Monthly shares of the development-fitted profiles; Figure S6: ROC curves of atypicality scores against illicit status on the Elliptic test steps. The
+downloaded at https://www.mdpi.com/article/[DOI]/s1. Table S1: Count-rule flags of the published sample; Table S2: Analyses of this study, by when they were specified and what kind of evidence they provide; Table S3: The 31 ZSH profiles; Table S4: One-line description of each profile and the development transaction closest to its centroid; Table S5: Arms of the factorial design, all fitted on the full development period; Table S6: Primary contrasts of H1 (rank-power against uniform weights, A3 − A4) and H2 (refinement against none, A1 − A3) on the test period: differences in AP lift with 95% block-bootstrap intervals and Holm-adjusted p-values; Table S7: Share of each profile in every period with a 95% interval from resampling blocks (1,000 resamples; the prospective sample uses its design weights), and the mean cluster-wise Jaccard similarity across the 30 block-bootstrap refits of Section 6.3 with its 5th…; Table S8: Design-weighted against unweighted concentration in the prospective sample; Table S9: The count rule 'more than three inputs and more than three outputs', published as 'coinjoin-like', compared with the equal-output CoinJoin rule; Table S10: The two CoinJoin rules against an external list of Wasabi 2.x CoinJoin transactions with a known coordinator [@Svenda2026]; exploratory, added after the freeze; Table S11: Atypicality scores against illicit status on the Elliptic test steps and, as exploratory analyses, against annotations of the Bitcoin data; Table S12: Sensitivity of ZSH to its settings; Table S13: Sensitivity to the size of the proxy partition; exploratory, added after the freeze; Table S14: Leave-one-family-out analysis of the seeded variant: AP lift of each count-rule family on the test period for the unseeded model, the model seeded with all families, and the model seeded without that family; Figure S1: Rank-power weights of the twelve features on development data, with the mutual information (MI) of each feature with the proxy partition; Figure S2: Profile descriptors on development data; Figure S3: AP lift of the eleven non-input annotations on the test period for methods fitted on the same development sample with the same K (log scale); Figure S4: Primary contrasts of the factorial design on the test period: (left) rank-power against uniform weights without refinement (H1); (right) refinement against none with rank-power weights (H2); Figure S5: Monthly shares of the development-fitted profiles; Figure S6: ROC curves of atypicality scores against illicit status on the Elliptic test steps. The
 supplementary file also gives the full definitions of the measures summarised
 in Section 5.3.
 

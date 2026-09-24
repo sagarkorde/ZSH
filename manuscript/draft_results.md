@@ -148,7 +148,7 @@ fell below 0.5 (Figure {F_stability}b). Following Hennig's rule of thumb
 [@Hennig2007], the first group can be treated as stable, the second as
 indicating a pattern whose boundaries move, and the last as not reliable.
 K-means++ had 12, 14 and 5 clusters in these groups. Centroids moved less for
-ZSH than for K-means++ (mean matched displacement 0.31 against 0.36 of the
+ZSH than for K-means++ (mean matched displacement 0.30 against 0.36 of the
 within-cluster root-mean-square distance).
 
 **Transfer to later periods (H4).** The profiles were fitted once on 2022–2023 data
@@ -248,9 +248,8 @@ against a single free one, with no design that separates drift from the other
 things a refit changes — it cannot establish that centroid drift is the principal
 cause, and we do not claim it is. The practical implication stands: where a
 deployed partition must keep its identity, recentring alone recovers a large part
-of the loss. The part of Section 6.3 that does not survive refitting is
-the feature ranking: it is what the constrained refit holds fixed, and holding it fixed
-is what lets the profiles keep their identity.
+of the loss. What a free refit loses, and the constrained refit keeps, is the feature ranking:
+holding it fixed is what lets the profiles keep their identity.
 
 ### 6.4. RQ3 — What the profiles concentrate
 
@@ -260,7 +259,7 @@ the precision–coverage curves. For every annotation the lower 95% bound of the
 AP lift of ZSH lies above one, so all eleven are concentrated above their base
 rates. How much this means depends on what was attainable. Read against the
 ceiling $1/\pi$, the profiles capture most of what a partition could capture
-for the four common annotations — 84% for P2TR inputs, 83% for P2WPKH, 81% for
+for the four annotations it captures best — 84% for P2TR inputs, 83% for P2WPKH, 81% for
 P2PKH and 78% for Runes — but little for the rare ones: 24% for P2SH inputs,
 23% for mixed-script inputs, 10% for P2WSH, 7% for exchange tags and under 1%
 for coinbase and Omni transactions, whose large lifts (22 and 26) are small
@@ -297,16 +296,16 @@ except for P2PKH inputs (17.3), where the hierarchical initialisation helps.
 
 In the prospective sample, nine of the twelve annotations had enough positives
 for the rule of Section 5.3 (at least 200 in each half); coinbase transactions
-(284), Omni transactions (16), miner tags (6) and equal-output CoinJoins (388)
+(284), Omni transactions (16) and equal-output CoinJoins (388)
 were too rare to evaluate. All nine remaining annotations are again
 concentrated above their base rates, with lower bounds above one, so the
 frozen profiles still carry information about properties they never saw two
 years after they were fitted. These prospective estimates are design-weighted and
-their intervals come from a month-stratified block bootstrap (Section 5.4); the
+their intervals come from a month-stratified block bootstrap (Section 5.3); the
 unweighted, sample-specific versions are in Table {T_weighting}. The strength is
 lower than in the test period for seven of the nine: the AP lift for P2PKH inputs
 falls from 23.3 to 9.3, for P2WSH inputs from 7.3 to 3.3 and for other OP_RETURN
-use from 7.2 to 3.3, while P2TR inputs (2.5) and exchange tags (29.6) are higher
+use from 7.2 to 3.3, while P2TR inputs (2.4) and exchange tags (29.6) are higher
 than in 2024. Two profiles still contain a quarter of the P2PKH-input
 transactions at a precision of 97%, and one profile contains a quarter of the
 exchange-tagged transactions at a precision of 15%. ZSH concentrates seven of the
@@ -583,17 +582,16 @@ of that study, as in Section 6.2, since reproducing it means reproducing its
 feature set. BIRCH and the Vlahavas pipeline were fitted on a
 random subsample of 1,000,000 transactions because their cost grows faster than
 linearly in the number of rows, and Ward on its own 30,000-row subsample as in
-Section 6.2; the other four use all 3,299,616. This comparison was added after
-the freeze and is exploratory.
+Section 6.2; the other four use all 3,299,616.
 
 **Concentration against the ceiling.** Table {T_bench_attained} and
 Figure {F_bench} give the attained share of every family for every annotation
 on the test period. Read across a row and the families differ; read down a
-column and the annotation decides. For the three common annotations every
+column and the annotation decides. For the three most frequent annotations every
 family attains between 45.6% and 97.0% of the ceiling. For coinbase
 transactions no family passes 2.5%, for Omni 0.9%, for exchange tags 10.3%,
 for other OP_RETURN use 9.8% and for P2WSH inputs 20.1%. Seven families that
-build clusters in different ways — around centroids, around densities, by
+build clusters in different ways — around centroids, by
 merging a hierarchy and by summarising a feature tree — fail on the same
 annotations, which is what Section 6.4 implies: these annotations are too rare
 for 31 clusters of these features to isolate, whatever builds the clusters.
@@ -697,8 +695,11 @@ profiles recover, for every annotation without exception. P2SH inputs are the cl
 case: the profiles attain 23.6% of the ceiling and a supervised split of the same
 features attains 98.5%. Mixed-script inputs go from 22.6% to 95.6%, P2WSH inputs from
 10.4% to 95.9%, other OP_RETURN use from 9.8% to 97.0% and coinbase transactions from
-0.6% to 88.9%. The median over the ten annotations is 16.5% for the profiles and 96.4%
-for the benchmark. Even where the profiles do well they leave something: 80.9% against
+0.6% to 88.9%. Table {T_ceiling} covers ten annotations rather than the eleven used elsewhere:
+Runes is a test-period protocol and has no development-period positives, so the
+transfer column cannot be computed for it. The median over those ten is 16.5% for the
+profiles and 96.4% for the benchmark, lower than the 22.6% median quoted in Section 6.7
+because that one includes Runes, which the profiles capture well. Even where the profiles do well they leave something: 80.9% against
 98.7% for P2PKH inputs and about 84% against 100% for the two common witness classes.
 The information is in the twelve numbers, and K-means at K = 31 does not put it into
 separate clusters.
@@ -728,10 +729,14 @@ fitted for one annotation at a time, whereas the profiles are a single partition
 has to serve all of them at once. We priced that constraint by building one partition
 from all eleven annotations together — the eleven out-of-fold scores of a transaction
 form its coordinates, and K-means cuts that space into 31 clusters. Sharing costs
-almost nothing: the shared partition attains a median of 92.8% against 74.1% for the
-per-annotation benchmark cut into equal cells, and it is higher than the single-annotation
-benchmark for eight of the eleven, because eleven coordinates describe a transaction better
-than one does. The gap between the profiles and the benchmark is therefore not an artefact
+little, and we price it against the benchmark this section argues for rather than the
+one it rejects: the shared partition attains a median of 92.8% against 96.4% for the
+per-annotation benchmark with free cell sizes, so sharing costs about four points of the
+ceiling. It is higher than the single-annotation benchmark for two of the ten annotations
+of Table {T_ceiling} and equal for one, because eleven coordinates describe a transaction
+better than one does. Against the equal-cell variant the shared partition looks far
+stronger still (92.8% against 74.1%), but that comparison inherits the constraint we have
+just rejected and we do not rest anything on it. The gap between the profiles and the benchmark is therefore not an artefact
 of asking one partition to do eleven jobs.
 
 **Do address-level features add anything?** *Exploratory, added after the freeze.*

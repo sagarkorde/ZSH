@@ -35,8 +35,8 @@ profiles capture most of what is attainable for common transaction properties an
 almost none of it for rare ones. Weights computed from the annotations themselves do
 not change that, and neither would better features: a supervised model on the same
 twelve features, fitted a year earlier, attains 95.0% of the ceiling for P2SH inputs
-where the profiles attain 23.6%, and over the ten annotations the median bound is
-96.4% against 16.5% for the profiles. The information is present and the clustering
+where the profiles attain 23.6%, and over the ten annotations its median is 89.8%
+against 16.5% for the profiles, rising to 96.4% when it is fitted within the period. The information is present and the clustering
 objective does not isolate it. And when the model is refitted freely, the new profiles cannot be matched to the old
 ones; but a refit that keeps the learned space and re-estimates only the centroids
 follows 24 of the 31 profiles into 2024 and recovers most of the concentration lost by

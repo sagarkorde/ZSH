@@ -85,9 +85,10 @@ the frozen model and re-estimating only the centroids, started at the developmen
 centroids, lets 24 of the 31 profiles be followed into 2024 and 14 into 2026, and on
 the prospective sample it also recovers most of the concentration the frozen model had
 lost — the median attained share rises from 10.8% to 26.1% and legacy spending from
-42.8% to 84.2%. The instability of a free refit is therefore not mainly the data moving
-but the model moving with it: what the constrained refit holds fixed is the feature
-ranking, and holding it fixed is what lets the profiles keep their identity. For a
+42.8% to 84.2%. This is consistent with much of the instability of a free refit being the model
+moving rather than the data, though the exploratory comparison of Section 6.3 cannot
+separate the two; what the constrained refit holds fixed is the feature ranking, and
+holding it fixed is what lets the profiles keep their identity. For a
 monitoring system this is the practical recipe — freeze the space, re-estimate the
 centroids, and match the profiles across refits — rather than a choice between a
 drifting frozen model and a series that restarts. This is not a problem of one method: of the seven
@@ -135,7 +136,8 @@ two. A supervised model on exactly the same twelve features, fitted a year earli
 the development period and using no test-period label, attains 95.0% of the ceiling for
 P2SH inputs where the profiles attain 23.6%, 89.1% against 22.6% for mixed-script
 inputs and 90.4% against 0.6% for coinbase transactions (Section 6.8). Over the ten
-annotations the median is 96.4% for a bound fitted within the period and 16.5% for the
+annotations the median is 96.4% for a benchmark fitted within the period, 89.8% for one
+fitted a year earlier, and 16.5% for the
 profiles, with no annotation exempt. The information is in the twelve numbers. What the
 profiles lack is not better features and not better weights but an objective that looks
 for this structure: K-means minimises within-cluster variance, and a partition of
@@ -143,7 +145,7 @@ minimum variance is not a partition of maximum concentration. The same pattern a
 on Elliptic, where clusters of the 165 features attain 10.2% and a random forest on
 those same features 78% (Section 6.5).
 
-Two earlier readings of ours did not survive this measurement, and we report them
+An earlier reading of ours did not survive this measurement, and we report it
 because the correction is part of the result. The first version of this analysis cut the
 supervised score into cells of equal size, which no clustering is obliged to do and
 which caps what any rare annotation can reach; it made exchange tags and Omni look like
@@ -263,7 +265,8 @@ because the model was never given, and cannot recover, who that party is.
   transactions), so the transfer results describe this particular change.
 * The prospective sample is one page of up to 25 consecutive transactions
   from each of 800 blocks per month, so it describes months well but single
-  blocks only partly. Every sampled page was obtained.
+  blocks only partly. Every planned page was in fact obtained, so there is no
+  non-response to adjust for.
 * The freeze is not blindness, and for part of this evaluation it is weaker than
   that. The code was frozen before the reported runs, but an earlier submitted
   version of this work had already analysed the same Bitcoin corpus *and the

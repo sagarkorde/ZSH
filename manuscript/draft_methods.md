@@ -308,7 +308,7 @@ therefore came *after* exposure to those outcomes. Accordingly we distinguish
 three tiers of evidence, and use the corresponding terms throughout:
 
 * **Frozen reanalysis after prior exposure.** H5 and H6, and every Elliptic
-  result in Section 6.6, together with all analyses of the 2022–2024 Bitcoin
+  result in Section 6.5, together with all analyses of the 2022–2024 Bitcoin
   corpus. The hypotheses and the code were fixed in advance of the reported
   runs, which rules out tuning the analysis to its result, but the outcomes were
   not unknown to us when the plan was written. These are *not* blind
