@@ -34,7 +34,9 @@ def _find_repo():
 REPO = _find_repo()
 TABLES = REPO / "results" / "manuscript"
 FIGS = REPO / "results" / "figures"
-OUT_DIR = HERE.parent
+# Where the built .docx files go. Defaults to the repository root; set
+# ZSH_DOCX_OUT to the folder you assemble the submission in.
+OUT_DIR = Path(os.environ.get("ZSH_DOCX_OUT", HERE.parent))
 DRAFT = "--draft" in sys.argv
 
 SECTIONS = ["draft_front.md", "draft_intro.md", "draft_related.md", "draft_methods.md",

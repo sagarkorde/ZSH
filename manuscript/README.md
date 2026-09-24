@@ -16,17 +16,20 @@ python assemble.py
 `supplementary.md`, and then calls `build_manuscript.py` to produce the `.docx`
 files in the repository root.
 
-It finds the repository automatically when run from this directory. Set `ZSH_REPO`
-to override.
+It finds the repository automatically when run from this directory.
 
-Two things are needed that this repository does not contain:
-
-| | |
+| Variable | |
 |---|---|
-| `pandoc` | on the PATH (tested with 3.10) |
-| MDPI Word template | pandoc uses it as a reference document for styling. It is MDPI's own file and is not redistributed here; set `ZSH_MDPI_TEMPLATE` to your copy |
+| `ZSH_REPO` | repository root, if not the parent of this directory |
+| `ZSH_RESULTS` | results directory, if not `../results` |
+| `ZSH_MDPI_TEMPLATE` | the MDPI Word template pandoc uses as a reference document. It is MDPI's own file and is not redistributed here |
+| `ZSH_DOCX_OUT` | where the built `.docx` files go; the default is the repository root |
 
-Without the template the Markdown is still written; only the `.docx` step fails.
+`pandoc` must be on the PATH (tested with 3.10). Without the template the Markdown
+is still written and only the `.docx` step fails.
+
+This directory is the single source for the text: edit the `draft_*.md` files here
+and rebuild. Nothing is maintained anywhere else.
 
 ## Checking the numbers
 
@@ -54,7 +57,10 @@ non-zero if any disagrees. The same check runs as the last step of
 
 The correspondence with the reviewers and the editor — the point-by-point replies,
 the cover letters and the editor replies — is kept out of this repository while the
-article is under review.
+article is under review. Those files sit in this directory when present, because
+`assemble.py` builds the reply letters from them, but they are ignored by name in
+`.gitignore` and are never committed. `assemble.py` skips the letter step when they
+are absent, so a fresh clone builds the article without them.
 
 Placeholders in `{BRACES}` that survive a build are listed by `assemble.py`. One is
 deliberate: `{ZENODO_DOI}` stands for the data record and is filled in by the
