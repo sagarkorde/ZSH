@@ -34,13 +34,13 @@ and rebuild. Nothing is maintained anywhere else.
 ## Checking the numbers
 
 ```bash
-python verify_numbers.py
+python ../experiments/verify_manuscript_numbers.py
 ```
 
 Every numerical claim in `manuscript.md` and `supplementary.md` is recomputed from
 the saved result files and compared with the string the text uses. It exits
-non-zero if any disagrees. The same check runs as the last step of
-`../RUN_ALL.py`.
+non-zero if any disagrees, and runs as the last step of `../RUN_ALL.py`. Set
+`ZSH_MANUSCRIPT` to check a copy of the text somewhere else.
 
 ## Files
 
@@ -51,7 +51,7 @@ non-zero if any disagrees. The same check runs as the last step of
 | `references.json` | the reference list |
 | `references_verified.md` | how each reference was checked against CrossRef or the publisher |
 | `crossref_v1_refs.json` | CrossRef records retrieved for that check |
-| `assemble.py`, `build_manuscript.py`, `verify_numbers.py` | the build and the check |
+| `assemble.py`, `build_manuscript.py` | the build; the numbers are checked by `../experiments/verify_manuscript_numbers.py` |
 
 ## Not included
 
