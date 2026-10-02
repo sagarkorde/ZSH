@@ -52,5 +52,6 @@ conclusions drawn from the seven-family comparison are restricted to the methods
 settings and data tested. Four counts were corrected, and the data deposit was verified
 file by file against the local archive.
 
-No reported number changed. The 335 numerical claims in the article and its supplementary
-file remain checked against the saved result files by a script in the repository.
+No reported number changed. The 332 numerical claims in the article and its supplementary
+file remain checked against the saved result files by a script in the repository, which runs
+335 checks in all.

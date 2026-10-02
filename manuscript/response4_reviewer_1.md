@@ -99,6 +99,7 @@ Four of the five comments in this round, and two of the three in the last, were 
 * the number of checked claims stated in the back matter must equal the number the script actually checks;
 * the development-trained median, now a headline number, is recomputed rather than quoted.
 
-335 checks pass against the saved result files. The audit of references, captions, abstract values and withdrawn phrasings reports no remaining problems.
+All 335 checks pass: the 332 numerical claims stated in the back matter, plus the three
+consistency checks described above. The audit of references, captions, abstract values and withdrawn phrasings reports no remaining problems.
 
 We are aware that this is the fourth round and that most of what the reviewer found was within our power to find first. The practice of opening the archive, checking the timestamps and reading the supplement against the article has improved this paper in every round, and we are grateful for it.
