@@ -1,5 +1,5 @@
-| Type | Annotation | Development (%) | Test (%) | Prospective (%, weighted) |
-|:-----|:-------------|------------:|--------:|------------:|
+| Type | Annotation | Development (%) | Test (%) | Held out (%, weighted) |
+|:-----|:-------------|------------:|--------:|----------:|
 | L2 | P2PKH inputs | 8.63 | 3.46 | 4.59 |
 | L2 | P2SH inputs | 7.44 | 4.35 | 3.16 |
 | L2 | P2WPKH inputs | 42.37 | 47.25 | 62.46 |

@@ -51,7 +51,7 @@ SUPP = ["T_rules", "T_profiles", "T_factorial", "T_heuristic", "T_cjsource", "T_
 
 TAB = {
     "T_data": ("T_data.md", "Data used in this study. The development and test periods are parts of the "
-               "published Bitcoin transaction sample [@Korde2026]; the prospective sample was collected after "
+               "published Bitcoin transaction sample [@Korde2026]; the held-out sample was collected after "
                "the analysis code had been frozen; the Elliptic data follow the temporal split of the "
                "original study [@Weber2019]."),
     "T_rules": ("T_rules.md", "Count-rule flags of the published sample. Each flag is a fixed rule on the input "
@@ -62,9 +62,9 @@ TAB = {
     "T_annotations": ("T_annotations.md", "Annotations that are not clustering inputs, as shares of all "
                       "transactions. L2: input script class (all inputs of one class, otherwise mixed); L3: "
                       "OP_RETURN protocol; L4: GraphSense entity tag on any input or output address; L5: "
-                      "equal-output CoinJoin rule, which needs individual output values. Prospective shares use "
+                      "equal-output CoinJoin rule, which needs individual output values. Held-out shares use "
                       "the design weights."),
-    "T_profiles": ("T_profiles.md", "The 31 ZSH profiles. Dev., Test and Prosp.: share of the transactions of "
+    "T_profiles": ("T_profiles.md", "The 31 ZSH profiles. Dev., Test and Held out: share of the transactions of "
                    "each period. In, Out, Value (total input value) and Fee rate (sat/vB) are medians over the "
                    "development members; the main input script with its share, the share signalling "
                    "replace-by-fee (RBF) and the share with an exchange tag also refer to development members. "
@@ -95,14 +95,14 @@ TAB = {
     "T_concentration": ("T_concentration.md", "Cross-fitted concentration of the non-input annotations by ZSH "
                         "and by K-means++ with the same K, both fitted on all development data. AP lift: average "
                         "precision of the cluster ranking divided by the base rate (KM++: the same quantity for "
-                        "K-means++). Prec.: precision at 25% coverage of the positives, reached with the number of "
-                        "top-ranked profiles given in the next column; dividing it by the base rate gives the "
-                        "enrichment. Intervals from 1,000 block bootstrap resamples; p-values Holm-adjusted over "
-                        "the annotations of each period."),
+                        "K-means++). Prec.: precision at 25% coverage of the positives; dividing it by the base rate gives "
+                        "the enrichment. Intervals from 1,000 block bootstrap resamples; p-values Holm-adjusted over "
+                        "the annotations of each period. Two columns of the previous version were dropped so that the "
+                        "table fits its page: the maximum lift, which is 1/π and can be read from the base rate given here, and the number of top-ranked profiles reaching 25% coverage, which is given in the text where it matters."),
     "T_heuristic": ("T_heuristic.md", "The count rule 'more than three inputs and more than three outputs', "
                     "published as 'coinjoin-like', compared with the equal-output CoinJoin rule. For 2022–2024, "
                     "estimates combine random samples of flagged and unflagged transactions, weighted by stratum "
-                    "size, with parametric bootstrap intervals. For the prospective sample they use all "
+                    "size, with parametric bootstrap intervals. For the held-out sample they use all "
                     "transactions and the design weights, with intervals from resampling blocks within months."),
     "T_elliptic": ("T_elliptic.md", "Concentration of illicit transactions on Elliptic. Models were fitted on "
                    "all transactions of time steps 1–34; clusters were ranked by their illicit rate among the "
@@ -126,10 +126,10 @@ TAB = {
     "T_cjsource": ("T_cjsource.md", "The two CoinJoin rules against an external list of Wasabi 2.x CoinJoin "
                    "transactions with a known coordinator [@Svenda2026]; exploratory, added after the freeze. Recall is the "
                    "share of the listed transactions that the rule flags, with a Wilson interval; the equal-output "
-                   "rule needs individual output values and can therefore be evaluated only on the prospective "
+                   "rule needs individual output values and can therefore be evaluated only on the held-out "
                    "sample. The list covers coordinators active after mid-2024, which is why it matches no "
                    "development transaction."),
-    "T_oracle": ("T_oracle.md", "An upper bound for the weighting; exploratory, added after the freeze. Each row refits the "
+    "T_oracle": ("T_oracle.md", "An oracle-informed weighting; exploratory, added after the freeze. This compares particular weighting rules and is not an upper bound on what weighting could achieve: on P2PKH inputs the rules derived from P2WSH and P2SH reach 22.7 and 22.0 against 13.4 for the rule derived from P2PKH itself. Each row refits the "
                  "pipeline on the same 1,000,000 development transactions with weights computed from the "
                  "annotation itself and evaluates it on the test period. ZSH lift: the unsupervised reference "
                  "fitted on the same sample. Attained: share of the ceiling 1/π, that is the average precision. "
@@ -142,12 +142,12 @@ TAB = {
                    "profiles matched at 0.5. The 0.5 criterion is a minimum-continuity threshold: it asks only "
                    "whether a profile remains recognisable across the refit, and is deliberately weaker than the "
                    "0.75 used in Section 6.3 as a criterion for cluster stability in Hennig's sense."),
-    "T_bench_battery": ("T_bench_battery.md", "The whole evaluation applied to seven clustering families; exploratory, added after the freeze. Every method is fitted on the development period at K = 31 and uses the same twelve features, with one exception: the partial reproduction of Vlahavas et al. uses the five features of that study, as in Table {T_methods}; BIRCH and the Vlahavas reproduction are fitted on a 1,000,000-transaction subsample and Ward on its own 30,000-row subsample, as in Table {T_methods}. Largest: share of the period transactions held by the largest cluster. Refit ARI: mean adjusted Rand index between the development partition and ten block-bootstrap refits. ARI: agreement between the transferred partition and a refit on the period itself. Matched: profiles whose minimum-cost match with that refit reaches a Jaccard similarity of 0.5. ZSH chooses its own number of clusters when refitted (37 in the test period, 38 in the prospective sample); the other families are refitted at K = 31."),
+    "T_bench_battery": ("T_bench_battery.md", "The whole evaluation applied to seven clustering families; exploratory, added after the freeze. Every method is fitted on the development period at K = 31 and uses the same twelve features, with one exception: the partial reproduction of Vlahavas et al. uses the five features of that study, as in Table {T_methods}; BIRCH and the Vlahavas reproduction are fitted on a 1,000,000-transaction subsample and Ward on its own 30,000-row subsample, as in Table {T_methods}. Largest: share of the period transactions held by the largest cluster. Refit ARI: mean adjusted Rand index between the development partition and ten block-bootstrap refits. ARI: agreement between the transferred partition and a refit on the period itself. Matched: profiles whose minimum-cost match with that refit reaches a Jaccard similarity of 0.5. ZSH chooses its own number of clusters when refitted (37 in the test period, 38 in the held-out sample); the other families are refitted at K = 31."),
     "T_warm": ("T_warm.md", "A refit constrained to the previous centroids; exploratory, added after the freeze. Free refit: the whole pipeline refitted on the period, as in Table {T_matching}. Constrained: the scaler and the rank-power weights of the frozen model are kept and only the centroids are re-estimated, started at the development centroids. Followed: profiles whose minimum-cost match with the refit reaches a Jaccard similarity of 0.5, the minimum-continuity threshold of Table {T_matching} rather than the stricter 0.75 stability criterion, and the share of the period transactions they hold. Median J: median Jaccard of the matched pairs. Attained: median share of the ceiling over the annotations of that period, for the frozen model and for the constrained refit."),
-    "T_prespec": ("T_prespec.md", "Analyses of this study, by when they were specified and what kind of evidence they provide. All non-exploratory analyses had their hypotheses written into the analysis plan and their code frozen (repository tag `v2-frozen`) before the reported runs. They are nevertheless labelled *frozen reanalysis* rather than confirmatory, because an earlier submitted version of this work had already examined the same Bitcoin corpus and the complete labelled Elliptic data set: the freeze prevents the analysis from being tuned to its result, but the outcomes were not unknown to the authors. Rows marked *prospective on 2024-26* are additionally prospective when applied to the 2024-2026 sample, whose transactions had not been mined at the freeze. Exploratory analyses were added after the freeze; each is recorded with its reason and commit in the deviations log and labelled where it appears."),
+    "T_prespec": ("T_prespec.md", "Analyses of this study, by when they were specified and what kind of evidence they provide. All non-exploratory analyses had their hypotheses written into the analysis plan and their code frozen (repository tag `v2-frozen`) before the reported runs. They are nevertheless labelled *frozen reanalysis* rather than confirmatory, because an earlier submitted version of this work had already examined the same Bitcoin corpus and the complete labelled Elliptic data set: the freeze prevents the analysis from being tuned to its result, but the outcomes were not unknown to the authors. Rows marked *held out on 2024-26* are additionally tested on the 2024-2026 sample, which was collected after the freeze and had not been examined when the plan was written; its blocks were already mined, so these rows test temporal generalisation rather than anything unobservable at the freeze. Exploratory analyses were added after the freeze; each is recorded with its reason and commit in the deviations log and labelled where it appears."),
     "T_ceiling": ("T_ceiling.md", "What the same twelve features give a supervised model; exploratory, added after the freeze. For each annotation a gradient-boosted tree is fitted on the twelve clustering features and its score is cut into 31 cells, which are then ranked and scored exactly as the profiles are, so the columns are comparable. Equal cells: cells of equal size, which cannot isolate a rare annotation whatever the score. Benchmark: cell sizes free (K-means on the score), fitted on one block-parity half of the test period and scored on the other. A year earlier: cell sizes free, fitted on the development period and therefore using no test-period label. All values are shares of the ceiling 1/π. The benchmark is fitted for one annotation at a time; Section S1 reports a single partition built from all eleven."),
     "T_bench_attained": ("T_bench_attained.md", "Share of the attainable concentration reached by each family on the test period; exploratory, added after the freeze. Ceiling: the largest AP lift an annotation of this base rate can reach, 1/π; the attained share is the average precision itself. Columns, in order: ZSH, K-means++, mini-batch K-means, the diagonal Gaussian mixture, BIRCH, Ward and the partial reproduction of Vlahavas et al., all at K = 31."),
-    "T_richer": ("T_richer.md", "Address-level features against the twelve, on the prospective sample; exploratory, added after the freeze. Twelve features built from the cached transaction records — input and output address reuse inside the sample, paying back to an own input address, witness items and bytes, sigops, locktime and sequence use, and the dispersion of input and output values — are added to the twelve of Table 2. Frozen: the development model transferred. Refit 12 and Refit 24: the pipeline refitted on this period with twelve and with twenty-four features. Sup.: the supervised benchmark of Table {T_ceiling} computed on this period, with cell sizes free. All values are shares of the ceiling 1/π. Input script types are excluded because they are annotations."),
+    "T_richer": ("T_richer.md", "Address-level features against the twelve, on the held-out sample; exploratory, added after the freeze. Twelve features built from the cached transaction records — input and output address reuse inside the sample, paying back to an own input address, witness items and bytes, sigops, locktime and sequence use, and the dispersion of input and output values — are added to the twelve of Table 2. Frozen: the development model transferred. Refit 12 and Refit 24: the pipeline refitted on this period with twelve and with twenty-four features. Sup.: the supervised benchmark of Table {T_ceiling} computed on this period, with cell sizes free. All values are shares of the ceiling 1/π. Input script types are excluded because they are annotations."),
     "T_proxy_k": ("T_proxy_k.md", "Sensitivity to the size of the proxy partition; exploratory, added after the freeze. "
                   "Each row refits the whole pipeline on the same 1,000,000 development transactions with the "
                   "given number of proxy clusters and is evaluated on the test period. τ: Kendall correlation of "
@@ -166,10 +166,10 @@ APP_TAB = {
               "seeded without that family. For the OP_RETURN and replace-by-fee families the corresponding flag "
               "was also removed from the features and the whole pipeline was refitted."),
     "T_support": ("T_support.md", "Share of each profile in every period with a 95% interval from resampling "
-                  "blocks (1,000 resamples; the prospective sample uses its design weights), and the mean "
+                  "blocks (1,000 resamples; the held-out sample uses its design weights), and the mean "
                   "cluster-wise Jaccard similarity across the 30 block-bootstrap refits of Section 6.3 with its "
                   "5th and 95th percentiles. Exploratory, added after the freeze."),
-    "T_weighting": ("T_weighting.md", "Design-weighted against unweighted concentration in the prospective "
+    "T_weighting": ("T_weighting.md", "Design-weighted against unweighted concentration in the held-out "
                     "sample. The weighted columns are the estimates reported in the article: they use the "
                     "design weights of the sampling scheme and a month-stratified block bootstrap, and they "
                     "estimate the quantity for the sampled population. The unweighted columns treat the "
@@ -188,7 +188,7 @@ FIG = {
                    "atypicality score is a separate component. All steps are fitted on development data, and "
                    "later data pass through the frozen model."),
     "F_design": ("F2_design.png", 6.5, "Study periods. The analysis code was frozen before any test-period, "
-                 "prospective or Elliptic test result was computed."),
+                 "held-out or Elliptic test result was computed."),
     "F_weights": ("F3_weights.png", 3.6, "Rank-power weights of the twelve features on development data, with "
                   "the mutual information (MI) of each feature with the proxy partition."),
     "F_profiles": ("F4_profiles.png", 6.5, "Profile descriptors on development data. Left block: medians of "
@@ -205,10 +205,10 @@ FIG = {
     "F_stability": ("F7_stability.png", 6.5, "Reproducibility. (a) Agreement of seed and block-bootstrap refits "
                     "with the fit on all development data. (b) Mean best Jaccard similarity of each cluster "
                     "across the 30 bootstrap refits; dotted lines mark the thresholds 0.5 and 0.75."),
-    "F_drift": ("F8_drift.png", 6.5, "Monthly shares of the development-fitted profiles. Test and prospective "
-                "transactions were assigned by the frozen model; prospective shares use the design weights. "
+    "F_drift": ("F8_drift.png", 6.5, "Monthly shares of the development-fitted profiles. Test and held-out "
+                "transactions were assigned by the frozen model; held-out shares use the design weights. "
                 "Vertical lines mark the start of the test period, the Runes launch and the start of the "
-                "prospective sample."),
+                "held-out sample."),
     "F_concentration": ("F9_curves.png", 6.5, "Enrichment (precision divided by base rate) against coverage "
                         "of the positives for selected annotations, averaged over the two cross-fitting "
                         "directions."),
@@ -460,7 +460,9 @@ def main():
     print(f"tables: {tnum}\nfigures: {fnum}")
     if unused:
         print(f"never referenced: {unused}")
-    AUTHOR_PLACEHOLDERS = {"{ZENODO_DOI}"}   # deliberately left for the authors
+    # {ZENODO_DOI} used to be exempt; a build carrying it was submitted once, and the
+    # Data Availability Statement then pointed at a record that held only the PDF.
+    AUTHOR_PLACEHOLDERS = set()
     blocking = [x for x in left if x not in AUTHOR_PLACEHOLDERS]
     if left:
         print(f"{len(left)} placeholders left: {left}")

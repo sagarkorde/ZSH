@@ -420,6 +420,9 @@ for t, lab in (("L2:P2SH", "P2SH"), ("L2:P2PKH", "P2PKH"), ("L2:P2WSH", "P2WSH")
 for t, lab in (("L2:P2WSH", "P2WSH"), ("L4:exchange", "exchange")):
     check(f"bound equal cells {lab}", pct(piv18.loc[t, EQUAL], 1))
 check("bound median free cells", pct(piv18[FREE].median(), 1))
+# the principal claim of Section 6.8 rests on the transfer column, so its median
+# is a checked quantity and not only an in-period figure (R1.3, round 4)
+check("bound median transfer cells", pct(piv18[TRANS].median(), 1))
 check("profiles median attained", pct(piv18["ZSH"].median(), 1))
 check("profiles P2SH attained", pct(piv18.loc["L2:P2SH", "ZSH"], 1))
 check("profiles exchange attained", pct(piv18.loc["L4:exchange", "ZSH"], 1))
@@ -475,6 +478,52 @@ check("single bound median", pct(p21["single bound"].median(), 1))
 check("shared bound better count",
       str(int((p21["shared bound"] > p21["single bound"]).sum())))
 
+N_NUMERIC = len(CHECKS)   # recomputed quantities; the back matter states this number
+
+# ---------------------------------------------------------------- internal consistency
+# Not recomputed quantities but cross-file agreement. Three reviewer-found errors were of
+# this kind: a prose count that no longer matched its table, a claim withdrawn in the
+# article and kept in the supplement, and a caption naming a deleted column.
+WORDS = {10: "Ten", 11: "Eleven", 12: "Twelve", 13: "Thirteen", 14: "Fourteen",
+         15: "Fifteen", 16: "Sixteen", 20: "Twenty", 21: "Twenty-one", 22: "Twenty-two",
+         23: "Twenty-three", 24: "Twenty-four", 25: "Twenty-five", 26: "Twenty-six",
+         27: "Twenty-seven"}
+_pre = RES / "manuscript" / "T_prespec.md"
+if _pre.exists():
+    _rows = [ln for ln in _pre.read_text(encoding="utf-8").splitlines()
+             if ln.startswith("|") and not set(ln) <= set("|:- ")]
+    _rows = _rows[1:]                                    # drop the header
+    _n_all = len(_rows)
+    _n_exp = sum(1 for ln in _rows if "Exploratory" in ln)
+    _n_pre = _n_all - _n_exp
+    check(f"analysis inventory: {_n_all} analyses in Table S2",
+          f"the {WORDS[_n_all].lower()} analyses reported here")
+    check(f"analysis inventory: {_n_pre} pre-specified",
+          f"{WORDS[_n_pre]} analyses were specified in that plan",
+          f"{WORDS[_n_pre]} of the {WORDS[_n_all].lower()} analyses reported here")
+    check(f"analysis inventory: {_n_exp} added after the freeze",
+          f"{WORDS[_n_exp]} more were added afterwards",
+          f"{WORDS[_n_exp].lower()} were added afterwards")
+
+# Phrases the article has withdrawn. Each must be absent from the manuscript AND the
+# supplementary file; the submission is one package and a reviewer reads it as one.
+FORBIDDEN = [
+    # the only permitted uses are the two sentences that withdraw the word
+    ("round 3: the sample is not prospective",
+     r"\bprospectiv(?!e anywhere,|e\.==)"),
+    ("round 3: the oracle experiment is not an upper bound",
+     r"upper bound for the weighting|Oracle-weight upper bound|bounds what any weighting"),
+    ("round 3: the 2024-26 blocks existed at the freeze",
+     r"did not exist at the freeze|had not been mined"),
+    ("round 4: Table 9 no longer has a profile-count column", r"given in the next column"),
+    ("round 4: weighting is not exhausted", r"close to exhausted"),
+]
+FORBID_HITS = []
+for _label, _pat in FORBIDDEN:
+    _m = re.findall(_pat, TEXT, flags=re.I)
+    if _m:
+        FORBID_HITS.append((_label, _pat, len(_m)))
+
 # ---------------------------------------------------------------- report
 missing = []
 for label, variants in CHECKS:
@@ -486,4 +535,11 @@ for label, variants in CHECKS:
 print(f"\n{len(CHECKS) - len(missing)}/{len(CHECKS)} checks found in manuscript.md")
 for label, variants in missing:
     print(f"MISSING  {label}: expected one of {variants}")
-sys.exit(1 if missing else 0)
+for label, pat, n in FORBID_HITS:
+    print(f"WITHDRAWN  {label}: {n} occurrence(s) of /{pat}/")
+
+# the back matter states how many numerical claims this script checks
+claim_ok = f"The {N_NUMERIC} numerical claims" in TEXT
+if not claim_ok:
+    print(f"STALE COUNT  back matter should say 'The {N_NUMERIC} numerical claims'")
+sys.exit(1 if (missing or FORBID_HITS or not claim_ok) else 0)

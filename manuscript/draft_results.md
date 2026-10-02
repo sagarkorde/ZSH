@@ -131,8 +131,8 @@ clear but not overwhelming amount.
 How precisely is each profile's size known? Resampling blocks gives an interval
 for every profile's share of each period (Table {T_support}). The intervals are
 narrow: the widest is 0.50 percentage points on development data, 0.73 in the
-test period and 1.27 in the prospective sample, and no development interval is
-wider than 7.7% of the share it surrounds. All 31 prospective shares lie outside the
+test period and 1.27 in the held-out sample, and no development interval is
+wider than 7.7% of the share it surrounds. All 31 held-out shares lie outside the
 corresponding development intervals. We report this as descriptive evidence of
 movement only: the intervals describe each period separately, and an interval for
 one period that excludes another period's point estimate is neither a confidence
@@ -183,24 +183,24 @@ of the weight, such a change reshapes the distance. K-means++ with uniform
 weights, which has no ranking to change, agreed better with its own refit
 (ARI 0.39).
 
-The prospective sample shows the same effect more strongly. Assigning its
+The held-out sample shows the same effect more strongly. Assigning its
 456,292 transactions with the frozen model puts an estimated 45.0% of them in
 one profile (P10) and 74.7% in three (P10, P12, P22); the largest profile of the
 development fit held 8.7%, and of the test period 15.6%. Month by month the
 concentration grows: P10 holds 65.7% of the transactions estimated for August
 2026 (Figure {F_drift}). These three profiles are the low-fee-rate members of
-their families, and the median fee rate of their prospective members is 1.3–2.6
+their families, and the median fee rate of their held-out members is 1.3–2.6
 sat/vB against 3.0–5.0 sat/vB in the development period. Nineteen of the 31
-profiles receive less than 1% of the prospective transactions each, and five
+profiles receive less than 1% of the held-out transactions each, and five
 receive almost none. The profiles keep their structural character only in part:
 the input-script mix stays close to the development mix for 16 of the 31
 profiles (Jensen–Shannon distance below 0.2) and the count-rule mix for 10.
 
-A refit on the prospective data agrees with the transferred partition even less
+A refit on the held-out data agrees with the transferred partition even less
 than on the test data (ARI 0.11 against 0.21; mean best Jaccard 0.14). It
 finds 37 profiles, three of which are at least 90% Runes and hold 54% of the
 Runes transactions, whereas the transferred model spreads them over the
-existing profiles. The feature ranking of the prospective refit also differs
+existing profiles. The feature ranking of the held-out refit also differs
 from the development ranking (Kendall τ 0.42): the fee rate per byte moves to
 rank 1 and the input-to-output value ratio to rank 2, while serialised size,
 the dominant development feature, falls to rank 6. K-means++ with uniform
@@ -212,7 +212,7 @@ respected on development data does not hold when the mix of activity moves.
 the new profiles have to be recognisable as the old ones. They are not
 (Table {T_matching}). Matching each of the 31 profiles to one cluster of the refit,
 no profile reaches a Jaccard similarity of 0.5 in either period; the median best
-match is 0.06 for the 2024 refit and 0.01 for the prospective refit, and the best
+match is 0.06 for the 2024 refit and 0.01 for the held-out refit, and the best
 single case is 0.37 and 0.47. K-means++ does better in the near term — four of its
 clusters, holding 41% of the test-period transactions, exceed 0.5 — but by 2026 only
 one does, holding 0.3% of transactions. A refit therefore produces a new map rather
@@ -230,15 +230,15 @@ the development centroids, behaves very differently (Table {T_warm}). In the tes
 period 24 of the 31 profiles can then be followed above a Jaccard similarity of 0.5,
 holding 83.8% of the transactions, against none for the free refit, and the agreement
 with the transferred partition rises from an ARI of 0.21 to 0.63. Two years out, 14
-of 31 can be followed, holding 27.0% of the prospective transactions. The centroids
-do move — 54 Lloyd iterations in the test period and 75 in the prospective sample,
+of 31 can be followed, holding 27.0% of the held-out transactions. The centroids
+do move — 54 Lloyd iterations in the test period and 75 in the held-out sample,
 with a mean displacement of 0.23 and 0.62 — so this is a genuine refit and not a
 frozen model under another name.
 
 What the constrained refit costs, and what it buys, differ by period. On the test
 period it is close to a wash: the median attained share over the eleven annotations
 goes from 22.6% to 21.1%, with P2PKH inputs falling from 80.9% to 71.7% and Runes
-rising from 78.0% to 90.8%. On the prospective sample it is a clear gain: the median
+rising from 78.0% to 90.8%. On the held-out sample it is a clear gain: the median
 rises from 10.8% to 26.1%, P2PKH inputs from 42.8% to 84.2%, Runes from 53.0% to
 91.5% and other OP_RETURN use from 5.9% to 17.1%, with exchange tags the only
 annotation to fall. This is consistent with centroid drift being an important contributor to what the
@@ -294,13 +294,13 @@ Rank-power K-means without refinement at the same K stays within 0.21 of ZSH
 for every annotation. Uniform weights with refinement lie close to K-means++,
 except for P2PKH inputs (17.3), where the hierarchical initialisation helps.
 
-In the prospective sample, nine of the twelve annotations had enough positives
+In the held-out sample, nine of the twelve annotations had enough positives
 for the rule of Section 5.3 (at least 200 in each half); coinbase transactions
 (284), Omni transactions (16) and equal-output CoinJoins (388)
 were too rare to evaluate. All nine remaining annotations are again
 concentrated above their base rates, with lower bounds above one, so the
 frozen profiles still carry information about properties they never saw two
-years after they were fitted. These prospective estimates are design-weighted and
+years after they were fitted. These held-out estimates are design-weighted and
 their intervals come from a month-stratified block bootstrap (Section 5.3); the
 unweighted, sample-specific versions are in Table {T_weighting}. The strength is
 lower than in the test period for seven of the nine: the AP lift for P2PKH inputs
@@ -334,7 +334,7 @@ the Samourai Whirlpool pools; 178 of the 482 transactions used one of them. The
 median number of equal outputs was five, which is the fixed structure of a
 Whirlpool transaction [@Stutz2022]. No transaction in either sample matched a
 GraphSense coinjoin tag; the only tags found were exchange tags (48 of 10,000
-transactions). The prospective sample, where individual output values are available for every
+transactions). The held-out sample, where individual output values are available for every
 transaction, allows the same comparison without sampling. Of its 456,292
 transactions, 388 meet the equal-output rule and 5,152 meet the count rule.
 Weighted by the design, equal-output CoinJoins make up 0.077% of transactions
@@ -345,44 +345,44 @@ fall over the period: the count rule flags 1.9% of transactions in December
 2024 and 0.55% in August 2026, and the equal-output share falls from 0.19% in
 October 2024 to between 0.03% and 0.10% in 2026. The equal values are also
 different. In 2022–2024 the four Whirlpool denominations were the most frequent; in the
-prospective sample the most frequent equal values are powers of two and three
+held-out sample the most frequent equal values are powers of two and three
 and round decimal amounts (1,062,882 = 2 × 3¹² sat, 354,294 = 2 × 3¹¹ sat,
 262,144 = 2¹⁸ sat, 100,000 sat), which is the output pattern of a different
-family of implementations. Two events fall just before the prospective period:
+family of implementations. Two events fall just before the held-out period:
 the seizure of the Samourai service in April 2024 [@DOJ2024] and the closure of
 the Wasabi coordinator in June 2024 [@zkSNACKs2024]. We report the timing
 without claiming a causal link, since our data cover only the period after
-both. No transaction in the prospective sample matched a GraphSense coinjoin
+both. No transaction in the held-out sample matched a GraphSense coinjoin
 tag.
 
 **An external check of the CoinJoin family.** Both rules above are rules. A list of
 Wasabi 2.x CoinJoin transactions with a known coordinator [@Svenda2026] gives labels
 from the source instead (Table {T_cjsource}). It covers coordinators active after
 mid-2024, so it matches none of our development transactions, 175 of the test period
-and 45 of the prospective sample. On these, the count rule has a recall of 98.9%
-(95% CI 95.9–99.7%) in the test period and 100% (92.1–100%) in the prospective
+and 45 of the held-out sample. On these, the count rule has a recall of 98.9%
+(95% CI 95.9–99.7%) in the test period and 100% (92.1–100%) in the held-out
 sample, and the equal-output rule, which can be evaluated only where individual
 output values are available, has a recall of 97.8% (88.4–99.6%). These are recall figures, and only recall figures:
 both rules find nearly all of the *listed* CoinJoins. They say nothing about
 precision, which is a separate question answered by a separate evaluation — the
 equal-output criterion of Table {T_heuristic}, where the count rule's precision is
-9.6% in the test period and 7.8% in the prospective sample. High recall against
+9.6% in the test period and 7.8% in the held-out sample. High recall against
 this list and low precision against that criterion are consistent, and should not
 be combined into a single claim about either rule.
 
 Two limits on the external check bear directly on how far it generalises, and we
 restate them here rather than only in Section 7.8. The list covers one
 implementation, Wasabi 2.x, and only coordinators active after mid-2024; it
-matches 175 test-period and 45 prospective transactions. Nothing here establishes
+matches 175 test-period and 45 held-out transactions. Nothing here establishes
 recall for CoinJoin activity in general, for other implementations, or for other
-periods. Of the 388 equal-output transactions in the prospective sample, 44 are on
+periods. Of the 388 equal-output transactions in the held-out sample, 44 are on
 the external list, so most of the rest come from implementations or coordinators the
 list does not cover — which is itself a reminder of how partial the list is.
 
 The labelled CoinJoins also let us check the profiles against a source. In the test
 period they fall into 11 of the 31 profiles, four of which hold 80% of them, and 41%
 are in profile P29 alone, which holds 0.2% of the test transactions — a concentration
-of about 200 times the base rate. In the prospective sample, 42% fall in P30 (0.1% of
+of about 200 times the base rate. In the held-out sample, 42% fall in P30 (0.1% of
 transactions). Both profiles are extreme-count groups (P29: two inputs and 193
 outputs at the median; P30: 200 inputs and one output), which is what a Wasabi
 CoinJoin looks like structurally: the matched transactions have a median of 31 inputs
@@ -456,7 +456,7 @@ detectors on this benchmark [@PerezCano2025].
 On the Bitcoin data the same kind of score behaves differently, and usefully.
 The Isolation Forest fitted on development data, before Runes existed, ranked
 the Runes transactions of 2024 as atypical with a ROC-AUC of 0.926 (0.926–0.927),
-and transactions with an exchange tag with 0.728 (0.723–0.734). In the prospective sample it ranked the 388
+and transactions with an exchange tag with 0.728 (0.723–0.734). In the held-out sample it ranked the 388
 equal-output CoinJoins as atypical (0.907, 0.892–0.918) and the Runes
 transactions with 0.952 (0.951–0.954). The score is therefore a reasonable
 signal that structurally unusual activity, or activity the development data did
@@ -548,12 +548,21 @@ for exchange tags the oracle reaches 23.5 against 20.8, moving attainment from 7
 7.8%. For P2PKH inputs the oracle is worse than the unsupervised weights (13.4 against
 20.4), because emphasising the features that separate P2PKH transactions produces a
 partition that splits them across several clusters. Weights proportional to the oracle
-mutual information behave similarly. Within this scheme, therefore, feature weighting
-is close to exhausted: an oracle that knows the answer in advance cannot concentrate
-these annotations much better than the unsupervised ranking, and never beyond a
-quarter of what is attainable for the three rarer ones. Feature weighting is not the
-lever. Section 6.8 asks whether the features or the objective is, and finds that for
-most annotations the features carry far more than the profiles recover.
+mutual information behave similarly.
+
+This experiment is not an upper bound on what weighting could achieve, and we no
+longer describe it as one. It compares particular weighting rules, and the table shows
+one of them beating the rule built from the annotation itself: on P2PKH inputs a
+weighting derived from P2WSH reaches an AP lift of 22.7 and one derived from P2SH 22.0,
+against 13.4 for the P2PKH oracle and 20.4 for the unsupervised ranking. A weighting
+informed by the answer can therefore be worse than one informed by a different
+annotation, and no ordering of these rules bounds the family they are drawn from. What
+the table does show is that the effect of reweighting is erratic and small in the
+direction that matters: across the four annotations no rule, including the oracle,
+lifts attainment past a quarter of the ceiling for the three rarer ones. The evidence
+that weighting is not where the headroom lies comes from elsewhere — six other
+clustering families reach the same ceilings (Section 6.7), and a supervised split of
+the same twelve features reaches far more than any of them (Section 6.8).
 
 **Leaving families out of the seeds.** Table {T_loo} tests the seeded variant further. If the seeds carry information about a
 rule family, removing that family from the seeds should lower its
@@ -573,7 +582,7 @@ was added after the analysis freeze (Table {T_prespec}).* Sections 6.2 to 6.6 co
 ZSH with K-means++ at the same K. The limits they report — concentration bounded by each base rate, weights
 that cannot lift it, profiles that do not survive a refit — are therefore
 statements about ZSH. To see which of them are statements about the task, the
-whole evaluation was repeated for seven families: ZSH, K-means++, mini-batch
+whole evaluation was repeated for seven families at one value of K: ZSH, K-means++, mini-batch
 K-means, a diagonal Gaussian mixture, BIRCH, Ward clustering and the partial
 reproduction of Vlahavas et al. [@Vlahavas2024], all with the same K = 31 and
 the same development transactions (Table {T_bench_battery}). Six of the seven
@@ -593,8 +602,10 @@ transactions no family passes 2.5%, for Omni 0.9%, for exchange tags 10.3%,
 for other OP_RETURN use 9.8% and for P2WSH inputs 20.1%. Seven families that
 build clusters in different ways — around centroids, by
 merging a hierarchy and by summarising a feature tree — fail on the same
-annotations, which is what Section 6.4 implies: these annotations are too rare
-for 31 clusters of these features to isolate, whatever builds the clusters.
+annotations, which is what Section 6.4 implies: ==for every one of the seven families
+tried here, 31 clusters of these twelve features do not isolate annotations this rare.
+Seven families at one K on one feature set cannot show that no clustering could; what
+they show is that the failure is not peculiar to ZSH.==
 
 Within that band the families do differ, and the largest difference belongs to
 the weighting. On P2PKH inputs ZSH attains 80.9% against 58.2% for mini-batch
@@ -605,7 +616,7 @@ Vlahavas et al. 7.3%). Two annotations go the other way: mixed-script inputs,
 where K-means++ attains 35.7% against 22.6%, and Runes, where the Gaussian
 mixture reaches 97.0% and the Vlahavas pipeline 96.7% against 78.0%.
 
-The advantage does not last. On the prospective sample the median attained
+The advantage does not last. On the held-out sample the median attained
 shares are 13.2% for the Gaussian mixture, 12.8% for mini-batch K-means, 11.5%
 for BIRCH, 10.9% for K-means++, 10.8% for ZSH, 10.7% for Ward and 5.8% for the
 Vlahavas pipeline. Only P2PKH inputs keep a clear gap (42.8% against 10.9% for
@@ -614,7 +625,7 @@ by this measure.
 
 **Cluster sizes.** In the test period the largest cluster holds between 15.2%
 (mini-batch K-means) and 45.7% (BIRCH) of the transactions, with ZSH at 15.6%.
-In the prospective sample it holds between 39.6% (Gaussian mixture) and 84.5%
+In the held-out sample it holds between 39.6% (Gaussian mixture) and 84.5%
 (BIRCH), with ZSH at 45.0%, and three clusters hold between 63.6% and 97.2%
 of the transactions depending on the family. The concentration of later
 activity into a few clusters reported in Section 6.3 is therefore not a
@@ -639,38 +650,50 @@ period and matching its clusters to the transferred ones (Section 6.3) shows
 that the families which can be followed are those whose partitions are close to
 degenerate. The Vlahavas pipeline matches 14 of 31 clusters above a Jaccard
 similarity of 0.5 in the test period, holding 89.6% of its transactions, and 16
-of 30 in the prospective sample holding 97.6%; BIRCH matches 2 of 31 in the
-prospective sample, but those 2 hold 84.7% of the transactions. In both cases a
+of 30 in the held-out sample holding 97.6%; BIRCH matches 2 of 31 in the
+held-out sample, but those 2 hold 84.7% of the transactions. In both cases a
 single cluster holds most of the data, so the match is easy and says little.
 Where the partition is balanced, almost nothing survives: ZSH matches no
 profile in either period, K-means++ 4 of 31 in the test period (41.2% of
-transactions) and none in the prospective sample, Ward 3 and none, mini-batch
+transactions) and none in the held-out sample, Ward 3 and none, mini-batch
 K-means 4 and 5, the Gaussian mixture 5 and 1. ZSH is also the only family that
 chooses its own number of clusters when refitted — 37 in the test period and 38
-in the prospective sample against 31 for the others — which lowers the Jaccard
+in the held-out sample against 31 for the others — which lowers the Jaccard
 similarity of any match it can make. These are new refits with their own seeds;
 the refits of Section 6.3 found 36 and 37 clusters, so the number itself moves
 with the seed. The counts at the 0.5 threshold are
 themselves sensitive to the refit seed: the K-means++ refit of Table
-{T_matching}, which used the seed of Section 6.3, left one prospective profile
+{T_matching}, which used the seed of Section 6.3, left one held-out profile
 just above the threshold holding 0.3% of the sample, and the refit here leaves
 none.
 
 **What the comparison separates.** Three of the results of this article belong
 to ZSH: the highest median attained share on the test period, a much stronger
 concentration of legacy P2PKH spending than any other family, and refits that
-agree at least as well as any other family's. Three belong to the task and not
-to the method: the ceiling on rare annotations, which no family approaches; the
-collapse of the partition into a few clusters two years after the fit, which
-every family shows; and the impossibility of following a balanced partition
-through a refit, which only near-degenerate partitions avoid. Reporting the
-first three without the second three would describe properties of unsupervised
-transaction profiling as properties of one method.
+agree at least as well as any other family's. ==Three are shared by all seven
+families tested here, so they are not specific to ZSH: the ceiling on rare
+annotations, which no family approaches; the collapse of the partition into a few
+clusters two years after the fit, which every family shows; and the inability to
+follow a balanced partition through a refit, which only near-degenerate partitions
+avoid. What the comparison establishes is the scope of those three results within the
+methods, settings and data tested: seven families, K = 31, these twelve features (five
+for the Vlahavas reproduction), this corpus and these annotations. It does not establish
+that they are unavoidable properties of transaction profiling in general, and we do not
+claim that; a different feature set, a different K, or an objective other than variance
+minimisation is untested here. Reporting the first three results without the second
+three would present properties shared by every family we ran as properties of one
+method.==
 
 ### 6.8. Is the limit the features or the objective?
 
 *This section is exploratory: the supervised benchmark and the address-level
 comparison were both added after the analysis freeze (Table {T_prespec}).*
+
+==Two versions of the benchmark are reported and they do not carry the same weight. The
+one the section's conclusion rests on is fitted on the development period, a year before
+the evaluation data, and uses no test-period label. The other is fitted within the test
+period on block-parity folds; it is optimistic for the reason given below, so we treat it
+as an exploratory comparison and say so wherever it is quoted.==
 
 Section 6.6 shows that weights computed from an annotation itself add little, and
 Section 6.7 that six other clustering families reach the same low shares for rare
@@ -698,7 +721,9 @@ features attains 98.5%. Mixed-script inputs go from 22.6% to 95.6%, P2WSH inputs
 0.6% to 88.9%. Table {T_ceiling} covers ten annotations rather than the eleven used elsewhere:
 Runes is a test-period protocol and has no development-period positives, so the
 transfer column cannot be computed for it. The median over those ten is 16.5% for the
-profiles and 96.4% for the benchmark, lower than the 22.6% median quoted in Section 6.7
+profiles and ==96.4% for the within-period benchmark, the optimistic variant; for the
+development-trained benchmark, which is the one we rely on, it is 89.8%. The 16.5% is==
+lower than the 22.6% median quoted in Section 6.7
 because that one includes Runes, which the profiles capture well. Even where the profiles do well they leave something: 80.9% against
 98.7% for P2PKH inputs and about 84% against 100% for the two common witness classes.
 The information is in the twelve numbers, and K-means at K = 31 does not put it into
@@ -713,8 +738,12 @@ the profiles is a statement about P2SH inputs specifically, not a general summar
 of the eleven annotations, whose attained shares range from 0.6% to 83.9%. This is the cleaner comparison, because the in-period
 benchmark is optimistic — with two block-parity folds, the labels of the half on which the
 clusters are ranked have influenced the scores, and therefore the cell membership, of
-the half on which they are scored. Both columns say the same thing, and the transfer
-column says it without that caveat.
+the half on which they are scored. ==Separating the model fitting, the construction of
+the cells and the ranking from the final evaluation altogether would need a third fold,
+which we did not run; the development-trained column separates them in time instead, and
+that is why the principal claim rests on it. For the script classes and coinbase
+transactions the two columns agree; for two annotations they do not, as the next
+paragraph shows.==
 
 Two annotations behave differently in that last column, and the difference is temporal
 rather than structural. Trained a year earlier, the benchmark falls from 97.0% to 4.8% for
@@ -732,7 +761,8 @@ form its coordinates, and K-means cuts that space into 31 clusters. Sharing cost
 little, and we price it against the benchmark this section argues for rather than the
 one it rejects: the shared partition attains a median of 92.8% against 96.4% for the
 per-annotation benchmark with free cell sizes, so sharing costs about four points of the
-ceiling. It beats the single-annotation benchmark for two of the ten annotations of
+ceiling. ==Both of those figures are within-period, so this pricing is exploratory and
+supports no claim of temporal generalisation.== It beats the single-annotation benchmark for two of the ten annotations of
 Table {T_ceiling} and matches it for one, so eleven coordinates are sometimes a better
 description of a transaction than the one fitted for the annotation at hand, but not
 usually. Against the equal-cell variant the shared partition looks far
@@ -741,7 +771,7 @@ just rejected and we do not rest anything on it. The gap between the profiles an
 of asking one partition to do eleven jobs.
 
 **Do address-level features add anything?** *Exploratory, added after the freeze.*
-The cached records of the prospective
+The cached records of the held-out
 collection carry the full transaction, so for those 456,292 transactions we added
 twelve features the published sample does not contain: how often each input and output
 address occurs elsewhere in the sample, whether the transaction pays back to one of its

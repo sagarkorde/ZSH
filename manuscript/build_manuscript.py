@@ -148,7 +148,7 @@ def main():
     tmp = Path(tempfile.mkdtemp())
     (tmp / "in.md").write_text(md, encoding="utf-8")
     raw = tmp / "raw.docx"
-    subprocess.run(["pandoc", str(tmp / "in.md"), "-f", "markdown+pipe_tables+tex_math_dollars",
+    subprocess.run(["pandoc", str(tmp / "in.md"), "-f", "markdown+pipe_tables+tex_math_dollars+mark",
                     "-o", str(raw), f"--reference-doc={TEMPLATE}", f"--resource-path={md_path.parent}"],
                    check=True)
     with zipfile.ZipFile(raw) as zin, zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:

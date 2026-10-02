@@ -30,20 +30,31 @@ is available from Kaggle
 TagPacks are available at https://github.com/graphsense/graphsense-tagpacks;
 the address-to-category map used here was built from the repository on
 30 August 2026 and its SHA-256 checksum is listed in the analysis plan. The
-code, the analysis plan written before the confirmatory analyses, the list of
-deviations, the prospective-data collector and all result files are available
+code, the analysis plan written before the reported runs, the list of
+deviations, the collector for the held-out sample and all result files are available
 at https://github.com/sagarkorde/ZSH (branch `v2`; tags `v2-plan`,
-`v2-frozen` and `v2-results`). The prospective transaction sample, the raw
-API responses, the collection manifest and a checksum list are archived at
-{ZENODO_DOI}. Every table and figure can be
-regenerated with `python RUN_ALL.py`.
-<!-- AUTHOR ACTION: create the Zenodo (or IEEE DataPort) record for the
-prospective sample and replace {ZENODO_DOI}. -->
+`v2-frozen` and `v2-results`). ==Which of these data support which kind of claim is set
+out in Section 5.1 and should be read with this statement: the 2022–2024 Bitcoin corpus
+and the Elliptic data set had both been examined in an earlier version of this work, so
+every analysis of them is a frozen reanalysis and not a blind confirmatory test, while
+the 2024–2026 sample deposited below was collected after the freeze and was unexamined
+when the plan was written, which makes it held out in collection rather than in time.==
 
+==The held-out temporal sample of
+456,292 transactions, the 24,526 raw API responses it was built from, the
+collection manifest and a SHA-256 list covering every other file in the record are
+deposited as a dataset record at https://doi.org/10.5281/zenodo.23037946, which resolves
+to the current version. The sample file hashes to
+`dff579fb…8733`, the value the collector recorded in the manifest when the sample
+was closed, so a reader can download the file, hash it and confirm that the archived
+sample is the one the reported design-weighted estimates were computed from. One caveat
+applies to rebuilding rather than downloading: a Parquet file written by a different
+Arrow build holds identical data in different bytes, so a regenerated file matches on
+content — 456,292 rows and 42 columns — and not on checksum.== Every table and figure can be regenerated with `python RUN_ALL.py`.
 **Use of Generative AI:** The authors used Claude Opus 5 (Anthropic) throughout
 this revision, under their direction and review. The tool was used to write and
 test the analysis code in the accompanying repository, including the clustering
-pipeline, the evaluation measures, the prospective-data collector and the
+pipeline, the evaluation measures, the collector for the held-out sample and the
 scripts that build every table and figure; to run those experiments and report
 their output; to propose analyses that the authors then approved, among them the
 reading of concentration against its ceiling, the oracle-weight bound, the
@@ -53,7 +64,7 @@ text of this article, its supplementary file and the response to the reviewers.
 The authors specified the research questions, the analysis plan and the design,
 reviewed all code, results and text, decided what to report, and take full
 responsibility for the content of this publication. No text, figure or number
-was published without author review. The 300 numerical claims in this article
+was published without author review. ==The 332 numerical claims== in this article
 and its supplementary file are checked against the saved result files by a
 script in the repository (`experiments/verify_manuscript_numbers.py`).
 <!-- AUTHOR CHECK: MDPI asks for a precise description of AI use. Edit this so

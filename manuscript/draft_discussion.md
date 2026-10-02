@@ -31,7 +31,7 @@ Refinement is not a source of concentration. At the same number of clusters it
 changed the AP lift of no non-input annotation by more than 0.21. Its value
 is practical: on the data it is fitted on, it keeps any single profile from
 absorbing a large part of the data, which matters when profiles are used to
-split work. The cap says nothing about later data: in the prospective period
+split work. The cap says nothing about later data: in the held-out period
 one profile of the frozen model held 45% of the transactions. The cap is only a
 target. On the Bitcoin data one split was enough; on Elliptic three levels of
 splitting left a cluster with 64% of the transactions, because K-means kept
@@ -68,10 +68,10 @@ were spread over existing profiles, and a refit on 2024 data produced a
 different partition (ARI 0.21). Part of the difference comes from the feature
 ranking, which changed with the data; because the top-ranked feature receives
 almost half of the weight, a new ranking gives a new distance. In the
-prospective sample the mismatch is larger: three profiles absorb three quarters
+held-out sample the mismatch is larger: three profiles absorb three quarters
 of the transactions of 2025 and 2026, and a refit agrees with the transferred
 partition at an ARI of 0.11. What did survive is concentration: two years
-after the fit, every annotation with enough positives in the prospective
+after the fit, every annotation with enough positives in the held-out
 sample was still concentrated above its base rate, although more weakly than
 in 2024. The profiles therefore keep some meaning while losing their balance. The reason is visible in the profile descriptors.
 The profiles separate transactions mainly by size and fee rate, and the fee
@@ -83,7 +83,7 @@ the 31 reaches a Jaccard similarity of 0.5 (Section 6.3). A free refit gives a n
 not an updated one. Constraining it changes that. Keeping the scaler and the weights of
 the frozen model and re-estimating only the centroids, started at the development
 centroids, lets 24 of the 31 profiles be followed into 2024 and 14 into 2026, and on
-the prospective sample it also recovers most of the concentration the frozen model had
+the held-out sample it also recovers most of the concentration the frozen model had
 lost — the median attained share rises from 10.8% to 26.1% and legacy spending from
 42.8% to 84.2%. This is consistent with much of the instability of a free refit being the model
 moving rather than the data, though the exploratory comparison of Section 6.3 cannot
@@ -127,20 +127,28 @@ against 1/π separates a partition that fails from an annotation that is simply 
 
 The second is the weighting. Weights computed from the annotation itself — an oracle
 that no unsupervised method has — lift P2SH attainment from 12% to 25%, leave P2WSH
-unchanged and make P2PKH worse (Section 6.6). Within this scheme feature weighting is
-close to exhausted, which is a negative result about the part of the method that gives
-it its name.
+unchanged and make P2PKH worse (Section 6.6). ==For the three rarer of the four
+annotations tested, no rule we tried — the two oracle variants, the unsupervised
+ranking and the rules derived from the other annotations — lifted attainment past a
+quarter of the ceiling, and the effect of reweighting was erratic rather than ordered.
+That is a negative result about the part of the method that gives it its name, and it
+is a result about the rules tested: it does not exclude that some other weighting of
+these twelve features would do better, and nothing here bounds what weighting in
+general could achieve.==
 
 The third is the feature set, and it is the one that changed our reading of the other
 two. A supervised model on exactly the same twelve features, fitted a year earlier on
 the development period and using no test-period label, attains 95.0% of the ceiling for
 P2SH inputs where the profiles attain 23.6%, 89.1% against 22.6% for mixed-script
-inputs and 90.4% against 0.6% for coinbase transactions (Section 6.8). Over the ten
-annotations the median is 96.4% for a benchmark fitted within the period, 89.8% for one
-fitted a year earlier, and 16.5% for the
-profiles, with no annotation exempt. The information is in the twelve numbers. What the
-profiles lack is not better features and not better weights but an objective that looks
-for this structure: K-means minimises within-cluster variance, and a partition of
+inputs and 90.4% against 0.6% for coinbase transactions (Section 6.8). ==Over the ten
+annotations the median is 89.8% for that earlier-fitted benchmark, against 16.5% for
+the profiles, with no annotation exempt. A benchmark fitted within the test period
+reaches a median of 96.4%, but that variant is optimistic — the labels of the half on
+which the cells are ranked have influenced the scores, and so the cell membership, of
+the half on which it is scored — so we rest this conclusion on the earlier-fitted
+column and treat the within-period one as exploratory (Section 6.8).== The information is in the twelve numbers. What the
+profiles lack is not better features, and not better weights among those we tried, but
+an objective that looks for this structure: K-means minimises within-cluster variance, and a partition of
 minimum variance is not a partition of maximum concentration. The same pattern appears
 on Elliptic, where clusters of the 165 features attain 10.2% and a random forest on
 those same features 78% (Section 6.5).
@@ -155,7 +163,7 @@ There is no annotation for which these features carry nothing.
 
 Two of the results are properties of the task rather than of ZSH, which the benchmark
 establishes (Section 6.7): every family's partition collapses into a few clusters in
-the prospective period, and profiles survive a refit only where a single cluster
+the held-out period, and profiles survive a refit only where a single cluster
 already holds most of the data. The third, the gap to the supervised benchmark, is a
 property of the objective that all seven families share — for most of the
 annotations tested. Exchange tags are the documented exception: there the
@@ -164,13 +172,13 @@ features relax it (Section 6.8).
 
 Where richer features help is where the annotation is a property of the parties rather
 than of the transaction. Adding address reuse, witness structure, sigops and value
-dispersion to the twelve, on the prospective sample where the full records are
+dispersion to the twelve, on the held-out sample where the full records are
 available, raises the supervised benchmark for exchange tags from 40.8% to 59.6%, while
 adding almost nothing for the OP_RETURN annotations, which the twelve already describe
 (Section 6.8). Refitting the profiles on all twenty-four features moves them barely at
 all, so the extra information does not reach them through the clustering objective
 either. Two things would therefore be worth building: a criterion that optimises the
-concentration of held-out properties directly, or a partition shaped by a few labels
+concentration of nominated annotations directly, or a partition shaped by a few labels
 and then applied unsupervised; and, for entity-level properties specifically, features
 built from the address graph rather than from the transaction alone.
 
@@ -217,7 +225,7 @@ of what a user would assume. On the Elliptic data illicit transactions received 
 scores than licit ones (ROC-AUC 0.175), so treating a high score as suspicion would
 invert the intended reading. What the score does detect is novelty relative to the
 fitting period: it ranked Runes transactions as unusual in 2024 (0.926) and equal-output
-CoinJoins in the prospective sample (0.907). Both are legitimate activity. A score that
+CoinJoins in the held-out sample (0.907). Both are legitimate activity. A score that
 reliably flags privacy-preserving transactions and new protocols, while failing on
 illicit ones, would be a poor basis for any decision affecting a person, and a harmful
 one if it directed scrutiny towards users of privacy tools.
@@ -249,7 +257,7 @@ because the model was never given, and cannot recover, who that party is.
   of that data is free of shared wallets, and we could only restrict the ranking
   side (Section 6.5).
 * The external CoinJoin labels cover one implementation (Wasabi 2.x) and only the
-  period after mid-2024, matching 175 test-period and 45 prospective transactions.
+  period after mid-2024, matching 175 test-period and 45 held-out transactions.
   They establish the recall of the two rules *against that list* and say nothing
   about their precision, about earlier CoinJoin software, or about CoinJoin
   activity in general; precision is estimated separately and is low (9.6% and
@@ -263,7 +271,7 @@ because the model was never given, and cannot recover, who that party is.
   comparable only for the same annotation and the same K.
 * The test period is dominated by one new protocol (Runes: 40% of its
   transactions), so the transfer results describe this particular change.
-* The prospective sample is one page of up to 25 consecutive transactions
+* The held-out sample is one page of up to 25 consecutive transactions
   from each of 800 blocks per month, so it describes months well but single
   blocks only partly. Every planned page was in fact obtained, so there is no
   non-response to adjust for.
@@ -273,12 +281,14 @@ because the model was never given, and cannot recover, who that party is.
   complete labelled Elliptic data set*. The Elliptic results of Section 6.5 and
   hypotheses H5 and H6 are therefore a frozen reanalysis carried out with prior
   knowledge of the outcomes, not blind confirmatory tests, and we do not present
-  them as such (Section 5.1). Only the 2024–2026 sample, which had not been mined
-  when the plan was frozen, supports genuinely prospective claims. The settings,
+  them as such (Section 5.1). Only the 2024–2026 sample was collected after the
+  freeze, and it alone was unexamined when the plan was written; its blocks were
+  already on the chain, so it tests whether a model fitted on 2022–2023 still
+  describes later activity, not anything that was unobservable at the freeze. The settings,
   the feature set and the choice of annotations were likewise made by people who
   had already seen how similar choices behaved on these transactions. What the
   freeze protects is the evaluation from being tuned to its own result; it does
-  not make any of this a blind test. Ten of the twenty-four analyses reported here were
-  specified in the plan and fourteen were added afterwards (Table {T_prespec});
+  not make any of this a blind test. ==Ten of the twenty-five analyses reported here were
+  specified in the plan and fifteen were added afterwards (Table {T_prespec});==
   they are labelled throughout, and the two that overturned earlier conclusions
   are identified as such.

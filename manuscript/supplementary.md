@@ -24,7 +24,7 @@ individual output values from the Esplora interfaces, and applied the
 equal-output rule. The two strata are weighted by their population sizes to
 estimate the precision and recall of the count rule and the prevalence of
 equal-output transactions; intervals come from a parametric bootstrap of the
-two stratum proportions. In the prospective sample the rule is compared with
+two stratum proportions. In the held-out sample the rule is compared with
 the equal-output rule on every transaction, using the design weights.
 
 **External CoinJoin labels.** For the transactions of the external list that fall in
@@ -51,7 +51,7 @@ transactions) and the squared distance to the assigned ZSH centroid. Each score
 is evaluated by ROC-AUC against the illicit label on the test steps. On the
 Bitcoin data we evaluate, as exploratory analyses, how the development-period
 Isolation Forest ranks Runes, exchange-tagged and P2WSH transactions of the test
-period and equal-output CoinJoins and Runes of the prospective sample.
+period and equal-output CoinJoins and Runes of the held-out sample.
 
 **Actor-disjoint evaluation.** With the actor annotations, the Elliptic analysis is
 repeated with the cluster ranking restricted to training-period transactions that
@@ -60,14 +60,17 @@ are ranked on actors that never appear in the evaluation set. Everything else is
 above. We also report whether a fully actor-disjoint split of the data is possible at
 all.
 
-**An upper bound for the weighting.** The weights are learned without labels. To see
+==**An oracle-informed weighting.**== The weights are learned without labels. To see
 how much a better ranking could be worth, we replace the ranking with one computed
 from an annotation itself: on development data we estimate the mutual information
 between each feature and the annotation on a class-balanced sample, and use it either
 with the same rank-power curve or directly as weights. The pipeline is then refitted
 with those fixed weights and evaluated on the test period. Such an oracle is not
-available to an unsupervised method; it bounds what any weighting of these twelve
-features could achieve for that annotation within this clustering scheme. We do this
+available to an unsupervised method. ==It compares particular weighting rules and does
+not bound the family they are drawn from: a rule derived from one annotation can
+concentrate another better than that annotation's own oracle does, so no ordering of
+these rules establishes a maximum (Section 6.6, Table 11). We described this
+experiment as an upper bound in earlier versions and withdraw that description.== We do this
 for four annotations that span the range of attainment: P2PKH, P2SH and P2WSH inputs
 and the exchange tag. Added after the freeze.
 
@@ -111,21 +114,21 @@ once. To price that constraint we build one partition with full label knowledge:
 each of the eleven annotations a gradient-boosted tree is cross-fitted by block parity
 as above, the eleven out-of-fold scores of a transaction are standardised to form its
 coordinates, and K-means cuts that eleven-dimensional space into K* clusters. The
-partition is then ranked and scored exactly as any other. It remains an upper bound
-rather than a method, because building it needs labels for every annotation.
+partition is then ranked and scored exactly as any other. ==It is a benchmark rather
+than a method, because building it needs labels for every annotation.==
 
 
-**Design weights in the prospective sample.** The prospective sample was drawn with
+**Design weights in the held-out sample.** The held-out sample was drawn with
 unequal inclusion probabilities: blocks were selected within months, and one page of up
 to 25 consecutive transactions was taken from each selected block, so a transaction in a
-large block stands for more of the chain than one in a small block. Every prospective
+large block stands for more of the chain than one in a small block. Every held-out
 estimate in the article that refers to a population quantity therefore uses the design
 weights, and its interval comes from a block bootstrap stratified by calendar month,
 which resamples blocks within each month rather than across the whole period and so
 respects the way the sample was built. Section 5.4 states which quantities are weighted
 and which are not.
 
-Table S8 reports the same prospective concentration results both ways, so
+Table S8 reports the same held-out concentration results both ways, so
 that the effect of the weighting can be read directly rather than inferred. Two details
 matter when comparing the columns. Target eligibility is deliberately unweighted, that
 is it counts sampled positives, so both analyses cover exactly the same annotations and
@@ -149,7 +152,7 @@ Table: **Table S1.** Count-rule flags of the published sample. Each flag is a fi
 | distribution | outputs > inputs and outputs > 2 | 8.5 | 10.6 | 99.56 |
 | peer-to-peer | inputs = 1 and outputs = 1 | 40.5 | 19.6 | 100.00 |
 
-Table: **Table S2.** Analyses of this study, by when they were specified and what kind of evidence they provide. All non-exploratory analyses had their hypotheses written into the analysis plan and their code frozen (repository tag `v2-frozen`) before the reported runs. They are nevertheless labelled *frozen reanalysis* rather than confirmatory, because an earlier submitted version of this work had already examined the same Bitcoin corpus and the complete labelled Elliptic data set: the freeze prevents the analysis from being tuned to its result, but the outcomes were not unknown to the authors. Rows marked *prospective on 2024-26* are additionally prospective when applied to the 2024-2026 sample, whose transactions had not been mined at the freeze. Exploratory analyses were added after the freeze; each is recorded with its reason and commit in the deviations log and labelled where it appears.
+Table: **Table S2.** Analyses of this study, by when they were specified and what kind of evidence they provide. All non-exploratory analyses had their hypotheses written into the analysis plan and their code frozen (repository tag `v2-frozen`) before the reported runs. They are nevertheless labelled *frozen reanalysis* rather than confirmatory, because an earlier submitted version of this work had already examined the same Bitcoin corpus and the complete labelled Elliptic data set: the freeze prevents the analysis from being tuned to its result, but the outcomes were not unknown to the authors. Rows marked *held out on 2024-26* are additionally tested on the 2024-2026 sample, which was collected after the freeze and had not been examined when the plan was written; its blocks were already mined, so these rows test temporal generalisation rather than anything unobservable at the freeze. Exploratory analyses were added after the freeze; each is recorded with its reason and commit in the deviations log and labelled where it appears.
 
 | Analysis | Section | Status | Reason it was added |
 |:-------------------------------------------|:--------|:-------------|:-------------------------------------------|
@@ -157,10 +160,10 @@ Table: **Table S2.** Analyses of this study, by when they were specified and wha
 | Method comparison at matched K | 6.2 | Frozen reanalysis |  |
 | Weighting × refinement factorial (H1, H2) | 6.2 | Frozen reanalysis |  |
 | Stability: seeds, block bootstrap, permuted null (H3) | 6.3 | Frozen reanalysis |  |
-| Transfer to later periods (H4) | 6.3 | Frozen reanalysis; prospective on 2024-26 |  |
-| Concentration of non-input annotations (H5) | 6.4 | Frozen reanalysis; prospective on 2024-26 |  |
-| Count rule against the equal-output rule | 6.4 | Frozen reanalysis; prospective on 2024-26 |  |
-| Elliptic with a temporal split | 6.5 | Frozen reanalysis |  |
+| Transfer to later periods (H4) | 6.3 | Frozen reanalysis; held out on 2024-26 |  |
+| Concentration of non-input annotations (RQ3) | 6.4 | Frozen reanalysis; held out on 2024-26 |  |
+| Count rule against the equal-output rule | 6.4 | Frozen reanalysis; held out on 2024-26 |  |
+| Elliptic with a temporal split (H5) | 6.5 | Frozen reanalysis |  |
 | Atypicality on Elliptic (H6) | 6.5 | Frozen reanalysis |  |
 | Sensitivity to every fixed setting | 6.6 | Frozen reanalysis |  |
 | Feature-ranking drift across refits | 6.3 | Exploratory | the test refit agreed poorly with the transferred partition |
@@ -170,16 +173,16 @@ Table: **Table S2.** Analyses of this study, by when they were specified and wha
 | Actor-disjoint Elliptic evaluation | 6.5 | Exploratory | reviewers asked for source-level held-out evaluation |
 | External CoinJoin labels | 6.4 | Exploratory | a reviewer asked for validation against external labels |
 | Concentration read against its ceiling | 5.3, 6.4 | Exploratory | AP lift alone cannot separate a weak partition from a rare annotation |
-| Oracle-weight upper bound | 6.6 | Exploratory | to separate a poor weighting from an uninformative feature set |
+| Oracle-informed weighting | 6.6 | Exploratory | to separate a poor weighting from an uninformative feature set |
 | Profile matching across refits | 6.3 | Exploratory | refitting is useful only if profiles can be followed |
 | Refit constrained to the previous centroids | 6.3 | Exploratory | to test the remedy this article proposes |
 | The same evaluation for seven families | 6.7 | Exploratory | to attribute the limits to ZSH or to the task |
 | Supervised benchmark on the same features | 6.8 | Exploratory | to separate the feature set from the objective |
 | One partition serving all annotations | 6.8 | Exploratory | to price the constraint of sharing a partition |
 | Address-level features | 6.8 | Exploratory | to test whether richer features lift the weakest case |
-| Design-weighted prospective estimates | 5.4, 6.4 | Exploratory | the prospective sample was drawn with unequal inclusion probabilities |
+| Design-weighted held-out estimates | 5.4, 6.4 | Exploratory | the held-out sample was drawn with unequal inclusion probabilities |
 
-Table: **Table S3.** The 31 ZSH profiles. Dev., Test and Prosp.: share of the transactions of each period. In, Out, Value (total input value) and Fee rate (sat/vB) are medians over the development members; the main input script with its share, the share signalling replace-by-fee (RBF) and the share with an exchange tag also refer to development members. The last column gives the Runes share among the test-period members.
+Table: **Table S3.** The 31 ZSH profiles. Dev., Test and Held out: share of the transactions of each period. In, Out, Value (total input value) and Fee rate (sat/vB) are medians over the development members; the main input script with its share, the share signalling replace-by-fee (RBF) and the share with an exchange tag also refer to development members. The last column gives the Runes share among the test-period members.
 
 | Profile | Dev. (%) | Test (%) | Prosp. (%) | In | Out | Value (sat) | Fee rate | Main input script (%) | RBF (%) | Exch. tag (%) | Runes, test (%) |
 |:--------|--------:|--------:|--------:|--------:|--------:|-------------:|--------:|-----------:|--------:|--------:|--------:|
@@ -291,9 +294,9 @@ Table: **Table S6.** Primary contrasts of H1 (rank-power against uniform weights
 | H2: A1 − A3 | Other OP_RETURN | 0.02 | 0.00–0.03 | 0.120 |
 | H2: A1 − A3 | Exchange tag | 0.21 | −0.26 to 0.68 | 0.695 |
 
-Table: **Table S7.** Share of each profile in every period with a 95% interval from resampling blocks (1,000 resamples; the prospective sample uses its design weights), and the mean cluster-wise Jaccard similarity across the 30 block-bootstrap refits of Section 6.3 with its 5th and 95th percentiles. Exploratory, added after the freeze.
+Table: **Table S7.** Share of each profile in every period with a 95% interval from resampling blocks (1,000 resamples; the held-out sample uses its design weights), and the mean cluster-wise Jaccard similarity across the 30 block-bootstrap refits of Section 6.3 with its 5th and 95th percentiles. Exploratory, added after the freeze.
 
-| Profile | Development (%) | Test (%) | Prospective (%) | Jaccard (5th–95th) |
+| Profile | Development (%) | Test (%) | Held out (%) | Jaccard (5th–95th) |
 |:--------|-----------------:|-----------------:|-----------------:|-----------------:|
 | P00 | 8.71 (8.46–8.96) | 1.92 (1.85–1.99) | 4.39 (4.17–4.63) | 0.97 (0.96–1.00) |
 | P01 | 7.66 (7.57–7.75) | 5.70 (5.59–5.81) | 0.75 (0.66–0.84) | 0.64 (0.32–0.99) |
@@ -327,7 +330,7 @@ Table: **Table S7.** Share of each profile in every period with a 95% interval f
 | P29 | 0.26 (0.26–0.27) | 0.21 (0.20–0.21) | 0.12 (0.10–0.13) | 0.90 (0.83–0.97) |
 | P30 | 0.20 (0.19–0.20) | 0.12 (0.11–0.12) | 0.13 (0.11–0.14) | 0.80 (0.59–0.97) |
 
-Table: **Table S8.** Design-weighted against unweighted concentration in the prospective sample. The weighted columns are the estimates reported in the article: they use the design weights of the sampling scheme and a month-stratified block bootstrap, and they estimate the quantity for the sampled population. The unweighted columns treat the sampled transactions as the population and are therefore sample-specific; they are given so that the effect of the weighting can be read directly. Positives are sampled counts and are identical for both, because target eligibility is deliberately unweighted. Attained: average precision, the share of the ceiling 1/π.
+Table: **Table S8.** Design-weighted against unweighted concentration in the held-out sample. The weighted columns are the estimates reported in the article: they use the design weights of the sampling scheme and a month-stratified block bootstrap, and they estimate the quantity for the sampled population. The unweighted columns treat the sampled transactions as the population and are therefore sample-specific; they are given so that the effect of the weighting can be read directly. Positives are sampled counts and are identical for both, because target eligibility is deliberately unweighted. Attained: average precision, the share of the ceiling 1/π.
 
 | Annotation | Positives | Base wtd (%) | Base unwtd (%) | AP lift wtd (95% CI) | AP lift unwtd (95% CI) | Attained wtd (%) | Attained unwtd (%) | Prec@25% wtd | Prec@25% unwtd |
 |:-------------------|----------:|--------:|--------:|-----------------:|-----------------:|---------:|---------:|---------:|---------:|
@@ -341,7 +344,7 @@ Table: **Table S8.** Design-weighted against unweighted concentration in the pro
 | Other OP_RETURN | 9,245 | 1.761 | 2.026 | 3.34 (2.97–3.79) | 3.15 (2.88–3.43) | 5.9 | 6.4 | 4.7 | 5.6 |
 | Exchange tag | 1,936 | 0.332 | 0.424 | 29.60 (25.29–33.41) | 23.75 (20.24–26.73) | 9.8 | 10.1 | 14.7 | 14.3 |
 
-Table: **Table S9.** The count rule 'more than three inputs and more than three outputs', published as 'coinjoin-like', compared with the equal-output CoinJoin rule. For 2022–2024, estimates combine random samples of flagged and unflagged transactions, weighted by stratum size, with parametric bootstrap intervals. For the prospective sample they use all transactions and the design weights, with intervals from resampling blocks within months.
+Table: **Table S9.** The count rule 'more than three inputs and more than three outputs', published as 'coinjoin-like', compared with the equal-output CoinJoin rule. For 2022–2024, estimates combine random samples of flagged and unflagged transactions, weighted by stratum size, with parametric bootstrap intervals. For the held-out sample they use all transactions and the design weights, with intervals from resampling blocks within months.
 
 | Data | Quantity | Estimate, % (95% CI) |
 |:-------------|:-------------|-----------------:|
@@ -349,19 +352,19 @@ Table: **Table S9.** The count rule 'more than three inputs and more than three 
 |  | Recall of the count rule | 90.2 (74.4–100.0) |
 |  | Prevalence of equal-output CoinJoins | 0.20 (0.17–0.25) |
 |  | Transactions with a GraphSense coinjoin tag | 0 |
-| Prospective sample (all 456,292 transactions, weighted) | Precision of the count rule | 7.8 (6.8–8.8) |
+| Held-out sample (all 456,292 transactions, weighted) | Precision of the count rule | 7.8 (6.8–8.8) |
 |  | Recall of the count rule | 97.0 (95.0–98.6) |
 |  | Prevalence of equal-output CoinJoins | 0.08 (0.07–0.09) |
 |  | Share meeting the count rule | 0.96 (0.90–1.01) |
 |  | Transactions with a GraphSense coinjoin tag | 0 |
 
-Table: **Table S10.** The two CoinJoin rules against an external list of Wasabi 2.x CoinJoin transactions with a known coordinator [@Svenda2026]; exploratory, added after the freeze. Recall is the share of the listed transactions that the rule flags, with a Wilson interval; the equal-output rule needs individual output values and can therefore be evaluated only on the prospective sample. The list covers coordinators active after mid-2024, which is why it matches no development transaction.
+Table: **Table S10.** The two CoinJoin rules against an external list of Wasabi 2.x CoinJoin transactions with a known coordinator [@Svenda2026]; exploratory, added after the freeze. Recall is the share of the listed transactions that the rule flags, with a Wilson interval; the equal-output rule needs individual output values and can therefore be evaluated only on the held-out sample. The list covers coordinators active after mid-2024, which is why it matches no development transaction.
 
 | Period | Transactions | On the external list | Count rule recall (%) | Equal-output recall (%) |
 |:-----------|-------------:|---------:|-----------------:|-----------------:|
 | Development | 3,299,616 | 0 |  |  |
 | Test | 2,584,530 | 175 | 98.9 (95.9–99.7) |  |
-| Prospective | 456,292 | 45 | 100.0 (92.1–100.0) | 97.8 (88.4–99.6) |
+| Held out | 456,292 | 45 | 100.0 (92.1–100.0) | 97.8 (88.4–99.6) |
 
 Table: **Table S11.** Atypicality scores against illicit status on the Elliptic test steps and, as exploratory analyses, against annotations of the Bitcoin data. A ROC-AUC below 0.5 means that positives receive lower scores. H6 is supported when the upper 95% bound is at most 0.5. Intervals from 1,000 resamples of time steps (Elliptic) or 200 resamples of blocks (Bitcoin).
 
@@ -374,8 +377,8 @@ Table: **Table S11.** Atypicality scores against illicit status on the Elliptic 
 | Bitcoin test | Isolation Forest, ZSH space | Runes | 1,041,406 | 0.926 (0.926–0.927) | 0.779 | 40.3 | exploratory |
 | Bitcoin test | Isolation Forest, ZSH space | exchange tag | 8,649 | 0.728 (0.723–0.734) | 0.023 | 0.3 | exploratory |
 | Bitcoin test | Isolation Forest, ZSH space | P2WSH inputs | 36,881 | 0.343 (0.339–0.346) | 0.010 | 1.4 | exploratory |
-| Bitcoin prospective | Isolation Forest, ZSH space | equal-output CoinJoin | 388 | 0.907 (0.892–0.918) | 0.035 | 0.1 | exploratory |
-| Bitcoin prospective | Isolation Forest, ZSH space | Runes | 137,087 | 0.952 (0.951–0.954) | 0.798 | 30.0 | exploratory |
+| Bitcoin held-out | Isolation Forest, ZSH space | equal-output CoinJoin | 388 | 0.907 (0.892–0.918) | 0.035 | 0.1 | exploratory |
+| Bitcoin held-out | Isolation Forest, ZSH space | Runes | 137,087 | 0.952 (0.951–0.954) | 0.798 | 30.0 | exploratory |
 
 Table: **Table S12.** Sensitivity of ZSH to its settings. Each variant was fitted on the same 1,000,000 development transactions with one setting changed and evaluated on the test period. The last column counts non-input annotations whose AP lift is significantly higher or lower than for the reference (Holm-adjusted p < 0.05, 95% interval excluding zero); with 2.6 million test transactions, even small differences are significant. Silhouettes are estimated from random draws, so identical partitions can differ in the third decimal.
 
@@ -433,7 +436,7 @@ Table: **Table S14.** Leave-one-family-out analysis of the seeded variant: AP li
 
 ![**Figure S4.** Primary contrasts of the factorial design on the test period: (left) rank-power against uniform weights without refinement (H1); (right) refinement against none with rank-power weights (H2). Differences in AP lift with 95% intervals; filled points are significant after Holm adjustment.](figs/F6_factorial.png){width=6.5in}
 
-![**Figure S5.** Monthly shares of the development-fitted profiles. Test and prospective transactions were assigned by the frozen model; prospective shares use the design weights. Vertical lines mark the start of the test period, the Runes launch and the start of the prospective sample.](figs/F8_drift.png){width=6.5in}
+![**Figure S5.** Monthly shares of the development-fitted profiles. Test and held-out transactions were assigned by the frozen model; held-out shares use the design weights. Vertical lines mark the start of the test period, the Runes launch and the start of the held-out sample.](figs/F8_drift.png){width=6.5in}
 
 ![**Figure S6.** ROC curves of atypicality scores against illicit status on the Elliptic test steps. Curves below the diagonal mean that illicit transactions receive lower scores.](figs/F11_atypicality.png){width=3.6in}
 

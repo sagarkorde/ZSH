@@ -24,11 +24,19 @@ blocks), and set the 241 later records aside (Table {T_data}, Figure {F_design})
 fitted on development data only. Test-period data are used only through
 models that were fitted earlier.
 
-### 3.2. Prospective sample
+### 3.2. Held-out temporal sample
 
 To test whether profiles fitted on 2022–2023 data still describe later
 activity, we collected a new sample covering October 2024 to August 2026 after
-the analysis code had been frozen. For each of the 23 calendar months we drew
+the analysis code had been frozen. ==We call it the *held-out temporal
+sample*, and use that name for it throughout this article, its tables, its
+figures and its supplementary file. Its blocks were mined between October 2024
+and August 2026 and so existed before the freeze of 16 September 2026; what the
+freeze establishes is that none of them had been collected or examined when the
+plan was written, and that the heights and page offsets were drawn from seeds
+fixed in the plan itself. We no longer call the sample prospective anywhere,
+because that word invites the stronger reading that its transactions did not
+exist when the plan was written, which is not the case.== For each of the 23 calendar months we drew
 800 block heights at random without replacement and, from each block, one page
 of up to 25 consecutive transactions starting at a random position. Data were
 retrieved from the public Esplora interfaces of mempool.space and
@@ -41,7 +49,7 @@ sampled in its month; the weights are used only when we estimate population
 shares. The sample contains 456,292 transactions from 18,400
 blocks.
 
-The prospective records are converted to the same features with the same code
+The held-out records are converted to the same features with the same code
 path. To check that this conversion reproduces the published sample, we
 retrieved 2,000 randomly chosen transactions of the development and test
 periods from the same interfaces and compared the two versions feature by
@@ -115,7 +123,7 @@ is an input or is defined from the inputs.
   several users and create several outputs of the same value [@CoinJoinPriv2024]. We mark a transaction when its most frequent output
   value is at least 50,000 sat, occurs at least three times, and the
   transaction has at least as many inputs as equal outputs. The rule needs
-  individual output values, which are available only for the prospective
+  individual output values, which are available only for the held-out
   sample and for API-retrieved records.
 
 ### 3.5. Elliptic data
@@ -271,7 +279,7 @@ Six hypotheses make the research questions of Section 1 testable:
   reproduce the partition, judged against K-means++ at the same K and against
   the pipeline on data without joint structure.
 * **H4.** Profiles fitted on 2022–2023 still describe the transactions of the
-  test period and of the prospective sample.
+  test period and of the held-out sample.
 * **H5.** On Elliptic time steps 35–49, clusters ranked by their illicit rate
   in steps 1–34 reach a precision above the base rate at fixed coverage. Tested
   as a frozen reanalysis after prior exposure to the Elliptic outcomes, not as a
@@ -288,11 +296,11 @@ whose lower 95% bound exceeds one. Everything else, including the sensitivity
 analysis and the Runes and CoinJoin analyses, is secondary or exploratory.
 
 The hypotheses, splits, metrics and settings were written down and the code was
-frozen before any test-period, prospective or Elliptic-test result was
+frozen before any test-period, held-out or Elliptic-test result was
 computed [repository tags `v2-plan`, `v2-frozen`]. Clarifications made before
 the freeze and all later deviations are listed in the repository.
 
-Ten analyses were specified in that plan. Fourteen more were added afterwards, each
+Ten analyses were specified in that plan. ==Fifteen== more were added afterwards, each
 for a reason recorded with its commit in the deviations log, and each labelled where
 it appears; Table {T_prespec} lists all of them and says which is which. Two of the
 later analyses overturned conclusions drawn from the frozen ones, and we report the
@@ -313,9 +321,14 @@ three tiers of evidence, and use the corresponding terms throughout:
   runs, which rules out tuning the analysis to its result, but the outcomes were
   not unknown to us when the plan was written. These are *not* blind
   confirmatory tests and we do not present them as such.
-* **Prospective evidence.** The 2024–2026 sample, which did not exist when the
-  plan was frozen and whose blocks had not been mined. Only these analyses are
-  described as prospective.
+* **Held-out temporal evidence.** The 2024–2026 sample. Its blocks were mined
+  between October 2024 and August 2026 and therefore existed before the plan was
+  frozen on 16 September 2026; what the freeze establishes is that we had neither
+  collected nor examined them, and the collector drew them afterwards from seeds
+  fixed in the plan. These analyses test whether a model fitted on 2022–2023 still
+  describes activity one to two years later. ==It is held out in collection
+  rather than in time: we call it the held-out temporal sample throughout and
+  nowhere describe it as prospective.==
 * **Exploratory.** The analyses added after the freeze, labelled where they
   appear and listed in Table {T_prespec}.
 
@@ -369,7 +382,7 @@ lift of 21 out of a possible 299 describe very different partitions. Clusters wi
 ranking half are ranked last. Annotations need at least 200 positives in each
 half; in the test period this leaves eleven non-input annotations (the seven
 input classes, the three OP_RETURN protocols and the exchange tag), and the
-equal-output CoinJoin rule is added in the prospective sample. For Elliptic, clusters are ranked on the labelled transactions of time
+equal-output CoinJoin rule is added in the held-out sample. For Elliptic, clusters are ranked on the labelled transactions of time
 steps 1–34 and scored on those of time steps 35–49.
 
 **Stability.** Agreement between partitions is measured by the adjusted Rand
@@ -384,15 +397,15 @@ independently, which removes all joint structure. Every replicate reruns the
 whole pipeline, including the feature weights [@StabilitySel2025].
 
 **Transfer.** The primary model and K-means++ at the same K assign the
-test-period and prospective transactions without refitting, and are also
+test-period and held-out transactions without refitting, and are also
 refitted on each later period; transferred and refitted partitions are compared
 with the agreement measures above. For every profile we compare its development
 and later members through the Jensen–Shannon distance [@Lin1991] between their
 input-script mixes and between their count-rule mixes, and through the medians
 of the main features. Monthly profile shares show how the mix of activity moves;
-shares in the prospective sample use the design weights.
+shares in the held-out sample use the design weights.
 
-**Weighting convention for the prospective sample.** Because that sample was
+**Weighting convention for the held-out sample.** Because that sample was
 drawn with unequal inclusion probabilities, every quantity reported for it is one
 of two kinds, and we say which throughout. *Design-weighted*, and therefore an
 estimate for the sampled population: annotation prevalence, profile shares, and
@@ -407,7 +420,7 @@ cluster on the calibration half uses Kish effective counts
 $(\sum w)^2 / \sum w^2$, so that a cluster carried by few sampled transactions
 with large weights is not credited with spurious precision. With equal weights
 every quantity reduces exactly to its unweighted form. Unweighted,
-sample-specific versions of the prospective concentration results are reported in
+sample-specific versions of the held-out concentration results are reported in
 the supplementary file as a sensitivity analysis. The feature ranking of
 each refit is compared with the development ranking by Kendall's τ, an
 exploratory comparison added after the freeze.
@@ -440,8 +453,9 @@ is repeated on training transactions that share no address with the evaluation
 period. Atypicality is measured by the Isolation Forest of Section 4.7, the local
 outlier factor [@Breunig2000] and the distance to the assigned centroid, each
 scored by ROC-AUC against the illicit label. Five analyses were added after the
-freeze: an upper bound for the weighting, in which the feature ranking is
-computed from an annotation itself; the matching of each profile to one cluster
+freeze: an oracle-informed weighting, in which the feature ranking is computed
+from an annotation itself and which is a comparison of weighting rules rather than
+a bound on them; the matching of each profile to one cluster
 of a refit by minimum-cost assignment, scored by Jaccard similarity; a refit
 constrained to the previous centroids, which keeps the scaler and the weights of
 the frozen model and re-estimates only the centroids, started at the development

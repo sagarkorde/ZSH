@@ -54,7 +54,9 @@ is not blindness: an earlier submitted version of this work had already examined
 same Bitcoin corpus and the labelled Elliptic data, so the analyses of those data are
 a frozen reanalysis rather than a blind confirmatory test (Section 5.1). Only the new
 sample of transactions from October 2024 to August 2026, collected after the freeze,
-is prospective. The main contributions are:
+==was unexamined when the plan was written; we call it the held-out temporal sample,
+and it is held out in collection rather than in time, since its blocks were mined
+before the freeze.== The main contributions are:
 
 1. A corrected and fully documented profiling pipeline. An audit of the
    published transaction sample removed count-derived rule flags, constant and
@@ -62,7 +64,7 @@ is prospective. The main contributions are:
    was fixed by rules written before evaluation (Sections 3 and 4).
 2. An evaluation protocol for transaction profiling without behavioural ground
    truth: matched-K comparisons with standard methods, refit and bootstrap
-   stability, transfer to a later test period and to a prospective sample,
+   stability, transfer to a later test period and to a held-out temporal sample,
    cross-fitted concentration of annotations that were never inputs, and
    external illicit labels (Section 5).
 3. Evidence on what the design choices do. Rank-power weighting changes which
@@ -81,14 +83,15 @@ is prospective. The main contributions are:
    way (Sections 6.3–6.5).
 5. Evidence on where the limit lies, added after the freeze and reported
    throughout as exploratory. Six other clustering families reach the same low
-   shares of the ceiling for the least frequent annotations, so those limits
-   belong to the task rather than to ZSH; and a supervised model on the same
+   shares of the ceiling for the least frequent annotations, ==so those limits are not
+   specific to ZSH, within the seven families and the single K tested==; and a
+   supervised model on the same
    twelve features attains far more than any of them, which places the limit in
    the clustering objective rather than in the features — except for exchange
    tags, where richer features do raise what supervision can extract
    (Sections 6.7 and 6.8).
 6. A public, versioned repository with the frozen analysis plan, the code, the
-   prospective-data collector and all result files.
+   collector for the held-out sample and all result files.
 
 Section 2 reviews related work, Section 3 describes the data and the audit,
 Section 4 the method, Section 5 the experimental design, Section 6 the results

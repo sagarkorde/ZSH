@@ -15,7 +15,7 @@ individual output values from the Esplora interfaces, and applied the
 equal-output rule. The two strata are weighted by their population sizes to
 estimate the precision and recall of the count rule and the prevalence of
 equal-output transactions; intervals come from a parametric bootstrap of the
-two stratum proportions. In the prospective sample the rule is compared with
+two stratum proportions. In the held-out sample the rule is compared with
 the equal-output rule on every transaction, using the design weights.
 
 **External CoinJoin labels.** For the transactions of the external list that fall in
@@ -42,7 +42,7 @@ transactions) and the squared distance to the assigned ZSH centroid. Each score
 is evaluated by ROC-AUC against the illicit label on the test steps. On the
 Bitcoin data we evaluate, as exploratory analyses, how the development-period
 Isolation Forest ranks Runes, exchange-tagged and P2WSH transactions of the test
-period and equal-output CoinJoins and Runes of the prospective sample.
+period and equal-output CoinJoins and Runes of the held-out sample.
 
 **Actor-disjoint evaluation.** With the actor annotations, the Elliptic analysis is
 repeated with the cluster ranking restricted to training-period transactions that
@@ -51,14 +51,17 @@ are ranked on actors that never appear in the evaluation set. Everything else is
 above. We also report whether a fully actor-disjoint split of the data is possible at
 all.
 
-**An upper bound for the weighting.** The weights are learned without labels. To see
+==**An oracle-informed weighting.**== The weights are learned without labels. To see
 how much a better ranking could be worth, we replace the ranking with one computed
 from an annotation itself: on development data we estimate the mutual information
 between each feature and the annotation on a class-balanced sample, and use it either
 with the same rank-power curve or directly as weights. The pipeline is then refitted
 with those fixed weights and evaluated on the test period. Such an oracle is not
-available to an unsupervised method; it bounds what any weighting of these twelve
-features could achieve for that annotation within this clustering scheme. We do this
+available to an unsupervised method. ==It compares particular weighting rules and does
+not bound the family they are drawn from: a rule derived from one annotation can
+concentrate another better than that annotation's own oracle does, so no ordering of
+these rules establishes a maximum (Section 6.6, Table {T_oracle}). We described this
+experiment as an upper bound in earlier versions and withdraw that description.== We do this
 for four annotations that span the range of attainment: P2PKH, P2SH and P2WSH inputs
 and the exchange tag. Added after the freeze.
 
@@ -102,21 +105,21 @@ once. To price that constraint we build one partition with full label knowledge:
 each of the eleven annotations a gradient-boosted tree is cross-fitted by block parity
 as above, the eleven out-of-fold scores of a transaction are standardised to form its
 coordinates, and K-means cuts that eleven-dimensional space into K* clusters. The
-partition is then ranked and scored exactly as any other. It remains an upper bound
-rather than a method, because building it needs labels for every annotation.
+partition is then ranked and scored exactly as any other. ==It is a benchmark rather
+than a method, because building it needs labels for every annotation.==
 
 
-**Design weights in the prospective sample.** The prospective sample was drawn with
+**Design weights in the held-out sample.** The held-out sample was drawn with
 unequal inclusion probabilities: blocks were selected within months, and one page of up
 to 25 consecutive transactions was taken from each selected block, so a transaction in a
-large block stands for more of the chain than one in a small block. Every prospective
+large block stands for more of the chain than one in a small block. Every held-out
 estimate in the article that refers to a population quantity therefore uses the design
 weights, and its interval comes from a block bootstrap stratified by calendar month,
 which resamples blocks within each month rather than across the whole period and so
 respects the way the sample was built. Section 5.4 states which quantities are weighted
 and which are not.
 
-Table {T_weighting} reports the same prospective concentration results both ways, so
+Table {T_weighting} reports the same held-out concentration results both ways, so
 that the effect of the weighting can be read directly rather than inferred. Two details
 matter when comparing the columns. Target eligibility is deliberately unweighted, that
 is it counts sampled positives, so both analyses cover exactly the same annotations and

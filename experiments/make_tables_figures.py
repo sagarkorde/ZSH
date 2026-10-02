@@ -79,7 +79,7 @@ def table_data():
     fm = load_json("E0/future_manifest.json")
     if fm:
         m = fm["months"]
-        rows.append({"Data": "Prospective sample (this study)", "Part": "Future (2024-10 to 2026-08)",
+        rows.append({"Data": "Held-out temporal sample (this study)", "Part": "Held out (2024-10 to 2026-08)",
                      "Period": f"{m[0]['month']} to {m[-1]['month']}",
                      "Transactions": fm["rows"], "Blocks": fm["blocks_with_page"]})
     e8 = load_json("E8/summary.json")
@@ -194,7 +194,7 @@ def fig_design():
     fig, ax = plt.subplots(figsize=(ps.FULL_W, 1.6))
     spans = [("Development (fit)", "2022-07-13", "2024-01-01", ps.SERIES[0]),
              ("Test", "2024-01-01", "2024-09-08", ps.SERIES[1]),
-             ("Prospective (collected after the freeze)", "2024-10-01", "2026-09-01", ps.SERIES[2])]
+             ("Held out (collected after the freeze)", "2024-10-01", "2026-09-01", ps.SERIES[2])]
     for i, (lab, a, b, c) in enumerate(spans):
         a, b = pd.Timestamp(a), pd.Timestamp(b)
         ax.barh(0, (b - a).days, left=a, height=0.45, color=c)
@@ -493,7 +493,7 @@ def fig_drift():
     step = max(1, len(months) // 16)
     ax.set_xticks(range(0, len(months), step), months[::step], rotation=45, ha="right")
     ax.set_yticks(range(len(piv)), [f"P{int(i):02d}" for i in piv.index], fontsize=6)
-    for d, lab in (("2024-01", "test"), ("2024-04", "Runes"), ("2024-10", "prospective")):
+    for d, lab in (("2024-01", "test"), ("2024-04", "Runes"), ("2024-10", "held out")):
         if d in months:
             x = months.index(d) - 0.5
             ax.axvline(x, color=ps.SERIES[1], lw=1)
@@ -587,10 +587,10 @@ def table_heuristic():
         rows.append({"Data": "D1", "Quantity": "GraphSense coinjoin-tag matches", "Estimate": s["D1"]["coinjoin_tag_matches"], "95% CI": ""})
     if s and "FUTURE" in s:
         for k, v in s["FUTURE"]["design_weighted"].items():
-            rows.append({"Data": "Future sample (design-weighted)", "Quantity": k, "Estimate": v, "95% CI": ""})
+            rows.append({"Data": "Held-out sample (design-weighted)", "Quantity": k, "Estimate": v, "95% CI": ""})
         for k, v in s["FUTURE"]["confusion"].items():
-            rows.append({"Data": "Future sample (counts)", "Quantity": k, "Estimate": v, "95% CI": ""})
-        rows.append({"Data": "Future sample", "Quantity": "GraphSense coinjoin-tag matches",
+            rows.append({"Data": "Held-out sample (counts)", "Quantity": k, "Estimate": v, "95% CI": ""})
+        rows.append({"Data": "Held-out sample", "Quantity": "GraphSense coinjoin-tag matches",
                      "Estimate": s["FUTURE"]["coinjoin_tag_matches"], "95% CI": ""})
     save_table(pd.DataFrame(rows), "T11_heuristic", floatfmt=".4g")
 

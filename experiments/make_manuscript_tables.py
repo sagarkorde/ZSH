@@ -115,7 +115,7 @@ def t_data():
     ]
     fm = js("E0/future_manifest.json")
     if fm:
-        rows.append(["Prospective sample", f"{fm['months'][0]['month']} to {fm['months'][-1]['month']}",
+        rows.append(["Held-out temporal sample", f"{fm['months'][0]['month']} to {fm['months'][-1]['month']}",
                      n(fm["rows"]), n(fm["blocks_with_page"]), "evaluation"])
     ell = OUT / "labels" / "elliptic_counts.json"
     if ell.exists():
@@ -187,7 +187,7 @@ def t_annotations():
     cols = ["Type", "Annotation", "Development (%)", "Test (%)"]
     if d is not None:
         rows.append(["L5", TARGET["L5:eocj"], "", "", pct(np.average(d.eocj, weights=d.design_weight), 2)])
-        cols.append("Prospective (%, weighted)")
+        cols.append("Held out (%, weighted)")
     save(pd.DataFrame(rows, columns=cols), "T_annotations", ["l", "l"] + ["r"] * (len(cols) - 2))
 
 
@@ -306,7 +306,7 @@ def t_transfer():
     s = js("E5/summary.json")
     wd = js("E5/weight_drift.json") or {}
     rows = []
-    for period, lab in (("TEST", "Test"), ("FUTURE", "Prospective")):
+    for period, lab in (("TEST", "Test"), ("FUTURE", "Held out")):
         if period not in s:
             continue
         for m, mn in (("ZSH", "ZSH"), ("KMeans++ K*", "K-means++")):
@@ -327,7 +327,7 @@ def t_transfer():
 
 def t_concentration():
     rows = []
-    for period, lab in (("test", "Test"), ("future", "Prospective")):
+    for period, lab in (("test", "Test"), ("future", "Held out")):
         p = R("E6") / f"{period}_independent.csv"
         if not p.exists():
             continue
@@ -339,13 +339,15 @@ def t_concentration():
             b = k.loc[t]
             rows.append([lab, TARGET.get(t, t), n(a.positives), pct(a.base_rate, 2),
                          f"{f(a.ap_lift, 1)} ({ci(a.ap_lift_lo, a.ap_lift_hi, 1)})",
-                         f(1 / a.base_rate, 1) if a.base_rate > 0.01 else n(1 / a.base_rate),
-                         pct(a.ap, 1), pct(a["prec@0.25"], 1), int(a["clusters@0.25"]),
-                         f(b.ap_lift, 1), f"{fa(-b.d_ap_lift)} ({ci(-b.d_ap_lift_hi, -b.d_ap_lift_lo, 2 if abs(b.d_ap_lift) < 1 else 1)})",
+                         pct(a.ap, 1), pct(a["prec@0.25"], 1),
+                         f(b.ap_lift, 1),
+                         f"{fa(-b.d_ap_lift)} ({ci(-b.d_ap_lift_hi, -b.d_ap_lift_lo, 2 if abs(b.d_ap_lift) < 1 else 1)})",
                          pval(b.d_ap_lift_p_holm)])
-    cols = ["Period", "Annotation", "Positives", "Base (%)", "ZSH AP lift (95% CI)", "Maximum lift",
-            "Attained (%)", "Prec. (%)", "Profiles", "KM++", "Difference (95% CI)", "p"]
-    save(pd.DataFrame(rows, columns=cols), "T_concentration", ["l", "l"] + ["r"] * 10)
+    # ten columns, not twelve: the ceiling is 1/base and the profile count sat unused in
+    # the text, and at twelve the headings broke across lines
+    cols = ["Period", "Annotation", "Positives", "Base (%)", "AP lift (95% CI)",
+            "Attained (%)", "Prec. (%)", "KM++", "Difference (95% CI)", "p"]
+    save(pd.DataFrame(rows, columns=cols), "T_concentration", ["l", "l"] + ["r"] * 8)
 
 
 def t_heuristic():
@@ -366,7 +368,7 @@ def t_heuristic():
                  ["", "Transactions with a GraphSense coinjoin tag", str(s["D1"]["coinjoin_tag_matches"])]]
     if "FUTURE" in s:
         fw = s["FUTURE"]["design_weighted"]
-        lab = f"Prospective sample (all {s['FUTURE']['rows']:,} transactions, weighted)"
+        lab = f"Held-out sample (all {s['FUTURE']['rows']:,} transactions, weighted)"
         first = True
         for k, name in (("precision_rule", "Precision of the count rule"), ("recall_rule", "Recall of the count rule"),
                         ("prevalence_eocj", "Prevalence of equal-output CoinJoins"),
@@ -422,7 +424,7 @@ def t_atypicality():
              "eocj": "equal-output CoinJoin"}
     for period, d in s["bitcoin"].items():
         for t, v in d.items():
-            rows.append([{"TEST": "Bitcoin test", "FUTURE": "Bitcoin prospective"}[period],
+            rows.append([{"TEST": "Bitcoin test", "FUTURE": "Bitcoin held-out"}[period],
                          "Isolation Forest, ZSH space", tname.get(t, t), n(v["positives"]),
                          f"{f(v['roc_auc'], 3)} ({ci(*v['roc_auc_ci'], 3)})", f(v["pr_auc"], 3),
                          pct(v["base_rate"]), "exploratory"])
@@ -532,9 +534,18 @@ def t_support():
                 row.append(f"{pct(r[f'{key}_share'], 2)} ({pct(r[f'{key}_lo'], 2)}–{pct(r[f'{key}_hi'], 2)})")
         row.append(f"{f(r.jaccard_mean, 2)} ({f(r.jaccard_p05, 2)}–{f(r.jaccard_p95, 2)})")
         rows.append(row)
-    cols = ["Profile", "Development (%)", "Test (%)", "Prospective (%)", "Jaccard (5th–95th)"]
+    cols = ["Profile", "Development (%)", "Test (%)", "Held out (%)", "Jaccard (5th–95th)"]
     save(pd.DataFrame(rows, columns=cols[:len(rows[0])]), "T_support",
          ["l"] + ["r"] * (len(rows[0]) - 1))
+
+
+PERIOD = {"Prospective": "Held out", "prospective": "held out",
+          "Future": "Held out", "future": "held out"}
+
+
+def per(x):
+    """Display label for a period read from a result file (see PERIOD)."""
+    return PERIOD.get(str(x), str(x))
 
 
 def t_cjsource():
@@ -543,7 +554,7 @@ def t_cjsource():
     rows = []
     for _, r in d.iterrows():
         cj = int(r.known_coinjoins)
-        rows.append([r.period, n(r.transactions), str(cj),
+        rows.append([per(r.period), n(r.transactions), str(cj),
                      "" if not cj else f"{pct(r.count_rule_recall)} ({pct(r.count_rule_recall_lo)}–"
                                        f"{pct(r.count_rule_recall_hi)})",
                      "" if pd.isna(r.get("equal_output_recall")) else
@@ -557,7 +568,7 @@ def t_cjsource():
 def t_matching():
     """Can profiles be followed across refits (E16)?"""
     d = pd.read_csv(R("E16") / "matching.csv")
-    rows = [[r.period, r.method, int(r.profiles), int(r.refit_clusters), f(r.median_jaccard, 2),
+    rows = [[per(r.period), r.method, int(r.profiles), int(r.refit_clusters), f(r.median_jaccard, 2),
              f(r.mean_jaccard, 2), str(int(r["matched_0.5"])), pct(r["share_matched_0.5"], 1),
              str(int(r["matched_0.75"]))] for _, r in d.iterrows()]
     save(pd.DataFrame(rows, columns=["Period", "Method", "Profiles", "Refit clusters", "Median J",
@@ -566,7 +577,11 @@ def t_matching():
 
 
 def t_oracle():
-    """Oracle-weight upper bound (E15): concentration attained with weights from the annotation."""
+    """Oracle-informed weighting (E15): concentration attained with weights from the annotation.
+
+    Not an upper bound: see Section 6.6. A rule derived from one annotation can beat
+    another annotation's own oracle, so these rules are not ordered by a maximum.
+    """
     c = pd.read_csv(R("E15") / "oracle_concentration.csv")
     ref = "reference (unsupervised)"
     rows = []
@@ -660,7 +675,7 @@ def t_ceiling():
 
 
 def t_richer():
-    """E19: address-level features on the prospective sample, against the twelve."""
+    """E19: address-level features on the held-out sample, against the twelve."""
     c = pd.read_csv(R("E19") / "richer_features.csv")
     cols = ["ZSH (frozen, 12 features)", "ZSH refit (12 features)", "ZSH refit (12 + address features)",
             "supervised (12 features)", "supervised (12 + address features)"]
@@ -681,7 +696,7 @@ def t_warm():
     w = pd.read_csv(R("E20") / "warm_refit.csv").set_index("period")
     c = pd.read_csv(R("E20") / "warm_refit_concentration.csv")
     rows = []
-    for p, lab in (("test", "Test period"), ("future", "Prospective sample")):
+    for p, lab in (("test", "Test period"), ("future", "Held-out sample")):
         if p not in w.index:
             continue
         r = w.loc[p]
@@ -705,19 +720,21 @@ def t_prespec():
     Status has three values. 'Frozen reanalysis' marks analyses whose hypotheses and
     code were fixed before the reported runs, but whose data had already been examined
     in the earlier submitted version of this work, so they are not blind confirmatory
-    tests. 'Prospective' marks analyses of the 2024-2026 sample, which did not exist at
-    the freeze. 'Exploratory' marks analyses added after the freeze.
+    tests. 'Frozen reanalysis; held out on 2024-26' marks those whose evidence includes
+    the 2024-2026 held-out temporal sample, which was collected after the freeze from
+    seeds fixed in the plan, although its blocks were mined before the freeze.
+    'Exploratory' marks analyses added after the freeze.
     """
-    FR, PR, EX = "Frozen reanalysis", "Frozen reanalysis; prospective on 2024-26", "Exploratory"
+    FR, PR, EX = "Frozen reanalysis", "Frozen reanalysis; held out on 2024-26", "Exploratory"
     rows = [
         ["Primary model and profiles", "6.1", FR, ""],
         ["Method comparison at matched K", "6.2", FR, ""],
         ["Weighting × refinement factorial (H1, H2)", "6.2", FR, ""],
         ["Stability: seeds, block bootstrap, permuted null (H3)", "6.3", FR, ""],
         ["Transfer to later periods (H4)", "6.3", PR, ""],
-        ["Concentration of non-input annotations (H5)", "6.4", PR, ""],
+        ["Concentration of non-input annotations (RQ3)", "6.4", PR, ""],
         ["Count rule against the equal-output rule", "6.4", PR, ""],
-        ["Elliptic with a temporal split", "6.5", FR, ""],
+        ["Elliptic with a temporal split (H5)", "6.5", FR, ""],
         ["Atypicality on Elliptic (H6)", "6.5", FR, ""],
         ["Sensitivity to every fixed setting", "6.6", FR, ""],
         ["Feature-ranking drift across refits", "6.3", EX, "the test refit agreed poorly with the transferred partition"],
@@ -727,21 +744,21 @@ def t_prespec():
         ["Actor-disjoint Elliptic evaluation", "6.5", EX, "reviewers asked for source-level held-out evaluation"],
         ["External CoinJoin labels", "6.4", EX, "a reviewer asked for validation against external labels"],
         ["Concentration read against its ceiling", "5.3, 6.4", EX, "AP lift alone cannot separate a weak partition from a rare annotation"],
-        ["Oracle-weight upper bound", "6.6", EX, "to separate a poor weighting from an uninformative feature set"],
+        ["Oracle-informed weighting", "6.6", EX, "to separate a poor weighting from an uninformative feature set"],
         ["Profile matching across refits", "6.3", EX, "refitting is useful only if profiles can be followed"],
         ["Refit constrained to the previous centroids", "6.3", EX, "to test the remedy this article proposes"],
         ["The same evaluation for seven families", "6.7", EX, "to attribute the limits to ZSH or to the task"],
         ["Supervised benchmark on the same features", "6.8", EX, "to separate the feature set from the objective"],
         ["One partition serving all annotations", "6.8", EX, "to price the constraint of sharing a partition"],
         ["Address-level features", "6.8", EX, "to test whether richer features lift the weakest case"],
-        ["Design-weighted prospective estimates", "5.4, 6.4", EX, "the prospective sample was drawn with unequal inclusion probabilities"],
+        ["Design-weighted held-out estimates", "5.4, 6.4", EX, "the held-out sample was drawn with unequal inclusion probabilities"],
     ]
     save(pd.DataFrame(rows, columns=["Analysis", "Section", "Status", "Reason it was added"]),
          "T_prespec", ["L", "l", "l", "L"])
 
 
 def t_weighting():
-    """Appendix: design-weighted against unweighted prospective concentration (R1.2)."""
+    """Appendix: design-weighted against unweighted held-out concentration (R1.2)."""
     pw = R("E6") / "future_independent.csv"
     pu = R("E6") / "future_independent_unweighted.csv"
     if not (pw.exists() and pu.exists()):
