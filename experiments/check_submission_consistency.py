@@ -179,6 +179,26 @@ else:
                         name + f".pdf p{pno}: caption for Table {cm.group(1)} ends the page")
         print(f"{name}.pdf: {len(caps)} captions in order, figures {figs}, no CJK")
 
+# ---------- no paragraph repeated back to back ----------
+for _lab, _txt in (("manuscript", man), ("supplementary", sup)):
+    _paras = [p.strip() for p in re.split(r"\n\s*\n", _txt) if len(p.strip()) > 120]
+    for _a, _b in zip(_paras, _paras[1:]):
+        if _a == _b:
+            problems.append(f"{_lab}: paragraph repeated back to back: {_a[:70]!r}")
+
+# ---------- captions use only the characters the template can set ----------
+# Anything outside this set is either a typo or an encoding fault; a CJK glyph in a
+# caption has been reported repeatedly, so the check names the character it found.
+ALLOWED = set(
+    "–—‘’“”…×±−≥≤πτ"
+    "λµ° ′″")
+for _lab, _txt in (("manuscript", man), ("supplementary", sup)):
+    for _m in re.finditer(r"\*\*(?:Table|Figure) S?\d+\.\*\*([^\n]*)", _txt):
+        for _ch in set(_m.group(1)):
+            if ord(_ch) > 127 and _ch not in ALLOWED:
+                problems.append(f"{_lab}: caption contains U+{ord(_ch):04X} {_ch!r}: "
+                                f"{_m.group(0)[:70]!r}")
+
 # ---------- an image and its caption must land on the same page ----------
 # A figure caption follows its image, so the image carries keepNext. When that was set
 # on the caption instead, each caption was bound to the NEXT figure and landed on the
