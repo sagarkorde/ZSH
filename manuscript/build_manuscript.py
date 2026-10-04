@@ -129,8 +129,12 @@ def postprocess(xml):
             t = head + t[first_row_end:]
         return t
     xml = re.sub(r"<w:tbl>.*?</w:tbl>", fix_table, xml, flags=re.S)
-    # a caption must stay on the page of the table it introduces
-    for style in ("MDPI41tablecaption", "MDPI51figurecaption"):
+    # A caption must stay on the page of the thing it describes, and keepNext binds a
+    # paragraph to the one that FOLLOWS it. A table caption precedes its table, so the
+    # caption carries keepNext; a figure caption follows its image, so the IMAGE carries
+    # it. Putting keepNext on a figure caption instead binds it to the next figure and
+    # pushes it off its own image, which shipped once.
+    for style in ("MDPI41tablecaption", "MDPI52figure"):
         xml = re.sub(r'(<w:pStyle w:val="' + style + r'" ?/>)(?!<w:keepNext)',
                      r"\1<w:keepNext/>", xml)
     # numbered equations: paragraph containing m:oMathPara followed by EQNUMnEQNUM

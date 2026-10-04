@@ -179,6 +179,34 @@ else:
                         name + f".pdf p{pno}: caption for Table {cm.group(1)} ends the page")
         print(f"{name}.pdf: {len(caps)} captions in order, figures {figs}, no CJK")
 
+# ---------- an image and its caption must land on the same page ----------
+# A figure caption follows its image, so the image carries keepNext. When that was set
+# on the caption instead, each caption was bound to the NEXT figure and landed on the
+# following page above a different image, which reads as a mismatched caption.
+try:
+    from pypdf import PdfReader as _R
+except ImportError:
+    pass
+else:
+    for _name, _pre in (("ZSH_supplementary_V5", "S"), ("ZSH_FinTech_MDPI_manuscript_V5", "")):
+        _pdf = SUB / "SUBMIT_V5_pdf_copies" / (_name + ".pdf")
+        if not _pdf.exists():
+            _pdf = SUB / (_name + ".pdf")
+        if not _pdf.exists():
+            continue
+        _i = _c = 0
+        for _n, _pg in enumerate(_R(str(_pdf)).pages, 1):
+            _caps = re.findall(r"Figure " + _pre + r"\d+\.", _pg.extract_text() or "")
+            _imgs = len(_pg.images) - (1 if _n == 1 else 0)   # page 1 carries the logo
+            _i += max(_imgs, 0)
+            _c += len(_caps)
+            if _i != _c:
+                problems.append(f"{_name}.pdf: after p{_n}, {_i} image(s) but {_c} caption(s) "
+                                f"- a caption is separated from its image by a page break")
+                break
+        else:
+            print(f"{_name}.pdf: every image and its caption share a page")
+
 # ---------- every figure caption sits under the image it describes ----------
 # Checked by hashing each embedded image against the file the caption names, rather
 # than by reading the rendered page, where an extractor can pair them wrongly.
