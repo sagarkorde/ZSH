@@ -128,6 +128,12 @@ for fname, label, pre, ntab, nfig in (
         problems.append(f"{label}: numbered {nums} but captioned {sorted(captioned)}")
     if re.search(r"[\u4e00-\u9fff]", plain):
         problems.append(f"{label}: CJK character in the rendered document")
+    # pandoc's mark extension does not nest: a == span opened inside another leaves a
+    # literal "==" in the output. Even parity in the source does not catch that, so test
+    # the rendered document. This shipped once in the Data Availability Statement.
+    if "==" in plain:
+        problems.append(f"{label}: {plain.count('==')} literal highlight marker(s) "
+                        f"rendered as text")
     print(f"{label}: tables {pre}1-{pre}{ntab}, figures {pre}1-{pre}{nfig}, captions complete")
 
 # ---------- the exported .pdf text layer ----------

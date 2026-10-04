@@ -2116,9 +2116,9 @@ when the plan was written, which makes it held out in collection rather than in 
 456,292 transactions, the 24,526 raw API responses it was built from, the
 collection manifest and a SHA-256 list covering every other file in the record are
 deposited as a dataset record at https://doi.org/10.5281/zenodo.23037946, which resolves
-to the current version. ==The sample file has SHA-256
+to the current version. The sample file has SHA-256
 `dff579fba854e86328297a5d740d736f69b7e1b9c30de8358396e617a3288733`,
-the value the collector recorded in the manifest when the sample was closed,== so a reader
+the value the collector recorded in the manifest when the sample was closed, so a reader
 can download the file, hash it and confirm that the archived
 sample is the one the reported design-weighted estimates were computed from. One caveat
 applies to rebuilding rather than downloading: a Parquet file written by a different

@@ -38,6 +38,14 @@ rev = text(D / "ZSH_response_reviewer_1_v5.docx")
 cov = text(D / "ZSH_cover_letter_v5.docx")
 edi = text(D / "ZSH_editor_reply_v5.docx")
 
+# pandoc's mark extension does not nest: a == span opened inside another leaves a
+# literal "==" in the rendered document. This shipped once in the Data Availability
+# Statement, where parity of the markers in the source was even and so passed.
+for _lab, _t in (("manuscript", man), ("supplement", sup)):
+    if "==" in _t:
+        problems.append(f"{_lab}: {_t.count(chr(61) * 2)} literal highlight marker(s) "
+                        f"rendered as text")
+
 # ---- manuscript
 for k in ("Data Availability Statement", "10.5281/zenodo.23037946", "The 333 numerical claims",
           "dff579fba854e86328297a5d740d736f69b7e1b9c30de8358396e617a3288733",
