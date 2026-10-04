@@ -39,7 +39,7 @@ Sagar D. Korde, on behalf of both authors
 Reviewers 2 and 3 raised no new points in this round, and we thank them for their earlier
 comments, which the second and third revisions addressed.
 
-For completeness, the changes made in this revision are these. The oracle-weight
+For completeness, the changes made in this revision are these. The oracle-informed weighting
 experiment is no longer described as an upper bound anywhere in the submission, including
 the supplementary file and Table S2, and Section 7.5 no longer infers from it that feature
 weighting is close to exhausted. The 2024–2026 sample is called the held-out temporal
@@ -52,6 +52,6 @@ conclusions drawn from the seven-family comparison are restricted to the methods
 settings and data tested. Four counts were corrected, and the data deposit was verified
 file by file against the local archive.
 
-No reported number changed. The 332 numerical claims in the article and its supplementary
+No reported number changed. The 333 numerical claims in the article and its supplementary
 file remain checked against the saved result files by a script in the repository, which runs
-335 checks in all.
+336 checks in all.

@@ -44,9 +44,10 @@ when the plan was written, which makes it held out in collection rather than in 
 456,292 transactions, the 24,526 raw API responses it was built from, the
 collection manifest and a SHA-256 list covering every other file in the record are
 deposited as a dataset record at https://doi.org/10.5281/zenodo.23037946, which resolves
-to the current version. The sample file hashes to
-`dff579fb…8733`, the value the collector recorded in the manifest when the sample
-was closed, so a reader can download the file, hash it and confirm that the archived
+to the current version. ==The sample file has SHA-256
+`dff579fba854e86328297a5d740d736f69b7e1b9c30de8358396e617a3288733`,
+the value the collector recorded in the manifest when the sample was closed,== so a reader
+can download the file, hash it and confirm that the archived
 sample is the one the reported design-weighted estimates were computed from. One caveat
 applies to rebuilding rather than downloading: a Parquet file written by a different
 Arrow build holds identical data in different bytes, so a regenerated file matches on
@@ -57,14 +58,15 @@ test the analysis code in the accompanying repository, including the clustering
 pipeline, the evaluation measures, the collector for the held-out sample and the
 scripts that build every table and figure; to run those experiments and report
 their output; to propose analyses that the authors then approved, among them the
-reading of concentration against its ceiling, the oracle-weight bound, the
+reading of concentration against its ceiling, ==the oracle-informed weighting
+comparison==, the
 comparison across clustering families and the supervised benchmark of Section 6.8;
 to check every reference against publisher records; and to draft and edit the
 text of this article, its supplementary file and the response to the reviewers.
 The authors specified the research questions, the analysis plan and the design,
 reviewed all code, results and text, decided what to report, and take full
 responsibility for the content of this publication. No text, figure or number
-was published without author review. ==The 332 numerical claims== in this article
+was published without author review. ==The 333 numerical claims== in this article
 and its supplementary file are checked against the saved result files by a
 script in the repository (`experiments/verify_manuscript_numbers.py`).
 <!-- AUTHOR CHECK: MDPI asks for a precise description of AI use. Edit this so

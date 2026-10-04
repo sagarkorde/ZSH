@@ -445,6 +445,11 @@ s19 = js("E19/summary.json")
 check("E19 rows", f"{s19['rows']:,}")
 check("E19 new features", str(len(s19["new_features"])))
 
+# the deposited checksum, in full: the reply letter quotes it in full and a
+# truncated copy in the article cannot be compared with it (R1.5, round 4)
+check("deposited sample checksum",
+      "dff579fba854e86328297a5d740d736f69b7e1b9c30de8358396e617a3288733")
+
 # ---------------------------------------------------------------- constrained refit (E20)
 w20 = csv("E20/warm_refit.csv").set_index("period")
 c20 = csv("E20/warm_refit_concentration.csv")
@@ -513,7 +518,7 @@ FORBIDDEN = [
     ("round 3: the sample is not prospective",
      r"\bprosp(?!ective anywhere,|ective\.==)"),
     ("round 3: the oracle experiment is not an upper bound",
-     r"upper bound for the weighting|Oracle-weight upper bound|bounds what any weighting"),
+     r"upper bound for the weighting|Oracle-weight upper bound|oracle-weight bound|bounds what any weighting"),
     ("round 3: the 2024-26 blocks existed at the freeze",
      r"did not exist at the freeze|had not been mined"),
     ("round 4: Table 9 no longer has a profile-count column", r"given in the next column"),

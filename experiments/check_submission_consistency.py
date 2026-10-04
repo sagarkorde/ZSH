@@ -1,13 +1,24 @@
-"""Final consistency pass over the assembled package, including every item the
-external review raised. Reads manuscript.md / supplementary.md and, where the point
-is about rendering, the built .docx files.
-"""
-import re
-import pathlib
-import zipfile
-import collections
+"""Consistency of the whole submission package, not just its numbers.
 
-MS = pathlib.Path("C:/Users/sagar/Desktop/ZHS_23826/ZSH_repo_clean/manuscript")
+Four rounds of review found errors of one kind: a claim withdrawn in one file and kept in
+another, a count that no longer matched its table, a caption naming a deleted column, a
+checksum list written before its files. None was a numerical claim, so none was caught by
+verify_manuscript_numbers.py. This script checks the rest:
+
+* every "Section N.M" reference resolves to a heading;
+* every table and figure is both defined and cited, and numbered without gaps;
+* every value in the abstract reappears in the body;
+* withdrawn phrasings appear nowhere in either file;
+* the built .docx and the exported .pdf agree with the source on numbering and captions.
+
+Run after assemble.py and after exporting the PDFs.
+"""
+import collections
+import pathlib
+import re
+import zipfile
+
+MS = pathlib.Path(__file__).resolve().parent.parent / "manuscript"
 SUB = pathlib.Path("C:/Users/sagar/Desktop/ZHS_23826/Fintech MDPI/Fintech MDPI Revised")
 man = (MS / "manuscript.md").read_text(encoding="utf-8")
 sup = (MS / "supplementary.md").read_text(encoding="utf-8")
@@ -20,80 +31,146 @@ def docx(name):
         return z.read("word/document.xml").decode("utf-8")
 
 
-# ---------- source-level checks ----------
+# ---------- section cross-references ----------
 heads = set()
 for m in re.finditer(r"^#{1,4}\s+(\d+(?:\.\d+)?)\.", man, flags=re.M):
     heads.add(m.group(1))
     heads.add(m.group(1).split(".")[0])
-for r, n in collections.Counter(re.findall(r"Sections?\s+(\d+(?:\.\d+)?)", both)).items():
-    if r not in heads:
-        problems.append(f"section reference {r} has no heading ({n}x)")
+for ref, n in collections.Counter(re.findall(r"Sections?\s+(\d+(?:\.\d+)?)", both)).items():
+    if ref not in heads:
+        problems.append(f"section reference {ref} has no heading ({n}x)")
 
-dt = set(re.findall(r"\*\*Table (S?\d+)\.\*\*", both))
-df = set(re.findall(r"\*\*Figure (S?\d+)\.\*\*", both))
-ct = set(re.findall(r"Tables? (S?\d+)", both)) | {
-    x for p in re.findall(r"Tables (S?\d+) and (S?\d+)", both) for x in p}
-cf = set(re.findall(r"Figures? (S?\d+)", both))
-for t in sorted(ct - dt):
+# ---------- tables and figures: cited <-> defined ----------
+defined_t = set(re.findall(r"\*\*Table (S?\d+)\.\*\*", both))
+defined_f = set(re.findall(r"\*\*Figure (S?\d+)\.\*\*", both))
+cited_t = set(re.findall(r"Tables? (S?\d+)", both))
+cited_t |= {x for pair in re.findall(r"Tables (S?\d+) and (S?\d+)", both) for x in pair}
+cited_f = set(re.findall(r"Figures? (S?\d+)", both))
+for t in sorted(cited_t - defined_t):
     problems.append(f"Table {t} cited but not defined")
-for f in sorted(cf - df):
+for f in sorted(cited_f - defined_f):
     problems.append(f"Figure {f} cited but not defined")
-for t in sorted(dt - ct):
+for t in sorted(defined_t - cited_t):
     problems.append(f"Table {t} defined but never cited")
-for f in sorted(df - cf):
+for f in sorted(defined_f - cited_f):
     problems.append(f"Figure {f} defined but never cited")
+print(f"tables: {len(defined_t)} defined, {len(cited_t)} cited; "
+      f"figures: {len(defined_f)} defined, {len(cited_f)} cited")
 
-for pat, why in [
+# ---------- the abstract's numbers must reappear in the body ----------
+abs_m = re.search(r"\*\*Abstract:\*\*(.+?):::", man, flags=re.S)
+if abs_m:
+    body = man[abs_m.end():]
+    # 11% is a rounded bound on the five rarest annotations (max 10.4%, given in the body)
+    skip = {"12", "31", "2022", "2023", "2024", "2026", "2.6", "3.3", "11", "11%"}
+    for tok in sorted(set(re.findall(r"\d[\d,]*\.?\d*%?", abs_m.group(1)))):
+        if len(tok) > 1 and tok not in skip and tok not in body:
+            problems.append(f"abstract value {tok!r} does not appear in the body")
+
+# ---------- the analysis inventory ----------
+cap = sup.find("**Table S2.**")
+data = []
+for line in reversed(sup[:cap].rstrip().splitlines()):
+    if not line.startswith("|"):
+        break
+    if set(line) <= set("|:- ") or ("Analysis" in line and "Status" in line):
+        continue
+    data.append(line)
+if data:
+    n_all = len(data)
+    n_exp = sum(1 for line in data if "Exploratory" in line)
+    print(f"Table S2: {n_all} analyses, {n_exp} exploratory, {n_all - n_exp} pre-specified")
+    words = {24: "twenty-four", 25: "twenty-five", 26: "twenty-six"}
+    if words.get(n_all, "?") not in both.lower():
+        problems.append(f"Table S2 has {n_all} rows; the text does not say so in words")
+
+# ---------- phrases that must appear nowhere in the package ----------
+FORBIDDEN = [
     (r"\bprosp(?!ective anywhere,|ective\.==)", "withdrawn term or its abbreviation"),
-    (r"upper bound for the weighting|Oracle-weight upper bound", "withdrawn claim"),
-    (r"given in the next column", "deleted column"),
+    (r"upper bound for the weighting|Oracle-weight upper bound|oracle-weight bound"
+     r"|bounds what any weighting", "withdrawn claim"),
+    (r"given in the next column", "reference to a deleted column"),
     (r"close to exhausted", "over-general claim"),
     (r"did not exist at the freeze|had not been mined", "withdrawn chronology"),
     (r"properties of the task|belong to the task and not|whatever builds the clusters",
      "over-general scope claim"),
     (r"Both columns say the same thing", "self-contradiction"),
     (r"\{(?:T_|F_|SUPP|ZENODO|DOI)[A-Za-z_]*\}", "unresolved placeholder"),
-    (r"zenodo\.22933176|zenodo\.22945019|zenodo\.23037947", "superseded archive DOI in the paper"),
+    (r"zenodo\.22933176|zenodo\.22945019|zenodo\.23037947", "superseded archive DOI"),
     (r"[\u4e00-\u9fff]", "CJK character"),
-]:
+]
+for pat, why in FORBIDDEN:
     for m in re.finditer(pat, both, flags=re.I):
-        problems.append(f"{why}: ...{both[max(0, m.start() - 50):m.end() + 50]!r}...")
+        problems.append(f"{why}: ...{re.sub(r'  +', ' ', both[max(0, m.start() - 50):m.end() + 50])}...")
 
 for name, txt in (("manuscript", man), ("supplementary", sup)):
     if txt.count("==") % 2:
         problems.append(f"{name}: odd number of == marks")
 
-# ---------- rendering checks, in the built .docx ----------
-for fname, label in (("ZSH_FinTech_MDPI_manuscript_V5.docx", "manuscript"),
-                     ("ZSH_supplementary_V5.docx", "supplement")):
-    xml = docx(fname)
-    plain = re.sub(r"<[^>]+>", "", xml)
-    pre = "S" if label == "supplement" else ""
-    nums = [int(x) for x in re.findall(rf"Table {pre}(\d+)\.", plain)]
-    seen = sorted(set(nums))
-    gaps = [n for n in range(1, max(seen) + 1) if n not in seen] if seen else []
-    print(f"{label}: tables {pre}{seen[0]}-{pre}{seen[-1]}, gaps: {gaps or 'none'}")
-    if gaps:
-        problems.append(f"{label}: table number gap(s) {gaps}")
-    if re.search(r"[\u4e00-\u9fff]", plain):
-        problems.append(f"{label}: CJK character in the rendered document")
-    for m in re.finditer(r"\bprosp", plain, flags=re.I):
-        if "prospective anywhere" in plain[m.start():m.start() + 40] or \
-           "as prospective" in plain[max(0, m.start() - 20):m.end() + 20]:
-            continue
-        problems.append(f"{label}: 'prosp' in the rendered document: "
-                        f"...{re.sub(r'  +', ' ', plain[max(0, m.start() - 55):m.end() + 45])}...")
+# ---------- the built .docx ----------
+for fname, label, pre, ntab, nfig in (
+        ("ZSH_FinTech_MDPI_manuscript_V5.docx", "manuscript", "", 15, 7),
+        ("ZSH_supplementary_V5.docx", "supplement", "S", 14, 6)):
+    if not (SUB / fname).exists():
+        problems.append(f"{fname} not found")
+        continue
+    plain = re.sub(r"<[^>]+>", "", docx(fname))
+    nums = sorted({int(x) for x in re.findall(r"Table " + pre + r"(\d+)\.", plain)})
+    if nums != list(range(1, ntab + 1)):
+        problems.append(f"{label}: table numbers {nums}, expected 1-{ntab}")
+    figs = sorted({int(x) for x in re.findall(r"Figure " + pre + r"(\d+)\.", plain)})
+    if figs != list(range(1, nfig + 1)):
+        problems.append(f"{label}: figure numbers {figs}, expected 1-{nfig}")
     # one caption per number; a caption may run to several sentences, so count the
     # distinct numbers that carry a caption rather than counting sentence starts
-    captioned = {int(n) for n in re.findall(rf"Table {pre}(\d+)\.\s*[A-Z]", plain)}
-    if captioned != set(seen):
-        problems.append(f"{label}: numbered {sorted(set(seen))} but captioned {sorted(captioned)}")
+    captioned = {int(x) for x in re.findall(r"Table " + pre + r"(\d+)\.\s*[A-Z]", plain)}
+    if captioned != set(nums):
+        problems.append(f"{label}: numbered {nums} but captioned {sorted(captioned)}")
+    if re.search(r"[\u4e00-\u9fff]", plain):
+        problems.append(f"{label}: CJK character in the rendered document")
+    print(f"{label}: tables {pre}1-{pre}{ntab}, figures {pre}1-{pre}{nfig}, captions complete")
 
-mxml = re.sub(r"<[^>]+>", "", docx("ZSH_FinTech_MDPI_manuscript_V5.docx"))
+# ---------- the exported .pdf text layer ----------
+# Claims that the supplement's tables are out of order, or that a caption reads a CJK
+# glyph instead of "Figure", have been made about the PDF. Check the PDF itself rather
+# than inferring from the .docx. Skipped when pypdf is not installed.
+try:
+    from pypdf import PdfReader
+except ImportError:
+    print("pypdf not installed: PDF text-layer check skipped")
+else:
+    for name, pre, ntab, nfig in (("ZSH_supplementary_V5", "S", 14, 6),
+                                  ("ZSH_FinTech_MDPI_manuscript_V5", "", 15, 7)):
+        pdf = SUB / "SUBMIT_V5_pdf_copies" / (name + ".pdf")
+        if not pdf.exists():
+            pdf = SUB / (name + ".pdf")
+        if not pdf.exists():
+            problems.append(name + ".pdf not found")
+            continue
+        t = "\n".join((pg.extract_text() or "") for pg in PdfReader(str(pdf)).pages)
+        # A caption may cite another table and end that sentence before a capital
+        # ("... as in Table 7. Constrained: ..."), which looks like a second caption.
+        # Compare the order in which each number FIRST appears.
+        seq = [m.group(1) for m in re.finditer(r"Table (" + pre + r"\d+)\.\s*[A-Z]", t)]
+        caps = list(dict.fromkeys(seq))
+        want = [pre + str(i) for i in range(1, ntab + 1)]
+        if caps != want:
+            problems.append(name + f".pdf: table captions out of order: {caps}")
+        figs = sorted({int(x) for x in re.findall(r"Figure " + pre + r"(\d+)\.", t)})
+        if figs != list(range(1, nfig + 1)):
+            problems.append(name + f".pdf: figure captions {figs}, expected 1-{nfig}")
+        if re.search(r"[\u4e00-\u9fff]", t):
+            problems.append(name + ".pdf: CJK character in the text layer")
+        print(f"{name}.pdf: {len(caps)} captions in order, figures {figs}, no CJK")
+
+# ---------- back matter ----------
+mplain = re.sub(r"<[^>]+>", "", docx("ZSH_FinTech_MDPI_manuscript_V5.docx")) \
+    if (SUB / "ZSH_FinTech_MDPI_manuscript_V5.docx").exists() else man
 for k in ("Data Availability Statement", "zenodo.23037946", "Funding:",
           "Institutional Review Board Statement", "Informed Consent Statement",
-          "Conflicts of Interest", "Use of Generative AI"):
-    if k not in mxml:
+          "Conflicts of Interest", "Use of Generative AI",
+          "dff579fba854e86328297a5d740d736f69b7e1b9c30de8358396e617a3288733"):
+    if k not in mplain:
         problems.append(f"back matter: '{k}' missing from the rendered manuscript")
 
 print()
