@@ -161,8 +161,9 @@ cases where the features were empty. With the cell sizes free, the benchmark for
 tags is 46.6% within the period and 28.2% a year earlier, against 7.0% for the profiles.
 There is no annotation for which these features carry nothing.
 
-Two of the results are properties of the task rather than of ZSH, which the benchmark
-establishes (Section 6.7): every family's partition collapses into a few clusters in
+==Two of the results are shared by all seven families tested here rather than specific
+to ZSH (Section 6.7) — seven families at K = 31, on these twelve features, this corpus
+and these annotations:== every family's partition collapses into a few clusters in
 the held-out period, and profiles survive a refit only where a single cluster
 already holds most of the data. The third, the gap to the supervised benchmark, is a
 property of the objective that all seven families share — for most of the

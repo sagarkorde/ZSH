@@ -1,4 +1,4 @@
-| Profile | Dev. (%) | Test (%) | Prosp. (%) | In | Out | Value (sat) | Fee rate | Main input script (%) | RBF (%) | Exch. tag (%) | Runes, test (%) |
+| Profile | Dev. (%) | Test (%) | Held out (%) | In | Out | Value (sat) | Fee rate | Main input script (%) | RBF (%) | Exch. tag (%) | Runes, test (%) |
 |:--------|--------:|--------:|--------:|--------:|--------:|-------------:|--------:|-----------:|--------:|--------:|--------:|
 | P00 | 8.7 | 1.9 | 4.4 | 1 | 1 | 1,145 | 6.1 | P2TR 99 | 96 | 0.0 | 1 |
 | P01 | 7.7 | 5.7 | 0.7 | 1 | 2 | 2,011,790 | 22.0 | P2WPKH 93 | 39 | 0.4 | 33 |

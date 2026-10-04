@@ -207,7 +207,7 @@ def t_profiles():
                 pct(r.exchange_tag_share, 1),
                 pct(test.loc[p, "runes_share"], 0) if p in test.index else ""]
         rows.append(row)
-    cols = ["Profile", "Dev. (%)", "Test (%)"] + (["Prosp. (%)"] if fut is not None else []) + [
+    cols = ["Profile", "Dev. (%)", "Test (%)"] + (["Held out (%)"] if fut is not None else []) + [
         "In", "Out", "Value (sat)", "Fee rate", "Main input script (%)", "RBF (%)", "Exch. tag (%)",
         "Runes, test (%)"]
     save(pd.DataFrame(rows, columns=cols), "T_profiles", ["l"] + ["r"] * (len(cols) - 1))
@@ -632,8 +632,8 @@ def t_bench_battery():
                      f(p.ari.iloc[0], 2) if len(p) else "",
                      fmt_matched(t) if len(t) else "",
                      fmt_matched(p) if len(p) else ""])
-    save(pd.DataFrame(rows, columns=["Method", "Largest, test (%)", "Largest, prosp. (%)", "Refit ARI",
-                                     "ARI, test", "ARI, prosp.", "Matched, test", "Matched, prosp."]),
+    save(pd.DataFrame(rows, columns=["Method", "Largest, test (%)", "Largest, held out (%)", "Refit ARI",
+                                     "ARI, test", "ARI, held out", "Matched, test", "Matched, held out"]),
          "T_bench_battery", ["l", "r", "r", "r", "r", "r", "r", "r"])
 
 

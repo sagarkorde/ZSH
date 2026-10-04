@@ -184,7 +184,7 @@ Table: **Table S2.** Analyses of this study, by when they were specified and wha
 
 Table: **Table S3.** The 31 ZSH profiles. Dev., Test and Held out: share of the transactions of each period. In, Out, Value (total input value) and Fee rate (sat/vB) are medians over the development members; the main input script with its share, the share signalling replace-by-fee (RBF) and the share with an exchange tag also refer to development members. The last column gives the Runes share among the test-period members.
 
-| Profile | Dev. (%) | Test (%) | Prosp. (%) | In | Out | Value (sat) | Fee rate | Main input script (%) | RBF (%) | Exch. tag (%) | Runes, test (%) |
+| Profile | Dev. (%) | Test (%) | Held out (%) | In | Out | Value (sat) | Fee rate | Main input script (%) | RBF (%) | Exch. tag (%) | Runes, test (%) |
 |:--------|--------:|--------:|--------:|--------:|--------:|-------------:|--------:|-----------:|--------:|--------:|--------:|
 | P00 | 8.7 | 1.9 | 4.4 | 1 | 1 | 1,145 | 6.1 | P2TR 99 | 96 | 0.0 | 1 |
 | P01 | 7.7 | 5.7 | 0.7 | 1 | 2 | 2,011,790 | 22.0 | P2WPKH 93 | 39 | 0.4 | 33 |

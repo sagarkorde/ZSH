@@ -1,4 +1,4 @@
-| Method | Largest, test (%) | Largest, prosp. (%) | Refit ARI | ARI, test | ARI, prosp. | Matched, test | Matched, prosp. |
+| Method | Largest, test (%) | Largest, held out (%) | Refit ARI | ARI, test | ARI, held out | Matched, test | Matched, held out |
 |:-------------|---------:|---------:|--------:|--------:|--------:|---------:|---------:|
 | ZSH | 15.6 | 45.0 | 0.78 | 0.18 | 0.10 | 0/31 | 0/31 |
 | K-means++ | 20.4 | 55.0 | 0.76 | 0.44 | 0.22 | 4/31 | 0/31 |

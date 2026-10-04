@@ -1455,7 +1455,7 @@ Section 6.2; the other four use all 3,299,616.
 
 Table: **Table 12.** The whole evaluation applied to seven clustering families; exploratory, added after the freeze. Every method is fitted on the development period at K = 31 and uses the same twelve features, with one exception: the partial reproduction of Vlahavas et al. uses the five features of that study, as in Table 4; BIRCH and the Vlahavas reproduction are fitted on a 1,000,000-transaction subsample and Ward on its own 30,000-row subsample, as in Table 4. Largest: share of the period transactions held by the largest cluster. Refit ARI: mean adjusted Rand index between the development partition and ten block-bootstrap refits. ARI: agreement between the transferred partition and a refit on the period itself. Matched: profiles whose minimum-cost match with that refit reaches a Jaccard similarity of 0.5. ZSH chooses its own number of clusters when refitted (37 in the test period, 38 in the held-out sample); the other families are refitted at K = 31.
 
-| Method | Largest, test (%) | Largest, prosp. (%) | Refit ARI | ARI, test | ARI, prosp. | Matched, test | Matched, prosp. |
+| Method | Largest, test (%) | Largest, held out (%) | Refit ARI | ARI, test | ARI, held out | Matched, test | Matched, held out |
 |:-------------|---------:|---------:|--------:|--------:|--------:|---------:|---------:|
 | ZSH | 15.6 | 45.0 | 0.78 | 0.18 | 0.10 | 0/31 | 0/31 |
 | K-means++ | 20.4 | 55.0 | 0.76 | 0.44 | 0.22 | 4/31 | 0/31 |
@@ -1875,8 +1875,9 @@ cases where the features were empty. With the cell sizes free, the benchmark for
 tags is 46.6% within the period and 28.2% a year earlier, against 7.0% for the profiles.
 There is no annotation for which these features carry nothing.
 
-Two of the results are properties of the task rather than of ZSH, which the benchmark
-establishes (Section 6.7): every family's partition collapses into a few clusters in
+==Two of the results are shared by all seven families tested here rather than specific
+to ZSH (Section 6.7) — seven families at K = 31, on these twelve features, this corpus
+and these annotations:== every family's partition collapses into a few clusters in
 the held-out period, and profiles survive a refit only where a single cluster
 already holds most of the data. The third, the gap to the supervised benchmark, is a
 property of the objective that all seven families share — for most of the

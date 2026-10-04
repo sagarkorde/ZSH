@@ -508,9 +508,10 @@ if _pre.exists():
 # Phrases the article has withdrawn. Each must be absent from the manuscript AND the
 # supplementary file; the submission is one package and a reviewer reads it as one.
 FORBIDDEN = [
-    # the only permitted uses are the two sentences that withdraw the word
+    # the stem, not the whole word: "Prosp. (%)" in a table heading survived a
+    # whole-word sweep. The only permitted uses are the two withdrawal sentences.
     ("round 3: the sample is not prospective",
-     r"\bprospectiv(?!e anywhere,|e\.==)"),
+     r"\bprosp(?!ective anywhere,|ective\.==)"),
     ("round 3: the oracle experiment is not an upper bound",
      r"upper bound for the weighting|Oracle-weight upper bound|bounds what any weighting"),
     ("round 3: the 2024-26 blocks existed at the freeze",
