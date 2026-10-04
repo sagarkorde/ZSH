@@ -167,6 +167,15 @@ else:
             problems.append(name + f".pdf: figure captions {figs}, expected 1-{nfig}")
         if re.search(r"[\u4e00-\u9fff]", t):
             problems.append(name + ".pdf: CJK character in the text layer")
+        # a caption separated from its table by a page break reads as a caption over
+        # the wrong table; the build sets keepNext and repeats header rows to stop that
+        pages = [pg.extract_text() or "" for pg in PdfReader(str(pdf)).pages]
+        for pno, ptxt in enumerate(pages, 1):
+            for cm in re.finditer(r"Table (" + pre + r"\d+)\.\s*[A-Z]", ptxt):
+                tail = ptxt[cm.end():]
+                if len(re.sub(r"\s+", "", re.sub(r"\d{1,4}", " ", tail))) < 40:
+                    problems.append(
+                        name + f".pdf p{pno}: caption for Table {cm.group(1)} ends the page")
         print(f"{name}.pdf: {len(caps)} captions in order, figures {figs}, no CJK")
 
 # ---------- back matter ----------

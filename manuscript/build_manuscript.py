@@ -114,6 +114,12 @@ def postprocess(xml):
                    '<w:bottom w:val="single" w:sz="8" w:space="0" w:color="auto"/></w:tblBorders>')
         t = re.sub(r"(<w:tblPr>)", r"\1" + borders, t, count=1)
         t = re.sub(r'<w:tblW [^>]*/>', '<w:tblW w:w="5000" w:type="pct"/><w:jc w:val="center"/>', t, count=1)
+        # A table that spills onto the next page left the following caption beside its
+        # continuation rows, which reads as a caption sitting over the wrong table.
+        # Repeat the header row on every page it occupies, and never split a row.
+        t = re.sub(r"<w:tr(\s[^>]*)?><w:trPr>", r"<w:tr\1><w:trPr><w:cantSplit/>", t)
+        t = re.sub(r"<w:tr(\s[^>]*)?>(?!<w:trPr>)", r"<w:tr\1><w:trPr><w:cantSplit/></w:trPr>", t)
+        t = t.replace("<w:trPr><w:cantSplit/>", "<w:trPr><w:cantSplit/><w:tblHeader/>", 1)
         # header row: bottom border on first row cells
         first_row_end = t.find("</w:tr>")
         if first_row_end > 0:
@@ -123,6 +129,10 @@ def postprocess(xml):
             t = head + t[first_row_end:]
         return t
     xml = re.sub(r"<w:tbl>.*?</w:tbl>", fix_table, xml, flags=re.S)
+    # a caption must stay on the page of the table it introduces
+    for style in ("MDPI41tablecaption", "MDPI51figurecaption"):
+        xml = re.sub(r'(<w:pStyle w:val="' + style + r'" ?/>)(?!<w:keepNext)',
+                     r"\1<w:keepNext/>", xml)
     # numbered equations: paragraph containing m:oMathPara followed by EQNUMnEQNUM
     def fix_eq(m):
         body, n = m.group(1), m.group(2)

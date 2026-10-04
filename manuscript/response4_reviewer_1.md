@@ -6,7 +6,7 @@ We accept all five comments. The reviewer's summary is accurate: the previous ro
 
 Three of the five comments concern corrections we announced in the last reply and did not carry through. One (Comment 3) asks us to restrain conclusions that the evidence does not reach. One (Comment 5) asks us to verify the archive rather than assert it; we did, and it found a defect in the deposit that we would not otherwise have known about.
 
-No result changed. Every reported number is unaltered. What changed is the scope claimed for several of them, the terminology, and three counts that were wrong.
+No result changed. Every reported number is unaltered. What changed is the scope claimed for several of them, the terminology, and four counts that were wrong.
 
 Section numbers refer to the revised manuscript; every change is highlighted in the marked copy, and the highlighting of the previous submission has been removed so that only this round's changes are marked.
 
