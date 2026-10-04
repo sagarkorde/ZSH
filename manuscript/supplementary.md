@@ -142,7 +142,7 @@ check against the previously reported unweighted results.
 
 ## Supplementary tables
 
-Table: **Table S1.** Count-rule flags of the published sample. Each flag is a fixed rule on the input and output counts; the rules can overlap. The last column gives the accuracy with which a depth-3 decision tree recovers each rule from the other candidate features on development data.
+Table: **Table S1.** Count-rule flags of the published sample. Each flag is a fixed rule on the input and output counts; the rules can overlap. The names are those used in the published sample and are not claims about behaviour: the flag named 'peer-to-peer', for instance, is the rule inputs = 1 and outputs = 1, and is the family called 'One input, one output' in Table S14; the last column gives the accuracy with which a depth-3 decision tree recovers each rule from the other candidate features on development data.
 
 | Flag in the published sample | Definition | Development (%) | Test (%) | Recovered by depth-3 tree (%) |
 |:-------------|:-------------|------------:|--------:|----------:|
@@ -176,7 +176,7 @@ Table: **Table S2.** Analyses of this study, by when they were specified and wha
 | Oracle-informed weighting | 6.6 | Exploratory | to separate a poor weighting from an uninformative feature set |
 | Profile matching across refits | 6.3 | Exploratory | refitting is useful only if profiles can be followed |
 | Refit constrained to the previous centroids | 6.3 | Exploratory | to test the remedy this article proposes |
-| The same evaluation for seven families | 6.7 | Exploratory | to attribute the limits to ZSH or to the task |
+| The same evaluation for seven families | 6.7 | Exploratory | to see which limits other clustering families also show |
 | Supervised benchmark on the same features | 6.8 | Exploratory | to separate the feature set from the objective |
 | One partition serving all annotations | 6.8 | Exploratory | to price the constraint of sharing a partition |
 | Address-level features | 6.8 | Exploratory | to test whether richer features lift the weakest case |

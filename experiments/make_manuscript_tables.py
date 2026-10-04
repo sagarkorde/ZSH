@@ -747,7 +747,7 @@ def t_prespec():
         ["Oracle-informed weighting", "6.6", EX, "to separate a poor weighting from an uninformative feature set"],
         ["Profile matching across refits", "6.3", EX, "refitting is useful only if profiles can be followed"],
         ["Refit constrained to the previous centroids", "6.3", EX, "to test the remedy this article proposes"],
-        ["The same evaluation for seven families", "6.7", EX, "to attribute the limits to ZSH or to the task"],
+        ["The same evaluation for seven families", "6.7", EX, "to see which limits other clustering families also show"],
         ["Supervised benchmark on the same features", "6.8", EX, "to separate the feature set from the objective"],
         ["One partition serving all annotations", "6.8", EX, "to price the constraint of sharing a partition"],
         ["Address-level features", "6.8", EX, "to test whether richer features lift the weakest case"],

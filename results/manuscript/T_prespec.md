@@ -20,7 +20,7 @@
 | Oracle-informed weighting | 6.6 | Exploratory | to separate a poor weighting from an uninformative feature set |
 | Profile matching across refits | 6.3 | Exploratory | refitting is useful only if profiles can be followed |
 | Refit constrained to the previous centroids | 6.3 | Exploratory | to test the remedy this article proposes |
-| The same evaluation for seven families | 6.7 | Exploratory | to attribute the limits to ZSH or to the task |
+| The same evaluation for seven families | 6.7 | Exploratory | to see which limits other clustering families also show |
 | Supervised benchmark on the same features | 6.8 | Exploratory | to separate the feature set from the objective |
 | One partition serving all annotations | 6.8 | Exploratory | to price the constraint of sharing a partition |
 | Address-level features | 6.8 | Exploratory | to test whether richer features lift the weakest case |

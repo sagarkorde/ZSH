@@ -14,6 +14,7 @@ verify_manuscript_numbers.py. This script checks the rest:
 Run after assemble.py and after exporting the PDFs.
 """
 import collections
+import hashlib
 import pathlib
 import re
 import zipfile
@@ -177,6 +178,38 @@ else:
                     problems.append(
                         name + f".pdf p{pno}: caption for Table {cm.group(1)} ends the page")
         print(f"{name}.pdf: {len(caps)} captions in order, figures {figs}, no CJK")
+
+# ---------- every figure caption sits under the image it describes ----------
+# Checked by hashing each embedded image against the file the caption names, rather
+# than by reading the rendered page, where an extractor can pair them wrongly.
+FIG_FOR_CAPTION = {
+    "ZSH_supplementary_V5.docx": ["F3_weights.png", "F4_profiles.png", "F5_methods.png",
+                                  "F6_factorial.png", "F8_drift.png", "F11_atypicality.png"],
+    "ZSH_FinTech_MDPI_manuscript_V5.docx": ["F2_design.png", "F1_pipeline.png", "F7_stability.png",
+                                            "F9_curves.png", "F10_elliptic.png",
+                                            "F12_sensitivity.png", "F13_bench.png"],
+}
+FIGDIR = pathlib.Path(__file__).resolve().parent.parent / "results" / "figures"
+by_hash = {}
+for _p in FIGDIR.glob("*.png"):
+    by_hash[hashlib.sha256(_p.read_bytes()).hexdigest()] = _p.name
+for fname, expected in FIG_FOR_CAPTION.items():
+    if not (SUB / fname).exists():
+        continue
+    with zipfile.ZipFile(SUB / fname) as z:
+        x = z.read("word/document.xml").decode("utf-8")
+        rel = dict(re.findall(r'Id="([^"]+)"[^>]*Target="([^"]+)"',
+                              z.read("word/_rels/document.xml.rels").decode("utf-8")))
+        got = []
+        for m in re.finditer(r'r:embed="([^"]+)"', x):
+            tgt = rel.get(m.group(1), "")
+            if not tgt.startswith("media/"):
+                continue
+            got.append(by_hash.get(hashlib.sha256(z.read("word/" + tgt)).hexdigest(), "unknown"))
+    if got != expected:
+        problems.append(f"{fname}: figures in document order are {got}, expected {expected}")
+    else:
+        print(f"{fname}: {len(got)} figures, each under its own caption")
 
 # ---------- back matter ----------
 mplain = re.sub(r"<[^>]+>", "", docx("ZSH_FinTech_MDPI_manuscript_V5.docx")) \

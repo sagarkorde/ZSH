@@ -55,7 +55,10 @@ TAB = {
                "the analysis code had been frozen; the Elliptic data follow the temporal split of the "
                "original study [@Weber2019]."),
     "T_rules": ("T_rules.md", "Count-rule flags of the published sample. Each flag is a fixed rule on the input "
-                "and output counts; the rules can overlap. The last column gives the accuracy with which a "
+                "and output counts; the rules can overlap. The names are those used in the published sample and "
+                "are not claims about behaviour: the flag named 'peer-to-peer', for instance, is the rule "
+                "inputs = 1 and outputs = 1, and is the family called 'One input, one output' in Table "
+                "{T_loo}; the last column gives the accuracy with which a "
                 "depth-3 decision tree recovers each rule from the other candidate features on development data."),
     "T_features": ("T_features.md", "The twelve clustering features, ranked by their mutual information with "
                    "the proxy partition on development data, and their rank-power weights (s = 1.5)."),
