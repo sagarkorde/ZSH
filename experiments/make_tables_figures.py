@@ -12,6 +12,7 @@ import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.dates
 import matplotlib.ticker  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
@@ -53,16 +54,44 @@ def save_table(df, name, floatfmt=None):
     print(f"table {name}: {df.shape}")
 
 
+# the result files still use the collection-time code FUTURE; the figures must not
+PERIOD_TITLE = {"FUTURE": "HELD OUT", "future": "held out",
+                "TEST": "TEST", "test": "test"}
+
+
 def savefig(fig, name):
     # Pass dpi and bbox explicitly rather than relying on plotstyle.apply() having run:
     # F13_bench was once written by a run that never applied the style, so it inherited
     # the matplotlib defaults (100 dpi, no tight bounding box) and its rotated tick
     # labels and row labels were cut off at the canvas edge.
+    # PNG is what the .docx embeds; PDF (vector) and JPG are the journal's upload formats.
+    #
+    # Saved WITHOUT bbox_inches="tight". Tight cropping grows the canvas beyond figsize
+    # to make room for labels, so a figure authored at 6.5 in was written at 7.7 in and
+    # then scaled to 6.5 in by the document, which printed 12 pt type at about 10 pt.
+    # Fitting the content inside a fixed canvas keeps authored points equal to printed
+    # points. tight_layout is a no-op for the figures that place their axes by hand.
+    # Tight cropping never clips a label, but it grows the canvas past figsize to make
+    # room for one, so a figure authored at 6.5 in was written at 7.7 in and the document
+    # scaled it back to 6.5, printing 12 pt type at about 10 pt. Shrink the canvas until
+    # the CROPPED width equals the width the article embeds it at; the type stays 12 pt
+    # because points are absolute, so authored points equal printed points.
+    PAD = 0.03
+    target = ps.HALF_W if fig.get_figwidth() <= (ps.HALF_W + ps.FULL_W) / 2 else ps.FULL_W
+    for _ in range(6):
+        fig.canvas.draw()
+        cropped = fig.get_tightbbox(fig.canvas.get_renderer()).width + 2 * PAD
+        if abs(cropped - target) <= 0.01:
+            break
+        scale = target / cropped
+        fig.set_size_inches(fig.get_figwidth() * scale, fig.get_figheight() * scale)
     out = FIG / f"{name}.png"
-    fig.savefig(out, dpi=600, bbox_inches="tight", pad_inches=0.03)
-    return out
+    for path in (out, FIG / f"{name}.pdf", FIG / f"{name}.jpg"):
+        fig.savefig(path, dpi=600, bbox_inches="tight", pad_inches=PAD,
+                    facecolor=fig.get_facecolor())
     plt.close(fig)
     print(f"figure {name}")
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -161,7 +190,7 @@ def table_profiles():
 # figures from E0 / E1
 # ---------------------------------------------------------------------------
 def fig_pipeline():
-    fig = plt.figure(figsize=(ps.FULL_W, 1.5))
+    fig = plt.figure(figsize=(ps.FULL_W, 3.4))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_axis_off()
     steps = [("Transaction\nrecords", "12 features,\nsatoshi units"),
@@ -170,20 +199,38 @@ def fig_pipeline():
              ("Hierarchical\ninitialisation", "160 micro-\nclusters; size-\nweighted Ward"),
              ("K-means and\nrefinement", "split clusters\n> 10% of rows\n(depth ≤ 3)"),
              ("Profiles", "nearest\ncentroid;\nannotations")]
-    n = len(steps)
-    left, right, gap = 0.01, 0.99, 0.022
-    width = (right - left - gap * (n - 1)) / n
+    # Two rows of three. Six boxes across the page gives 0.94 in each, which at 12 pt
+    # holds about eleven characters, and "initialisation" and "split clusters" overflow.
+    ncol = 3
+    left, right, gap, vgap = 0.01, 0.99, 0.045, 0.10
+    width = (right - left - gap * (ncol - 1)) / ncol
+    height = (1 - vgap) / 2 - 0.04
     for i, (title, sub) in enumerate(steps):
-        x0 = left + i * (width + gap)
-        box = FancyBboxPatch((x0, 0.05), width, 0.90, boxstyle="round,pad=0,rounding_size=0.02",
+        row, col = divmod(i, ncol)
+        x0 = left + col * (width + gap)
+        y0 = 0.52 - row * (height + vgap) + (0.04 if row == 0 else 0.0)
+        box = FancyBboxPatch((x0, y0), width, height, boxstyle="round,pad=0,rounding_size=0.02",
                              fc="#dbe9fb" if i in (2, 3, 4) else "#eef4fc", ec=ps.SERIES[0], lw=0.8)
         ax.add_patch(box)
-        ax.text(x0 + width / 2, 0.76, title, ha="center", va="center", fontsize=7.5, weight="bold")
-        ax.text(x0 + width / 2, 0.36, sub, ha="center", va="center", fontsize=6.8, color=ps.INK2,
-                linespacing=1.15)
-        if i < n - 1:
-            ax.annotate("", xy=(x0 + width + gap, 0.50), xytext=(x0 + width, 0.50),
-                        arrowprops=dict(arrowstyle="-|>", color=ps.MUTED, lw=0.8, shrinkA=0, shrinkB=0))
+        ax.text(x0 + width / 2, y0 + height * 0.78, title, ha="center", va="center",
+                fontsize=ps.MIN_PT, weight="bold")
+        ax.text(x0 + width / 2, y0 + height * 0.34, sub, ha="center", va="center",
+                fontsize=ps.MIN_PT, color=ps.INK2, linespacing=1.2)
+        if i == len(steps) - 1:
+            continue
+        arrow = dict(arrowstyle="-|>", color=ps.MUTED, lw=1.0, shrinkA=0, shrinkB=0)
+        if col < ncol - 1:                      # along the row
+            ax.annotate("", xy=(x0 + width + gap, y0 + height / 2),
+                        xytext=(x0 + width, y0 + height / 2), arrowprops=arrow)
+        else:                                   # wrap to the start of the next row
+            # routed through the gap between the rows: straight across row 2 would cross
+            # the boxes and run against the arrows inside it
+            nxt_y = 0.52 - (row + 1) * (height + vgap)
+            mid_y = (nxt_y + height + y0) / 2
+            x_from, x_to = x0 + width / 2, left + width / 2
+            ax.plot([x_from, x_from], [y0, mid_y], color=ps.MUTED, lw=1.0, clip_on=False)
+            ax.plot([x_from, x_to], [mid_y, mid_y], color=ps.MUTED, lw=1.0, clip_on=False)
+            ax.annotate("", xy=(x_to, nxt_y + height), xytext=(x_to, mid_y), arrowprops=arrow)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     savefig(fig, "F1_pipeline")
@@ -191,19 +238,22 @@ def fig_pipeline():
 
 def fig_design():
     fm = load_json("E0/future_manifest.json")
-    fig, ax = plt.subplots(figsize=(ps.FULL_W, 1.6))
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 2.3))
     spans = [("Development (fit)", "2022-07-13", "2024-01-01", ps.SERIES[0]),
              ("Test", "2024-01-01", "2024-09-08", ps.SERIES[1]),
              ("Held out (collected after the freeze)", "2024-10-01", "2026-09-01", ps.SERIES[2])]
     for i, (lab, a, b, c) in enumerate(spans):
         a, b = pd.Timestamp(a), pd.Timestamp(b)
         ax.barh(0, (b - a).days, left=a, height=0.45, color=c)
-        ax.text(a + (b - a) / 2, 0.42, lab, ha="center", va="bottom", fontsize=7)
+        ax.text(a + (b - a) / 2, 0.42, lab, ha="center", va="bottom", fontsize=ps.MIN_PT)
     for d, lab in (("2024-04-20", "Runes launch\n(block 840,000)"), ("2026-09-17", "code frozen\n(tag v2-frozen)")):
         ax.plot([pd.Timestamp(d)] * 2, [-0.5, 0.26], color=ps.INK2, lw=0.8, ls="--")
-        ax.text(pd.Timestamp(d), -0.55, lab, ha="center", va="top", fontsize=6.3, color=ps.INK2)
+        ax.text(pd.Timestamp(d), -0.55, lab, ha="center", va="top", fontsize=ps.MIN_PT, color=ps.INK2)
     ax.set_ylim(-1.0, 0.9)
     ax.set_yticks([])
+    # at 12 pt the default six-monthly date ticks run into each other
+    ax.xaxis.set_major_locator(matplotlib.dates.YearLocator())
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%Y"))
     ax.spines["left"].set_visible(False)
     ax.grid(False)
     savefig(fig, "F2_design")
@@ -211,12 +261,12 @@ def fig_design():
 
 def fig_weights():
     w = pd.read_csv(R("E1") / "weights.csv").sort_values("rank", ascending=False)
-    fig, ax = plt.subplots(figsize=(ps.HALF_W, 2.6))
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 3.6))
     y = np.arange(len(w))
     ax.barh(y, w.weight, color=ps.SERIES[0], height=0.62)
     ax.set_yticks(y, [NICE.get(f, f) for f in w.feature])
     for yi, (wt, mi) in enumerate(zip(w.weight, w.mi)):
-        ax.text(wt + 0.006, yi, f"{wt:.3f}  (MI {mi:.2f})", va="center", fontsize=6.3, color=ps.INK2)
+        ax.text(wt + 0.006, yi, f"{wt:.3f}  (MI {mi:.2f})", va="center", fontsize=ps.MIN_PT, color=ps.INK2)
     ax.set_xlim(0, w.weight.max() * 1.55)
     ax.set_xlabel("Weight $w_j$ (sums to 1)")
     ax.grid(axis="y", visible=False)
@@ -251,16 +301,16 @@ def fig_profiles():
     M = pd.DataFrame(cols).reindex(range(k))
     M.to_csv(TAB / "F4_profile_matrix.csv")
     share = pd.Series(np.bincount(lab, minlength=k) / len(lab))
-    fig, ax = plt.subplots(figsize=(ps.FULL_W, 5.2))
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 7.8))
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("seq", ["#f7f9fc"] + ps.SEQ[1:])
     im = ax.imshow(M.to_numpy(), aspect="auto", cmap=cmap, vmin=0, vmax=1)
     ax.set_xticks(range(M.shape[1]), M.columns, rotation=40, ha="right")
-    ax.set_yticks(range(k), [f"P{i:02d} ({share[i] * 100:.1f}%)" for i in range(k)], fontsize=6)
+    ax.set_yticks(range(k), [f"P{i:02d} ({share[i] * 100:.1f}%)" for i in range(k)], fontsize=ps.MIN_PT)
     ax.axvline(4.5, color="white", lw=2)
     ax.axvline(M.shape[1] - 1.5, color="white", lw=2)
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
-    cb.set_label("column-scaled median (left block) or share of members", fontsize=6.5)
+    cb.set_label("column-scaled median (left block) or share of members", fontsize=ps.MIN_PT)
     savefig(fig, "F4_profiles")
 
 
@@ -300,7 +350,7 @@ def table_methods():
 def fig_methods():
     c = pd.read_csv(R("E2") / "methods_concentration_independent.csv")
     targets = list(dict.fromkeys(c.target))
-    fig, ax = plt.subplots(figsize=(ps.FULL_W, 0.28 * len(targets) + 1.0))
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 0.42 * len(targets) + 1.8))
     y = {t: i for i, t in enumerate(targets[::-1])}
     others = c[~c.method.isin(["ZSH", "KMeans++"])]
     ax.scatter(others.ap_lift, others.target.map(y), s=14, color=ps.MUTED, alpha=0.6, lw=0,
@@ -363,7 +413,7 @@ def table_factorial():
 def fig_factorial():
     panels = (("H1_primary_A3_vs_A4", "A3", "Rank-power vs uniform weights\n(no refinement, same K)"),
               ("H2_primary_A1_vs_A3", "A1", "Refinement vs none\n(rank-power weights, same K)"))
-    fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 3.3), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 4.4), sharey=True)
     for ax, (key, arm, title) in zip(axes, panels):
         d = pd.read_csv(R("E3") / f"{key}_independent.csv")
         d = d[d.method == arm].reset_index(drop=True)
@@ -413,7 +463,7 @@ def fig_stability():
     jac = pd.read_csv(R("E4") / "clusterwise_jaccard_long.csv", keep_default_na=False, na_values=[""])
     methods = ["ZSH", "KMeans++ K*", "RPW K* (no refinement)"]
     names = {"ZSH": "ZSH", "KMeans++ K*": "K-means++", "RPW K* (no refinement)": "rank-power,\nno refinement"}
-    fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 2.8), gridspec_kw={"width_ratios": [1, 1.25]})
+    fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 3.8), gridspec_kw={"width_ratios": [1, 1.25]})
     ax = axes[0]
     for i, kind in enumerate(("seed", "bootstrap")):
         for j, m in enumerate(methods):
@@ -426,7 +476,8 @@ def fig_stability():
             else:
                 ax.scatter(np.full(len(v), x) + jit, v, s=10, color=ps.SERIES[j], lw=0, alpha=0.85,
                            label="30 block-bootstrap refits (filled)" if j == 0 else None)
-    ax.set_xticks(range(len(methods)), [names[m] for m in methods])
+    # three categories share one half-width panel; upright labels touch at 12 pt
+    ax.set_xticks(range(len(methods)), [names[m] for m in methods], rotation=20, ha="right")
     ax.set_ylabel("ARI with the full-DEV fit")
     ax.set_ylim(0, 1)
     from matplotlib.lines import Line2D
@@ -486,21 +537,24 @@ def fig_drift():
     m = pd.read_csv(R("E5") / "monthly_profile_shares.csv")
     piv = m.pivot(index="profile", columns="month", values="share").fillna(0)
     months = list(piv.columns)
-    fig, ax = plt.subplots(figsize=(ps.FULL_W, 4.4))
+    # 31 profile labels at 12 pt need about 0.24 in of height each, so the heatmap is
+    # tall rather than letting the row labels overlap
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 7.8))
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("seq", ["#f7f9fc"] + ps.SEQ[1:])
     vmax = float(np.quantile(piv.to_numpy(), 0.99))
     im = ax.imshow(piv.to_numpy(), aspect="auto", cmap=cmap, vmin=0, vmax=vmax)
     step = max(1, len(months) // 16)
     ax.set_xticks(range(0, len(months), step), months[::step], rotation=45, ha="right")
-    ax.set_yticks(range(len(piv)), [f"P{int(i):02d}" for i in piv.index], fontsize=6)
+    ax.set_yticks(range(len(piv)), [f"P{int(i):02d}" for i in piv.index], fontsize=ps.MIN_PT)
     for d, lab in (("2024-01", "test"), ("2024-04", "Runes"), ("2024-10", "held out")):
         if d in months:
             x = months.index(d) - 0.5
             ax.axvline(x, color=ps.SERIES[1], lw=1)
-            ax.text(x + 0.3, -0.9, lab, color=ps.SERIES[1], fontsize=6.5, va="bottom")
+            ax.text(x + 0.3, -0.9, lab, color=ps.SERIES[1], fontsize=ps.MIN_PT, va="bottom")
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
-    cb.set_label("monthly share of transactions (future months design-weighted)", fontsize=6.5)
+    cb.set_label("monthly share of transactions"
+                 "\n(held-out months design-weighted)", fontsize=ps.MIN_PT)
     savefig(fig, "F8_drift")
 
 
@@ -552,7 +606,9 @@ def fig_curves():
         return
     ncol = 3
     nrow = int(np.ceil(len(panels) / ncol))
-    fig, axes = plt.subplots(nrow, ncol, figsize=(ps.FULL_W, 2.2 * nrow), squeeze=False)
+    # at 12 pt a one-line "HELD OUT: OP_RETURN: Runes" is wider than a third of the page,
+    # so the period and the annotation go on separate lines and the panels gain height
+    fig, axes = plt.subplots(nrow, ncol, figsize=(ps.FULL_W, 2.9 * nrow), squeeze=False)
     grid = np.linspace(0.005, 1, 200)
     order = [("ZSH", ps.SERIES[0]), ("K-means++ (K*)", ps.SERIES[1]),
              ("rank-power K-means (K*)", ps.SERIES[2]), ("uniform + refinement", ps.SERIES[3])]
@@ -566,13 +622,15 @@ def fig_curves():
             ax.set_yscale("log")
             ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
             ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
-        ax.set_title(f"{period}: {tlabel(t)}", loc="left")
+        ax.set_title(f"{PERIOD_TITLE.get(period, period)}\n{tlabel(t)}", loc="left")
         ax.set_xlabel("coverage of positives")
         ax.set_ylabel("precision / base rate")
     for ax in axes.ravel()[len(panels):]:
         ax.set_visible(False)
     h, lab = axes[0, 0].get_legend_handles_labels()
-    fig.legend(h, lab, loc="lower center", ncol=4, fontsize=6.3, bbox_to_anchor=(0.5, -0.02))
+    # four entries in one row are wider than the page at 12 pt, and a legend does not
+    # shrink with the canvas, so the figure could never be cropped to 6.5 in
+    fig.legend(h, lab, loc="lower center", ncol=2, fontsize=ps.MIN_PT, bbox_to_anchor=(0.5, -0.04))
     fig.tight_layout(rect=(0, 0.06, 1, 1))
     savefig(fig, "F9_curves")
 
@@ -624,7 +682,7 @@ def table_elliptic():
 def fig_elliptic():
     s = load_json("E8/summary.json")
     ts = pd.read_csv(R("E8") / "per_timestep.csv")
-    fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 2.7))
+    fig, axes = plt.subplots(1, 2, figsize=(ps.FULL_W, 3.6))
     ax = axes[0]
     cur = s["AF-165"]["curves"]
     order = [("ZSH", ps.SERIES[0]), ("K-means++ (K)", ps.SERIES[1]), ("rank-power K-means (K)", ps.SERIES[2]),
@@ -637,8 +695,8 @@ def fig_elliptic():
     ax.set_xlabel("coverage of test illicit transactions")
     ax.set_ylabel("precision / base rate (6.5%)")
     ax.set_ylim(0, None)
-    ax.legend(loc="lower left", fontsize=6)
-    ax.set_title("(a) Enrichment at each coverage, test steps", loc="left")
+    ax.legend(loc="lower left", fontsize=ps.MIN_PT)
+    ax.set_title("(a) Enrichment at each coverage", loc="left")
     ax = axes[1]
     for m, col in order[:2]:
         d = ts[(ts.setting == "AF-165") & (ts.method == m)]
@@ -646,11 +704,11 @@ def fig_elliptic():
         ax.plot(d.timestep, d.recall, marker="s", ms=3, color=col, ls="--", label=f"{m}: recall")
     last = CFG["elliptic"]["train_last_timestep"]
     ax.axvline(43, color=ps.MUTED, lw=0.8, ls=":")
-    ax.text(43.2, 0.95, "dark-market\nclosure", fontsize=6, color=ps.INK2, va="top")
+    ax.text(43.2, 0.95, "dark-market\nclosure", fontsize=ps.MIN_PT, color=ps.INK2, va="top")
     ax.set_xlabel("time step")
     ax.set_ylim(0, 1)
     ax.set_title("(b) Top clusters per test step", loc="left")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=5.8)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=ps.MIN_PT)
     _ = last
     fig.tight_layout()
     savefig(fig, "F10_elliptic")
@@ -690,7 +748,7 @@ def fig_atypicality():
     ax.set_xlabel("false positive rate")
     ax.set_ylabel("true positive rate")
     ax.set_aspect("equal")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.45, -0.2), fontsize=6.3, ncol=1)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.45, -0.2), fontsize=ps.MIN_PT, ncol=1)
     savefig(fig, "F11_atypicality")
 
 
@@ -737,7 +795,7 @@ def fig_sensitivity():
     targets = list(dict.fromkeys(c.target))
     piv = c.pivot(index="method", columns="target", values="ap_lift")[targets]
     rel = np.log2(piv.loc[order] / piv.loc["reference"])
-    fig, ax = plt.subplots(figsize=(ps.FULL_W, 4.6))
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 7.0))
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("div", [ps.DIV_NEG, ps.DIV_MID, ps.DIV_POS])
     lim = 1.5
     im = ax.imshow(rel.clip(-lim, lim).to_numpy(), aspect="auto", cmap=cmap, vmin=-lim, vmax=lim)
@@ -745,7 +803,7 @@ def fig_sensitivity():
         for j in range(rel.shape[1]):
             v = piv.loc[order[i], targets[j]]
             txt = f"{v:.0f}" if v >= 100 else (f"{v:.1f}" if v >= 10 else f"{v:.2f}")
-            ax.text(j, i, txt, ha="center", va="center", fontsize=5.6,
+            ax.text(j, i, txt, ha="center", va="center", fontsize=ps.MIN_PT,
                     color=ps.INK if abs(rel.iloc[i, j]) < 1.0 else "white",
                     weight="bold" if i == 0 else "normal")
     ax.set_xticks(range(len(targets)), [tlabel(t) for t in targets], rotation=35, ha="right")
@@ -754,7 +812,7 @@ def fig_sensitivity():
         ax.axhline(y, color="white", lw=2)
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
-    cb.set_label("log₂(AP lift / reference), clipped at ±1.5", fontsize=6.5)
+    cb.set_label("log₂(AP lift / reference), clipped at ±1.5", fontsize=ps.MIN_PT)
     savefig(fig, "F12_sensitivity")
 
 
@@ -775,20 +833,23 @@ def fig_bench():
     targets = list(dict.fromkeys(c.target))
     piv = c.pivot(index="method", columns="target", values="ap").loc[methods, targets] * 100
     base = c.groupby("target").base_rate.first()[targets]
-    fig, ax = plt.subplots(figsize=(ps.FULL_W, 2.9))
+    fig, ax = plt.subplots(figsize=(ps.FULL_W, 4.2))
     cmap = matplotlib.colors.LinearSegmentedColormap.from_list("seq", ps.SEQ)
     im = ax.imshow(piv.to_numpy(), aspect="auto", cmap=cmap, vmin=0, vmax=100)
     for i in range(piv.shape[0]):
         for j in range(piv.shape[1]):
             v = piv.iloc[i, j]
-            ax.text(j, i, f"{v:.0f}" if v >= 10 else f"{v:.1f}", ha="center", va="center", fontsize=6,
+            ax.text(j, i, f"{v:.0f}" if v >= 10 else f"{v:.1f}", ha="center", va="center", fontsize=ps.MIN_PT,
                     color=ps.INK if v < 55 else "white", weight="bold" if i == 0 else "normal")
+    # eleven columns share 6.5 in, so a 35-degree two-line label at 12 pt overlaps its
+    # neighbours; upright labels need only the column's own width
     ax.set_xticks(range(len(targets)),
-                  [f"{tlabel(t)}\n{100 * base[t]:.2f}%" for t in targets], rotation=35, ha="right")
+                  [f"{tlabel(t)}  {100 * base[t]:.2f}%" for t in targets],
+                  rotation=90, ha="center", va="top")
     ax.set_yticks(range(len(methods)), [BENCH_LABEL[m] for m in methods])
     ax.grid(False)
     cb = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.01)
-    cb.set_label("attained share of the ceiling (%)", fontsize=6.5)
+    cb.set_label("attained share of the ceiling (%)", fontsize=ps.MIN_PT)
     savefig(fig, "F13_bench")
 
 

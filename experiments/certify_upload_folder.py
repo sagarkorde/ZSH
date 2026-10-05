@@ -27,6 +27,8 @@ got = {p.name for p in files}
 if got != expected:
     problems.append(f"folder contents: missing {sorted(expected - got)}, extra {sorted(got - expected)}")
 for p in D.iterdir():
+    if p.is_dir():          # figures/ holds the PDF and JPG uploads
+        continue
     if p.suffix.lower() != ".docx":
         problems.append(f"non-.docx file in the upload folder: {p.name}")
     if re.search(r"_V4|_v4|_v2\b|_draft", p.stem):

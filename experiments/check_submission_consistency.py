@@ -171,13 +171,19 @@ else:
         # a caption separated from its table by a page break reads as a caption over
         # the wrong table; the build sets keepNext and repeats header rows to stop that
         pages = [pg.extract_text() or "" for pg in PdfReader(str(pdf)).pages]
+        # Only the FIRST appearance of a number is its caption. A later one is a
+        # caption citing another table and ending the sentence ("... as in Table 4.
+        # Largest: ..."), not an orphan, even at the foot of a page.
+        seen_caption = set()
         for pno, ptxt in enumerate(pages, 1):
             for cm in re.finditer(r"Table (" + pre + r"\d+)\.\s*[A-Z]", ptxt):
+                if cm.group(1) in seen_caption:
+                    continue
+                seen_caption.add(cm.group(1))
                 tail = ptxt[cm.end():]
-                if len(re.sub(r"\s+", "", re.sub(r"\d{1,4}", " ", tail))) < 40:
+                if len(re.sub(r"\s+", "", re.sub(r"\d{1,4}", " ", tail))) < 40:
                     problems.append(
                         name + f".pdf p{pno}: caption for Table {cm.group(1)} ends the page")
-        print(f"{name}.pdf: {len(caps)} captions in order, figures {figs}, no CJK")
 
 # ---------- no paragraph repeated back to back ----------
 for _lab, _txt in (("manuscript", man), ("supplementary", sup)):
@@ -198,6 +204,23 @@ for _lab, _txt in (("manuscript", man), ("supplementary", sup)):
             if ord(_ch) > 127 and _ch not in ALLOWED:
                 problems.append(f"{_lab}: caption contains U+{ord(_ch):04X} {_ch!r}: "
                                 f"{_m.group(0)[:70]!r}")
+
+# ---------- no withdrawn term drawn inside a figure ----------
+# A label baked into an image is invisible to every check above: "FUTURE" survived as a
+# panel title and "future months" as a colour-bar label long after the word was removed
+# from the text. Check the source that draws them.
+PLOT = pathlib.Path(__file__).resolve().parent / "make_tables_figures.py"
+if PLOT.exists():
+    src = PLOT.read_text(encoding="utf-8")
+    # strip the lines that read result files, where FUTURE is a key, not a label
+    drawn = chr(10).join(ln for ln in src.splitlines()
+                         if not re.search(r"load_json|read_csv|summary|R\(", ln))
+    for m in re.finditer(r'"[^"]*prosp[^"]*"|"[^"]*FUTURE[^"]*"|"[^"]*future months[^"]*"',
+                         drawn, flags=re.I):
+        if "PERIOD_TITLE" in drawn[max(0, m.start() - 120):m.start()]:
+            continue
+        problems.append(f"make_tables_figures.py: withdrawn term in a drawn label: {m.group(0)}")
+    print("make_tables_figures.py: no withdrawn term in a drawn label")
 
 # ---------- an image and its caption must land on the same page ----------
 # A figure caption follows its image, so the image carries keepNext. When that was set

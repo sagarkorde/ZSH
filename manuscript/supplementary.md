@@ -428,7 +428,7 @@ Table: **Table S14.** Leave-one-family-out analysis of the seeded variant: AP li
 
 ## Supplementary figures
 
-![**Figure S1.** Rank-power weights of the twelve features on development data, with the mutual information (MI) of each feature with the proxy partition.](figs/F3_weights.png){width=3.6in}
+![**Figure S1.** Rank-power weights of the twelve features on development data, with the mutual information (MI) of each feature with the proxy partition.](figs/F3_weights.png){width=6.5in}
 
 ![**Figure S2.** Profile descriptors on development data. Left block: medians of five features, log-transformed and rescaled to [0, 1] across profiles. Middle block: shares of members with each input script class, an OP_RETURN output, replace-by-fee signalling and an exchange tag. Right column: Runes share among the test-period members.](figs/F4_profiles.png){width=6.5in}
 

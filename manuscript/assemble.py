@@ -192,7 +192,7 @@ FIG = {
                    "later data pass through the frozen model."),
     "F_design": ("F2_design.png", 6.5, "Study periods. The analysis code was frozen before any test-period, "
                  "held-out or Elliptic test result was computed."),
-    "F_weights": ("F3_weights.png", 3.6, "Rank-power weights of the twelve features on development data, with "
+    "F_weights": ("F3_weights.png", 6.5, "Rank-power weights of the twelve features on development data, with "
                   "the mutual information (MI) of each feature with the proxy partition."),
     "F_profiles": ("F4_profiles.png", 6.5, "Profile descriptors on development data. Left block: medians of "
                    "five features, log-transformed and rescaled to [0, 1] across profiles. Middle block: shares of "
