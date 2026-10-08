@@ -192,7 +192,7 @@ def main():
         arms["ZSH refit (12 + address features)"] = ZSH(feats + NEW).fit(df, seed_for("E19", "refitall")).labels_
         log(f"  refit on 12 + {len(NEW)} features ({time.time() - t:.0f}s)")
 
-        parts = []
+        parts, parts12 = [], []
         B = 50 if SMOKE else CFG["evaluation"]["bootstrap_B"]
         for name, y in targets.items():
             if y.sum() < 400:
@@ -208,11 +208,21 @@ def main():
                                          reference="ZSH (frozen, 12 features)", log=log,
                                          row_weights=rw, strata=st_)
             parts.append(tab)
-    out = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
-    if len(out):
-        out["max_lift"] = 1.0 / out["base_rate"]
-        out["attained"] = out["ap"]
-    out.to_csv(res / "richer_features.csv", index=False)
+            # The frozen model differs from the refits in fitting period as well as in
+            # features, so it cannot isolate what the address features add. Scoring the
+            # same arms again against the twelve-feature refit does: that pair is fitted
+            # on the same transactions by the same pipeline and differs only in the
+            # feature set (R1.2, round 5).
+            tab12, _, _ = evaluate_targets(a, df, {name: y}, B, seed_for("E19", "boot", name),
+                                           reference="ZSH refit (12 features)", log=log,
+                                           row_weights=rw, strata=st_)
+            parts12.append(tab12)
+    for rows, fname in ((parts, "richer_features.csv"), (parts12, "richer_features_vs_refit12.csv")):
+        out = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+        if len(out):
+            out["max_lift"] = 1.0 / out["base_rate"]
+            out["attained"] = out["ap"]
+        out.to_csv(res / fname, index=False)
     write_json({"rows": int(len(df)), "coverage": float(cov.mean()), "new_features": NEW,
                 "targets": list(targets), "K": K}, res / "summary.json")
     log("done")

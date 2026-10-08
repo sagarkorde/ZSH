@@ -45,11 +45,22 @@ from zsh.io import SMOKE, dev_test, selected_features  # noqa: E402
 MAX_TRAIN = 1_500_000
 
 
-def bins_from_scores(score, k):
-    qs = np.unique(np.quantile(score, np.linspace(0, 1, k + 1)[1:-1]))
-    lab = np.searchsorted(qs, score, side="right").astype(np.int32)
-    _, lab = np.unique(lab, return_inverse=True)
-    return lab.astype(np.int32)
+def bins_from_scores(score, k, parity, seed):
+    """Cut a score into k cells holding an equal share of *each* block-parity fold.
+
+    Same construction, and for the same reason, as `equal_cells` in E18: the out-of-fold
+    score is one model per fold, so a cut on the pooled score need not divide either fold
+    equally, and quantile edges collapse wherever the score is tied. Ranking within each
+    fold and cutting by rank keeps every cell at a k-th of the fold it is scored on.
+    """
+    rng = np.random.default_rng(seed)
+    score = np.asarray(score)
+    lab = np.empty(len(score), dtype=np.int32)
+    for fold in (0, 1):
+        i = np.flatnonzero(parity == fold)
+        order = i[np.lexsort((rng.random(len(i)), score[i]))]
+        lab[order] = ((np.arange(len(i)) * k) // len(i)).astype(np.int32)
+    return lab
 
 
 def oof_scores(X, y, parity, seed, rng):
@@ -102,7 +113,8 @@ def main():
         B = 50 if SMOKE else CFG["evaluation"]["bootstrap_B"]
         for j, name in enumerate(names):
             arms = dict(arms_common)
-            arms["single bound"] = bins_from_scores(S[:, j], K)
+            arms["single bound"] = bins_from_scores(
+                S[:, j], K, parity, seed_for("E21", "equal_cells", name))
             tab, _, _ = evaluate_targets(arms, test, {name: targets[name]}, B,
                                          seed_for("E21", "boot", name), reference="profiles (ZSH)", log=log)
             parts.append(tab)

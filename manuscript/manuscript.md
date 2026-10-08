@@ -31,9 +31,11 @@ oracle weights nor six other families changed this, though for P2SH inputs super
 the same features reached 95% against the profiles' 24%. Refits agreed at an adjusted
 Rand index of 0.83, yet by 2026 three profiles held three quarters of the sample and none
 survived a free refit; constraining it to the previous centroids followed 24 of 31 in
-2024 and 14 in 2026. For most annotations the limit is the clustering objective, not the
-features; for exchange tags richer features raise what supervision extracts, not what the
-profiles recover. These profiles are a readable map of activity, not a detector.
+2024 and 14 in 2026. For most annotations the limit, among the methods tested, appears to
+be the clustering objective, not the features; for exchange tags richer features raise
+what both supervision and the profiles extract, the profiles from 3.0% to 9.4% of the
+ceiling and supervision to 59.6%. These profiles are a readable map of activity, not a
+detector.
 
 :::
 
@@ -127,10 +129,10 @@ before the freeze.== The main contributions are:
    shares of the ceiling for the least frequent annotations, ==so those limits are not
    specific to ZSH, within the seven families and the single K tested==; and a
    supervised model on the same
-   twelve features attains far more than any of them, which places the limit in
-   the clustering objective rather than in the features — except for exchange
-   tags, where richer features do raise what supervision can extract
-   (Sections 6.7 and 6.8).
+   twelve features attains far more than any of them, which suggests that, for the
+   methods tested, the limit lies in the clustering objective more than in the
+   features — except for exchange tags, where richer features do raise what
+   supervision can extract (Sections 6.7 and 6.8).
 6. A public, versioned repository with the frozen analysis plan, the code, the
    collector for the held-out sample and all result files.
 
@@ -259,7 +261,7 @@ Table: **Table 1.** Data used in this study. The development and test periods ar
 | Elliptic, training steps | time steps 1–34 | 136,265 | 29,894 labelled | fitting; ranking clusters |
 | Elliptic, test steps | time steps 35–49 | 67,504 | 16,670 labelled | evaluation |
 
-![**Figure 1.** Study periods. The analysis code was frozen before any test-period, held-out or Elliptic test result was computed.](figs/F2_design.png){width=6.5in}
+![**Figure 1.** Study periods. ==The analysis code was frozen before the runs reported here; the 2022–2024 Bitcoin corpus and the Elliptic data had been examined in an earlier version of this work (Section 5.1).==](figs/F2_design.png){width=6.5in}
 
 ## 3.2. Held-out temporal sample
 
@@ -271,9 +273,9 @@ figures and its supplementary file. Its blocks were mined between October 2024
 and August 2026 and so existed before the freeze of 16 September 2026; what the
 freeze establishes is that none of them had been collected or examined when the
 plan was written, and that the heights and page offsets were drawn from seeds
-fixed in the plan itself. We no longer call the sample prospective anywhere,
-because that word invites the stronger reading that its transactions did not
-exist when the plan was written, which is not the case.== For each of the 23 calendar months we drew
+fixed in the plan itself. We do not call the sample prospective, because that word
+invites the stronger reading that its transactions did not exist when the plan was
+written, which is not the case.== For each of the 23 calendar months we drew
 800 block heights at random without replacement and, from each block, one page
 of up to 25 consecutive transactions starting at a random position. Data were
 retrieved from the public Esplora interfaces of mempool.space and
@@ -571,8 +573,8 @@ whose lower 95% bound exceeds one. Everything else, including the sensitivity
 analysis and the Runes and CoinJoin analyses, is secondary or exploratory.
 
 The hypotheses, splits, metrics and settings were written down and the code was
-frozen before any test-period, held-out or Elliptic-test result was
-computed [repository tags `v2-plan`, `v2-frozen`]. Clarifications made before
+==frozen before the test-period, held-out and Elliptic-test results reported here were
+computed== [repository tags `v2-plan`, `v2-frozen`]. Clarifications made before
 the freeze and all later deviations are listed in the repository.
 
 Ten analyses were specified in that plan. ==Fifteen== more were added afterwards, each
@@ -704,7 +706,8 @@ exploratory comparison added after the freeze.
 refit the pipeline with one setting changed at a time: $s \in \{0.5, 1, 2, 3\}$;
 $K_0 \in \{10, 20, 40, 60\}$; $c \in \{5\%, 15\%, 20\%\}$ or no refinement; depth 6;
 the upsampled corpus of the first version of this work and the equivalent sample
-weights; the size of the proxy partition, $K_p \in \{5, 20, 50\}$ instead of ten;
+weights; the size of the proxy partition, $K_p \in \{5, 20, 50\}$ instead of ten
+==(this variant was added after the freeze; Table S2)==;
 and three initialisations: K-means++ with ten starts, semantic seeds, and a blend
 of the seeds with the hierarchical centroids. The semantic seeds share the $K_0$
 initial centroids among the count-rule families (L1) in proportion to their size,
@@ -718,7 +721,7 @@ $\lambda\,\mathbf{c}^{\mathrm{seed}}_k + (1-\lambda)\,\mathbf{c}^{\mathrm{hier}}
 with $\lambda = 0.6$. All variants are evaluated on the test period against the
 reference variant.
 
-**The remaining analyses.** Six further analyses are defined in Section S1. The
+**The remaining analyses.** Further analyses are defined in Section S1. The
 "coinjoin-like" count rule is checked against the equal-output rule on a
 stratified sample of 10,000 transactions whose individual output values were
 retrieved from the Esplora interfaces, and against an external list of Wasabi 2.x
@@ -727,8 +730,8 @@ random forest [@Breiman2001] trained on the same labels, and the cluster ranking
 is repeated on training transactions that share no address with the evaluation
 period. Atypicality is measured by the Isolation Forest of Section 4.7, the local
 outlier factor [@Breunig2000] and the distance to the assigned centroid, each
-scored by ROC-AUC against the illicit label. Five analyses were added after the
-freeze: an oracle-informed weighting, in which the feature ranking is computed
+scored by ROC-AUC against the illicit label. ==The analyses added after the freeze, all
+fifteen of which are listed in Table S2, include==: an oracle-informed weighting, in which the feature ranking is computed
 from an annotation itself and which is a comparison of weighting rules rather than
 a bound on them; the matching of each profile to one cluster
 of a refit by minimum-cost assignment, scored by Jaccard similarity; a refit
@@ -1074,7 +1077,7 @@ fractions of ceilings above 2,900. Profiles built from counts, sizes, values
 and fees therefore describe the bulk of ordinary activity well and rare
 activity poorly, which is the opposite of what a triage tool would want.
 
-Table: **Table 9.** Cross-fitted concentration of the non-input annotations by ZSH and by K-means++ with the same K, both fitted on all development data. AP lift: average precision of the cluster ranking divided by the base rate (KM++: the same quantity for K-means++). Prec.: precision at 25% coverage of the positives; dividing it by the base rate gives the enrichment. Intervals from 1,000 block bootstrap resamples; p-values Holm-adjusted over the annotations of each period. Two columns of the previous version were dropped so that the table fits its page: the maximum lift, which is 1/π and can be read from the base rate given here, and the number of top-ranked profiles reaching 25% coverage, which is given in the text where it matters.
+Table: **Table 9.** Cross-fitted concentration of the non-input annotations by ZSH and by K-means++ with the same K, both fitted on all development data. AP lift: average precision of the cluster ranking divided by the base rate (KM++: the same quantity for K-means++). Prec.: precision at 25% coverage of the positives; dividing it by the base rate gives the enrichment. Intervals from 1,000 block bootstrap resamples; p-values Holm-adjusted over the annotations of each period. The maximum lift is 1/π and can be read from the base rate given here; the number of top-ranked profiles reaching 25% coverage is given in the text where it matters.
 
 | Period | Annotation | Positives | Base (%) | AP lift (95% CI) | Attained (%) | Prec. (%) | KM++ | Difference (95% CI) | p |
 |:--------|:-------------|-----------:|--------:|-----------------:|---------:|--------:|--------:|-----------------:|--------:|
@@ -1410,8 +1413,8 @@ Table: **Table 11.** An oracle-informed weighting; exploratory, added after the 
 | P2WSH inputs | 1.43 | 7.1 | 10.1 | 7.2 | 10.3 | 7.3 | 9.1 |
 | Exchange tag | 0.33 | 20.8 | 7.0 | 23.5 | 7.8 | 26.0 | 24.6 |
 
-This experiment is not an upper bound on what weighting could achieve, and we no
-longer describe it as one. It compares particular weighting rules, and the table shows
+This experiment is not an upper bound on what weighting could achieve.
+It compares particular weighting rules, and the table shows
 one of them beating the rule built from the annotation itself: on P2PKH inputs a
 weighting derived from P2WSH reaches an AP lift of 22.7 and one derived from P2SH 22.0,
 against 13.4 for the P2PKH oracle and 20.4 for the unsupervised ranking. A weighting
@@ -1419,10 +1422,11 @@ informed by the answer can therefore be worse than one informed by a different
 annotation, and no ordering of these rules bounds the family they are drawn from. What
 the table does show is that the effect of reweighting is erratic and small in the
 direction that matters: across the four annotations no rule, including the oracle,
-lifts attainment past a quarter of the ceiling for the three rarer ones. The evidence
-that weighting is not where the headroom lies comes from elsewhere — six other
-clustering families reach the same ceilings (Section 6.7), and a supervised split of
-the same twelve features reaches far more than any of them (Section 6.8).
+lifts attainment past a quarter of the ceiling for the three rarer ones. ==This finding is
+limited to the weighting rules and configurations tested here; it does not exclude that
+other weighting rules would do better.== Sections 6.7 and 6.8 address a separate question:
+six other clustering families reach the same ceilings, and a supervised split of
+the same twelve features reaches far more than any of them.
 
 **Leaving families out of the seeds.** Table S14 tests the seeded variant further. If the seeds carry information about a
 rule family, removing that family from the seeds should lower its
@@ -1439,9 +1443,9 @@ do not show that the profiles capture behaviour.
 
 **What was done.** *This whole section is exploratory: the seven-family comparison
 was added after the analysis freeze (Table S2).* Sections 6.2 to 6.6 compare
-ZSH with K-means++ at the same K. The limits they report — concentration bounded by each base rate, weights
-that cannot lift it, profiles that do not survive a refit — are therefore
-statements about ZSH. To see which of them are statements about the task, the
+ZSH with K-means++ at the same K. The limits they report — concentration bounded by each base rate, ==the
+tested weights that do not lift it==, profiles that do not survive a refit — are therefore
+statements about ZSH. To see which of them are ==shared by other clustering families==, the
 whole evaluation was repeated for seven families at one value of K: ZSH, K-means++, mini-batch
 K-means, a diagonal Gaussian mixture, BIRCH, Ward clustering and the partial
 reproduction of Vlahavas et al. [@Vlahavas2024], all with the same K = 31 and
@@ -1595,30 +1599,34 @@ them (Table 14). A gradient-boosted tree is fitted for one annotation at a
 time and its score is cut into 31 cells, which are then ranked and scored by the same
 cross-fitted procedure as the profiles, so the columns are comparable.
 
-Table: **Table 14.** What the same twelve features give a supervised model; exploratory, added after the freeze. For each annotation a gradient-boosted tree is fitted on the twelve clustering features and its score is cut into 31 cells, which are then ranked and scored exactly as the profiles are, so the columns are comparable. Equal cells: cells of equal size, which cannot isolate a rare annotation whatever the score. Benchmark: cell sizes free (K-means on the score), fitted on one block-parity half of the test period and scored on the other. A year earlier: cell sizes free, fitted on the development period and therefore using no test-period label. All values are shares of the ceiling 1/π. The benchmark is fitted for one annotation at a time; Section S1 reports a single partition built from all eleven.
+Table: **Table 14.** What the same twelve features give a supervised model; exploratory, added after the freeze. For each annotation a gradient-boosted tree is fitted on the twelve clustering features and its score is cut into 31 cells, which are then ranked and scored exactly as the profiles are, so the columns are comparable. Equal cells: cells of equal size, which cannot isolate a rare annotation whatever the score; they are formed by rank within each block-parity fold, so that each cell holds a thirty-first of the half it is scored on and the bound in the text applies. Benchmark: cell sizes free (K-means on the score), fitted on one block-parity half of the test period and scored on the other. A year earlier: cell sizes free, fitted on the development period and therefore using no test-period label. All values are shares of the ceiling 1/π. The benchmark is fitted for one annotation at a time; Section S1 reports a single partition built from all eleven.
 
 | Annotation | Base (%) | Ceiling | Profiles (%) | Equal cells (%) | Benchmark (%) | A year earlier (%) |
 |:-------------|--------:|--------:|---------:|--------:|----------:|--------:|
-| Coinbase | 0.03 | 3451 | 0.6 | 49.9 | 88.9 | 90.4 |
-| P2PKH inputs | 3.46 | 29 | 80.9 | 96.7 | 98.7 | 96.9 |
+| Coinbase | 0.03 | 3451 | 0.6 | 0.9 | 88.9 | 90.4 |
+| P2PKH inputs | 3.46 | 29 | 80.9 | 96.8 | 98.7 | 96.9 |
 | P2SH inputs | 4.35 | 23 | 23.6 | 90.9 | 98.5 | 95.0 |
 | P2WPKH inputs | 47.25 | 2 | 83.4 | 99.9 | 100.0 | 99.7 |
-| P2WSH inputs | 1.43 | 70 | 10.4 | 43.6 | 95.9 | 89.1 |
+| P2WSH inputs | 1.43 | 70 | 10.4 | 43.7 | 95.9 | 89.1 |
 | P2TR inputs | 40.94 | 2 | 83.9 | 99.9 | 100.0 | 99.5 |
 | Mixed-script inputs | 2.54 | 39 | 22.6 | 73.6 | 95.6 | 89.1 |
-| Omni | 0.03 | 2953 | 0.9 | 0.5 | 52.7 | 2.4 |
+| Omni | 0.03 | 2953 | 0.9 | 0.8 | 52.7 | 2.4 |
 | Other OP_RETURN | 1.35 | 74 | 9.8 | 41.8 | 97.0 | 4.8 |
-| Exchange tag | 0.33 | 299 | 7.0 | 7.4 | 46.6 | 28.2 |
-| Median |  |  | 16.5 | 61.8 | 96.4 | 89.8 |
+| Exchange tag | 0.33 | 299 | 7.0 | 7.7 | 46.6 | 28.2 |
+| Median |  |  | 16.5 | 58.7 | 96.4 | 89.8 |
 
 How the score is cut matters, and the table reports two ways of doing it. Cells of
 equal size are the obvious choice and the wrong one: an annotation with a base rate of
 0.03% cannot exceed about 1% purity in cells holding a thirty-first of the data each,
 whatever the score says, so equal cells measure the cutting rule rather than the
 features. A clustering is under no such constraint, so the benchmark that matters lets the
-cell sizes vary. The difference is large exactly where it should be — 43.6% against
-95.9% for P2WSH inputs, 7.4% against 46.6% for exchange tags — and negligible for the
-common classes, where it changes nothing.
+cell sizes vary. The difference is large exactly where it should be — 0.9% against 88.9%
+for coinbase transactions, 43.7% against 95.9% for P2WSH inputs and 7.7% against 46.6%
+for exchange tags — and negligible for the common classes, where it changes nothing.
+Coinbase shows most plainly what the equal-cell column measures. Its 0.9% is the whole of
+what 31 cells of equal size permit at a base rate of 0.03%: the supervised score has in
+fact separated the annotation completely, and the cutting rule accounts for the entire
+apparent shortfall. Across the ten annotations the median is 58.7% against 96.4%.
 
 Read against the benchmark with free cell sizes, the features carry far more than the
 profiles recover, for every annotation without exception. P2SH inputs are the clearest
@@ -1694,10 +1702,24 @@ twenty-four 59.6%, a gain of 19 percentage points, which is what one would expec
 property defined by the addresses a transaction touches. For the two OP_RETURN
 annotations they add much less (82.0% to 86.4% for other OP_RETURN use, 99.4% to
 99.7% for Runes), which is also expected: those are properties of the outputs
-themselves, already visible to the twelve. Refitting the profiles on all twenty-four
-features moves them very little — 9.4% against 9.8% for exchange tags, and 4.8%
-against 5.9% for other OP_RETURN use — so the extra information does not reach the
-profiles through the clustering objective either.
+themselves, already visible to the twelve. The features reach the profiles as well, and
+the comparison that shows it is Refit 12 against Refit 24, which are fitted on the same
+transactions by the same pipeline and differ only in the feature set. Exchange tags go
+from 3.0% to 9.4% of the ceiling and other OP_RETURN use from 2.8% to 4.8%; as paired
+differences in AP lift these are 19.1 (95% CI 15.7 to 23.6) and 1.15 (0.93 to 1.34), both
+well clear of zero. Runes rises from 89.7% to 91.9%, already close to its ceiling.
+
+Refit 24 nevertheless lands where the transferred model already was — 9.4% against 9.8%
+for exchange tags, 4.8% against 5.9% for other OP_RETURN use — and it would be a mistake
+to read that agreement as the features making no difference, which an earlier version of
+this section did. Two effects of similar size cancel in it. Refitting on this period alone
+costs 20.6 AP lift for exchange tags and 1.74 for other OP_RETURN use, measured against
+the transferred model, because one period gives the ranking less to work with and the
+feature weights are re-estimated on it; the twelve address-level features then return
+19.1 and 1.15 of that. The profiles do take up the extra information. What they do
+not do is approach what supervision extracts from it: 9.4% against 59.6% for exchange
+tags, so the objective still accounts for most of the gap, and for this annotation the
+representation and the objective both bind.
 
 Table: **Table 15.** Address-level features against the twelve, on the held-out sample; exploratory, added after the freeze. Twelve features built from the cached transaction records — input and output address reuse inside the sample, paying back to an own input address, witness items and bytes, sigops, locktime and sequence use, and the dispersion of input and output values — are added to the twelve of Table 2. Frozen: the development model transferred. Refit 12 and Refit 24: the pipeline refitted on this period with twelve and with twenty-four features. Sup.: the supervised benchmark of Table 14 computed on this period, with cell sizes free. All values are shares of the ceiling 1/π. Input script types are excluded because they are annotations.
 
@@ -1833,8 +1855,8 @@ signals novelty relative to the fitting period, not illicit activity.
 
 ## 7.5. What limits the profiles
 
-Three experiments bound the same gap from different sides, and together they say
-where the limitation lies. The first is the ceiling itself. Reading concentration
+Three experiments ==approach== the same gap from different sides, and together they ==indicate
+where the limitation lies for the methods tested==. The first is the ceiling itself. Reading concentration
 against 1/π separates a partition that fails from an annotation that is simply rare
 (Section 6.4): a lift of 23 out of a possible 29 and a lift of 21 out of a possible
 299 look similar and are not. A study that reports only lifts cannot tell them apart.
@@ -1879,8 +1901,8 @@ There is no annotation for which these features carry nothing.
 to ZSH (Section 6.7) — seven families at K = 31, on these twelve features, this corpus
 and these annotations:== every family's partition collapses into a few clusters in
 the held-out period, and profiles survive a refit only where a single cluster
-already holds most of the data. The third, the gap to the supervised benchmark, is a
-property of the objective that all seven families share — for most of the
+already holds most of the data. The third, the gap to the supervised benchmark, ==points
+to== the objective that all seven families share — for most of the
 annotations tested. Exchange tags are the documented exception: there the
 twelve-feature representation is itself a binding constraint, and richer
 features relax it (Section 6.8).
@@ -1890,12 +1912,14 @@ than of the transaction. Adding address reuse, witness structure, sigops and val
 dispersion to the twelve, on the held-out sample where the full records are
 available, raises the supervised benchmark for exchange tags from 40.8% to 59.6%, while
 adding almost nothing for the OP_RETURN annotations, which the twelve already describe
-(Section 6.8). Refitting the profiles on all twenty-four features moves them barely at
-all, so the extra information does not reach them through the clustering objective
-either. Two things would therefore be worth building: a criterion that optimises the
-concentration of nominated annotations directly, or a partition shaped by a few labels
-and then applied unsupervised; and, for entity-level properties specifically, features
-built from the address graph rather than from the transaction alone.
+(Section 6.8). The profiles take up the extra information too — refitted on all
+twenty-four features they treble their attainment for exchange tags, from 3.0% to 9.4% —
+but they end at a sixth of what supervision extracts from the same features, so for this
+annotation the representation and the objective both bind rather than either alone. Two
+things would therefore be worth building: a criterion that optimises the concentration of
+nominated annotations directly, or a partition shaped by a few labels and then applied
+unsupervised; and, for entity-level properties specifically, features built from the
+address graph rather than from the transaction alone.
 
 ## 7.6. Practical use
 
@@ -2040,14 +2064,16 @@ CoinJoins correctly about one time in ten.
 
 Three findings sharpen this. Read against the ceiling that each base rate sets, the
 profiles capture most of what is attainable for common transaction properties and
-almost none of it for rare ones. Weights computed from the annotations themselves do
-not change that, and neither would better features: a supervised model on the same
+almost none of it for rare ones. Weights computed from the annotations themselves==, under
+the rules we tested,== do
+not change that, and ==for most annotations the features are not what is missing==: a supervised model on the same
 twelve features, fitted a year earlier, attains 95.0% of the ceiling for P2SH inputs
 where the profiles attain 23.6%, and over the ten annotations its median is 89.8%
 against 16.5% for the profiles. ==A variant fitted within the test period reaches
 96.4%, but it shares labels across its two folds and is therefore optimistic, so the
-claim rests on the earlier-fitted figure.== The information is present and the clustering
-objective does not isolate it. And when the model is refitted freely, the new profiles cannot be matched to the old
+claim rests on the earlier-fitted figure.== ==For most of the annotations tested, the
+information is present in the features, and none of the clustering objectives tested
+isolates it.== And when the model is refitted freely, the new profiles cannot be matched to the old
 ones; but a refit that keeps the learned space and re-estimates only the centroids
 follows 24 of the 31 profiles into 2024 and recovers most of the concentration lost by
 2026, so the series can be continued after all.
@@ -2061,7 +2087,7 @@ already holds most of the data. ==Those three limits hold for all seven families
 K = 31 on these features and these data, which is the scope we claim for them.==
 
 Two lines of work follow. First, for most of the annotations tested neither the
-weights nor the features are the lever, so the useful direction is the objective: a criterion that optimises the
+==weighting rules we tested nor the features appear to be== the lever, so the useful direction is the objective: a criterion that optimises the
 concentration of nominated annotations directly, or a partition shaped by a few
 labels and then applied unsupervised. Richer features earn their place only for properties of
 the parties rather than of the transaction: adding address reuse and witness structure
@@ -2115,8 +2141,8 @@ when the plan was written, which makes it held out in collection rather than in 
 ==The held-out temporal sample of
 456,292 transactions, the 24,526 raw API responses it was built from, the
 collection manifest and a SHA-256 list covering every other file in the record are
-deposited as a dataset record at https://doi.org/10.5281/zenodo.23037946, which resolves
-to the current version. The sample file has SHA-256
+deposited as a dataset record at https://doi.org/10.5281/zenodo.23100775 (Version 4.0.0).
+The sample file has SHA-256
 `dff579fba854e86328297a5d740d736f69b7e1b9c30de8358396e617a3288733`,
 the value the collector recorded in the manifest when the sample was closed, so a reader
 can download the file, hash it and confirm that the archived
@@ -2124,23 +2150,12 @@ sample is the one the reported design-weighted estimates were computed from. One
 applies to rebuilding rather than downloading: a Parquet file written by a different
 Arrow build holds identical data in different bytes, so a regenerated file matches on
 content — 456,292 rows and 42 columns — and not on checksum.== Every table and figure can be regenerated with `python RUN_ALL.py`.
-**Use of Generative AI:** The authors used Claude Opus 5 (Anthropic) throughout
-this revision, under their direction and review. The tool was used to write and
-test the analysis code in the accompanying repository, including the clustering
-pipeline, the evaluation measures, the collector for the held-out sample and the
-scripts that build every table and figure; to run those experiments and report
-their output; to propose analyses that the authors then approved, among them the
-reading of concentration against its ceiling, ==the oracle-informed weighting
-comparison==, the
-comparison across clustering families and the supervised benchmark of Section 6.8;
-to check every reference against publisher records; and to draft and edit the
-text of this article, its supplementary file and the response to the reviewers.
-The authors specified the research questions, the analysis plan and the design,
-reviewed all code, results and text, decided what to report, and take full
-responsibility for the content of this publication. No text, figure or number
-was published without author review. ==The 333 numerical claims== in this article
-and its supplementary file are checked against the saved result files by a
-script in the repository (`experiments/verify_manuscript_numbers.py`).
+
+**Use of Generative AI:** A large language model was used, under the authors'
+direction and review, to edit and test the analysis code, validate the reported
+experiments, manuscript and supplementary material. The authors defined the
+research questions, analysis plan and design, reviewed all code, results and
+text, and took full responsibility for the content.
 
 **Conflicts of Interest:** The authors declare no conflicts of interest. The
 first author is also an author of the transaction data set used in this study.

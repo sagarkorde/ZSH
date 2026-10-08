@@ -16,7 +16,8 @@ two ways: into cells of equal size, and into cells whose sizes are free (K-means
 score). The second is the bound that matters, because a clustering is under no
 obligation to make its clusters equal: with equal-size cells a 0.03% annotation cannot
 exceed about 1% purity whatever the score, which understates the bound for every rare
-annotation. Two fitting variants are used:
+annotation. The equal cells are formed within each block-parity fold, for the reason
+given in `equal_cells`. Two fitting variants are used:
 
   transfer   trained on the development period, evaluated on the test period; this is
              what a supervised model would actually deliver a year later.
@@ -48,12 +49,28 @@ from zsh.io import SMOKE, dev_test, selected_features  # noqa: E402
 MAX_TRAIN = 1_500_000        # rows used to fit each supervised model
 
 
-def equal_cells(score, k, rng):
-    """Cut a score into k cells of equal size (quantile bins)."""
-    qs = np.unique(np.quantile(score, np.linspace(0, 1, k + 1)[1:-1]))
-    lab = np.searchsorted(qs, score, side="right").astype(np.int32)
-    _, lab = np.unique(lab, return_inverse=True)
-    return lab.astype(np.int32)
+def equal_cells(score, k, parity, seed):
+    """Cut a score into k cells holding an equal share of *each* block-parity fold.
+
+    The cells have to be equally populated in the fold the ranking is evaluated on, not
+    only in the two folds pooled, or the bound the column exists to illustrate does not
+    hold. Two things would otherwise break it. Quantile edges computed on the pooled
+    score collapse wherever the score is tied, so fewer than k cells come back and they
+    are not equal; and the in-period score is two models stitched together, one per fold,
+    whose baselines sit at different values, so a cut on the pooled score can leave a
+    cell that holds a k-th of the pooled rows but only a few hundred of one fold. Both
+    let a rare annotation exceed the k/ceiling share that equal cells allow. Ranking
+    within each fold and cutting by rank avoids both: ties are broken at random, so a
+    score that cannot separate spreads its positives instead of concentrating them.
+    """
+    rng = np.random.default_rng(seed)
+    score = np.asarray(score)
+    lab = np.empty(len(score), dtype=np.int32)
+    for fold in (0, 1):
+        i = np.flatnonzero(parity == fold)
+        order = i[np.lexsort((rng.random(len(i)), score[i]))]
+        lab[order] = ((np.arange(len(i)) * k) // len(i)).astype(np.int32)
+    return lab
 
 
 def free_cells(score, k, seed):
@@ -115,7 +132,8 @@ def main():
             t = time.time()
             score = fit_predict(Xd[idx], y_dev[idx], Xt, seed_for("E18", "transfer", name))
             row["transfer_seconds"] = time.time() - t
-            label_sets[f"supervised transfer, equal cells: {name}"] = equal_cells(score, K, rng)
+            label_sets[f"supervised transfer, equal cells: {name}"] = equal_cells(
+                score, K, parity, seed_for("E18", "equal_cells_t", name))
             label_sets[f"supervised transfer, free cells: {name}"] = free_cells(
                 score, K, seed_for("E18", "cells_t", name))
             np.save(out_dir("labels" + sfx) / f"e18_transfer_{name.replace(chr(58), chr(95))}.npy",
@@ -132,7 +150,8 @@ def main():
                 sc[ev] = fit_predict(Xt[tr], y_test.astype(np.int8)[tr], Xt[ev],
                                      seed_for("E18", "inperiod", name, half))
             row["inperiod_seconds"] = time.time() - t
-            label_sets[f"supervised in-period, equal cells: {name}"] = equal_cells(sc, K, rng)
+            label_sets[f"supervised in-period, equal cells: {name}"] = equal_cells(
+                sc, K, parity, seed_for("E18", "equal_cells_i", name))
             label_sets[f"supervised in-period, free cells: {name}"] = free_cells(
                 sc, K, seed_for("E18", "cells_i", name))
             rows.append(row)

@@ -159,6 +159,14 @@ def main():
     md = number_equations(md)
     md, order = resolve_citations(md, refs)
     md = md.replace("<!-- REFERENCES -->", reference_block(order, refs))
+    # The submitted article sets every em dash as a hyphen: spaced where the dash is
+    # parenthetical ("the limit - for the methods tested - is"), unspaced where it joins
+    # two words ("writing-original draft preparation", the CRediT wording). That had been
+    # done by hand in Word and was not reproducible from this source, so the rule lives
+    # here instead: the Markdown keeps the em dash, which is easier to read, and the build
+    # converts it. En dashes, which mark number ranges, are left alone.
+    md = re.sub(r"(?<=\w)—(?=\w)", "-", md)
+    md = re.sub(r"[ \t]*—[ \t]*", " - ", md)
     tmp = Path(tempfile.mkdtemp())
     (tmp / "in.md").write_text(md, encoding="utf-8")
     raw = tmp / "raw.docx"

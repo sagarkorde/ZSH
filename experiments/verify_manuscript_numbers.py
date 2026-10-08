@@ -417,15 +417,32 @@ for t, lab in (("L2:P2SH", "P2SH"), ("L2:P2PKH", "P2PKH"), ("L2:P2WSH", "P2WSH")
                ("L2:coinbase", "coinbase"), ("L4:exchange", "exchange"),
                ("L3:other_opreturn", "other OP_RETURN"), ("L3:omni", "Omni")):
     check(f"bound a year earlier {lab}", pct(piv18.loc[t, TRANS], 1))
-for t, lab in (("L2:P2WSH", "P2WSH"), ("L4:exchange", "exchange")):
+for t, lab in (("L2:P2WSH", "P2WSH"), ("L4:exchange", "exchange"), ("L2:coinbase", "coinbase")):
     check(f"bound equal cells {lab}", pct(piv18.loc[t, EQUAL], 1))
 check("bound median free cells", pct(piv18[FREE].median(), 1))
+check("bound median equal cells", pct(piv18[EQUAL].median(), 1))
 # the principal claim of Section 6.8 rests on the transfer column, so its median
 # is a checked quantity and not only an in-period figure (R1.3, round 4)
 check("bound median transfer cells", pct(piv18[TRANS].median(), 1))
 check("profiles median attained", pct(piv18["ZSH"].median(), 1))
 check("profiles P2SH attained", pct(piv18.loc["L2:P2SH", "ZSH"], 1))
 check("profiles exchange attained", pct(piv18.loc["L4:exchange", "ZSH"], 1))
+
+# A structural check, not a quoted number. K cells of equal population cannot carry an
+# average precision above K times the base rate, whatever the score, because the whole of
+# a cell counts once the cell is entered. Reporting a value above that bound means the
+# cells were not equally populated. Round 5 found exactly that: quantile edges collapse
+# on tied scores, and the in-period score is one model per fold, so a cut on the pooled
+# score left a cell holding a thirty-first of the pooled rows and 378 of one fold.
+BOUND_FAILS = []
+for _csvname, _arms in (("E18/feature_ceiling.csv",
+                         ("supervised in-period, equal cells", "supervised transfer, equal cells")),
+                        ("E21/shared_bound.csv", ("single bound",))):
+    _d = csv(_csvname)
+    for _r in _d.itertuples():
+        if _r.method in _arms and _r.ap > min(1.0, 31 * _r.base_rate) * 1.001:
+            BOUND_FAILS.append((_csvname, _r.target, _r.method, _r.ap,
+                                min(1.0, 31 * _r.base_rate)))
 
 # ---------------------------------------------------------------- richer features (E19)
 rf19 = csv("E19/richer_features.csv")
@@ -441,6 +458,28 @@ check("E19 refit24 exchange", pct(p19.loc["L4:exchange", "ZSH refit (12 + addres
 check("E19 frozen other OP_RETURN", pct(p19.loc["L3:other_opreturn", "ZSH (frozen, 12 features)"], 1))
 check("E19 refit24 other OP_RETURN",
       pct(p19.loc["L3:other_opreturn", "ZSH refit (12 + address features)"], 1))
+
+# The effect of the address features on the profiles is Refit 12 against Refit 24: the
+# same transactions, the same pipeline, only the feature set differs. The frozen model
+# differs in fitting period as well and cannot isolate it (R1.2, round 5).
+R12, R24 = "ZSH refit (12 features)", "ZSH refit (12 + address features)"
+for t, lab in (("L4:exchange", "exchange"), ("L3:other_opreturn", "other OP_RETURN"),
+               ("L3:runes", "Runes")):
+    check(f"E19 refit12 {lab}", pct(p19.loc[t, R12], 1))
+check("E19 refit24 Runes", pct(p19.loc["L3:runes", R24], 1))
+rf12 = csv("E19/richer_features_vs_refit12.csv")
+d12 = rf12[rf12.method == R24].set_index("target")
+dfz = rf12[rf12.method == "ZSH (frozen, 12 features)"].set_index("target")
+check("E19 feature gain exchange", f"{d12.loc['L4:exchange', 'd_ap_lift']:.1f}")
+check("E19 feature gain exchange lo", f"{d12.loc['L4:exchange', 'd_ap_lift_lo']:.1f}")
+check("E19 feature gain exchange hi", f"{d12.loc['L4:exchange', 'd_ap_lift_hi']:.1f}")
+check("E19 feature gain other OP_RETURN", f"{d12.loc['L3:other_opreturn', 'd_ap_lift']:.2f}")
+check("E19 feature gain other OP_RETURN lo",
+      f"{d12.loc['L3:other_opreturn', 'd_ap_lift_lo']:.2f}")
+check("E19 feature gain other OP_RETURN hi",
+      f"{d12.loc['L3:other_opreturn', 'd_ap_lift_hi']:.2f}")
+check("E19 refit cost exchange", f"{dfz.loc['L4:exchange', 'd_ap_lift']:.1f}")
+check("E19 refit cost other OP_RETURN", f"{dfz.loc['L3:other_opreturn', 'd_ap_lift']:.2f}")
 s19 = js("E19/summary.json")
 check("E19 rows", f"{s19['rows']:,}")
 check("E19 new features", str(len(s19["new_features"])))
@@ -516,7 +555,7 @@ FORBIDDEN = [
     # the stem, not the whole word: "Prosp. (%)" in a table heading survived a
     # whole-word sweep. The only permitted uses are the two withdrawal sentences.
     ("round 3: the sample is not prospective",
-     r"\bprosp(?!ective anywhere,|ective\.==)"),
+     r"\bprosp(?!ective, because|ective\.==)"),
     ("round 3: the oracle experiment is not an upper bound",
      r"upper bound for the weighting|Oracle-weight upper bound|oracle-weight bound|bounds what any weighting"),
     ("round 3: the 2024-26 blocks existed at the freeze",
@@ -543,9 +582,14 @@ for label, variants in missing:
     print(f"MISSING  {label}: expected one of {variants}")
 for label, pat, n in FORBID_HITS:
     print(f"WITHDRAWN  {label}: {n} occurrence(s) of /{pat}/")
+for f, t, m, ap, bound in BOUND_FAILS:
+    print(f"BOUND  {f} {t} [{m}]: attained {100 * ap:.1f}% exceeds the "
+          f"{100 * bound:.2f}% that 31 equal cells allow")
 
-# the back matter states how many numerical claims this script checks
-claim_ok = f"The {N_NUMERIC} numerical claims" in TEXT
+# The back matter stated how many numerical claims this script checks. The submitted
+# article no longer carries that sentence, so the count is only enforced where it is
+# claimed: a stated count must be right, an absent one is not an error.
+claim_ok = "numerical claims" not in TEXT or f"The {N_NUMERIC} numerical claims" in TEXT
 if not claim_ok:
     print(f"STALE COUNT  back matter should say 'The {N_NUMERIC} numerical claims'")
-sys.exit(1 if (missing or FORBID_HITS or not claim_ok) else 0)
+sys.exit(1 if (missing or FORBID_HITS or BOUND_FAILS or not claim_ok) else 0)

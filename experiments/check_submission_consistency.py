@@ -87,7 +87,7 @@ if data:
 
 # ---------- phrases that must appear nowhere in the package ----------
 FORBIDDEN = [
-    (r"\bprosp(?!ective anywhere,|ective\.==)", "withdrawn term or its abbreviation"),
+    (r"\bprosp(?!ective, because|ective\.==)", "withdrawn term or its abbreviation"),
     (r"upper bound for the weighting|Oracle-weight upper bound|oracle-weight bound"
      r"|bounds what any weighting", "withdrawn claim"),
     (r"given in the next column", "reference to a deleted column"),
