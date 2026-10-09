@@ -1,10 +1,15 @@
 # Correspondence with the reviewers and the editor. Kept here so that
 # assemble.py can build the reply letters, but never committed while the
 # article is under review. See README.md.
+#
+# The round is part of the file name, and the first version of this list named the
+# rounds one at a time, so a later round fell through it: response3 and response4 were
+# committed, and response5 was committed and pushed before the omission was noticed.
+# One pattern now covers every round. It does not untrack the files that are already
+# tracked, which are left as they are.
 response_to_reviewers.md
 response_resolved.md
-response_reviewer_*.md
-response2_reviewer_*.md
+response*_reviewer_*.md
 letter_openings.md
 editor_replies.md
 cover_letter*.md
