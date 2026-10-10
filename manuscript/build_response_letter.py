@@ -121,7 +121,8 @@ EVAL = {
         "comparison: Refit 24 against Frozen, which differ in fitting period as well as in "
         "feature set. Refit 12 against Refit 24 isolates the effect of the additional "
         "features and reverses it — the profiles do take up the extra information. "
-        "Section 6.8 (page 34), Section 7.5 (page 37) and the abstract (page 1) now say so, "
+        "Section 6.8 (page 34), Section 7.5 (page 37), Section 8 (page 40) and the abstract "
+        "(page 1) now say so, "
         "and add that the profiles nevertheless reach about a sixth of what supervision "
         "extracts from the same features, so for exchange tags the representation and the "
         "objective both bind rather than either alone."),
@@ -230,8 +231,8 @@ COMMENT_2 = ("Comments 2: In the interpretation of Table 15, assess the effect o
 RESPONSE_2 = [
     ["Response 2: Agree. The comparison you specify is the right one, and it reverses the "
      "conclusion we drew. We have accordingly rewritten the passage in Section 6.8 (page "
-     "34) and the two statements elsewhere in the article that repeated the conclusion, in "
-     "Section 7.5 (page 37) and the abstract (page 1)."],
+     "34) and the three statements elsewhere in the article that repeated the conclusion, "
+     "in Section 7.5 (page 37), Section 8 (page 40) and the abstract (page 1)."],
     ["What was wrong. The sentence compared Refit 24 with Frozen — 9.4% against 9.8% "
      "for exchange tags, 4.8% against 5.9% for other OP_RETURN use — and read the "
      "near-equality as the additional features making no difference to the profiles. Frozen "
@@ -285,6 +286,11 @@ RESPONSE_2 = [
       "9.4% — but they end at a sixth of what supervision extracts from the same "
       "features, so for this annotation the representation and the objective both bind "
       "rather than either alone.” (Section 7.5, page 37)", True)],
+    [("“Richer features earn their place only for properties of the parties rather than of "
+      "the transaction: adding address reuse and witness structure to the twelve, where the "
+      "full records allowed it, raised the supervised benchmark for exchange tags from "
+      "40.8% to 59.6% and lifted the profiles themselves from 3.0% to 9.4%, while moving "
+      "the OP_RETURN annotations far less.” (Section 8, page 40)", True)],
     [("“… for exchange tags richer features raise what both supervision and the "
       "profiles extract, the profiles from 3.0% to 9.4% of the ceiling and supervision to "
       "59.6%.” (Abstract, page 1)", True)],

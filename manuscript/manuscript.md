@@ -2092,7 +2092,7 @@ concentration of nominated annotations directly, or a partition shaped by a few
 labels and then applied unsupervised. Richer features earn their place only for properties of
 the parties rather than of the transaction: adding address reuse and witness structure
 to the twelve, where the full records allowed it, raised the supervised benchmark for exchange
-tags from 40.8% to 59.6% ==and lifted the profiles themselves from 3.0% to 9.4%==, and moved
+tags from 40.8% to 59.6% ==and lifted the profiles themselves from 3.0% to 9.4%, while moving==
 the OP_RETURN annotations far less. For
 that annotation the features, not only the objective, are a binding limit.
 Second, profiles that are refitted over time need a way to be matched to their
