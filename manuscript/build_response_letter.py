@@ -65,7 +65,7 @@ SUMMARY = [
      "supporting publication. Both corrections were warranted and both have been made. The "
      "corresponding revisions are highlighted in the re-submitted files."],
     ["The two comments proved to carry different weight, and we would rather say so than "
-     "level them. The first exposed a defect in our code, not a typographical slip: the "
+     "treat them as equal. The first exposed a defect in our code, not a typographical slip: the "
      "Coinbase entry of 49.9% is what the script produced, and it was able to exceed the "
      "limit that Section 6.8 itself states because the cells were not equally populated in "
      "the fold on which they were scored. We have corrected the code, rerun the two "
@@ -200,10 +200,13 @@ RESPONSE_1 = [
      "the script had computed. It now also asserts a bound that the definition implies. For "
      "every arm whose cells are equally populated it fails if the attained share exceeds 31 "
      "times the base rate, the most that 31 equal cells can carry whatever the score says. "
-     "Run against the previous result files it reports three violations: the Coinbase entry "
-     "you identified, the same annotation in the shared-partition analysis, and one we had "
-     "not noticed, Omni at 1.6% against a limit of 1.05%. Run against the corrected files "
-     "it is silent."],
+     "Run against the previous result files it reports three violations. One is the Coinbase "
+     "entry of Table 14 that you identified. The other two are in the shared-partition "
+     "analysis of Section 6.8, whose per-annotation arm was cut the same way and whose "
+     "figures are not tabulated in the article: coinbase again, at 49.7%, and Omni at 1.6% "
+     "against a limit of 1.05%, which we had not noticed. Omni is within its limit in "
+     "Table 14, at 0.5%, so that column gave no sign of it. Run against the corrected files "
+     "the check is silent."],
     ["The revised caption and paragraph read:"],
     [("“Equal cells: cells of equal size, which cannot isolate a rare annotation "
       "whatever the score; they are formed by rank within each block-parity fold, so that "
